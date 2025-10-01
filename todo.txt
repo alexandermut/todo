@@ -1,0 +1,6 @@
+(A) Angebot finalisieren +Arbeit @Office due:2025-10-03 id:1
+x 2025-09-28 2025-09-20 Steuer erledigt +Privat @Home id:2
+Einkaufen +Haushalt @City t:2025-10-02 id:3
+(B) Laufen gehen @Fitness rec:2d due:2025-10-01 id:4
+Backup machen +IT @Home p:1.2 id:5 custom:foo-bar
+Ohne Metadaten Titel
