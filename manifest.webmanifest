@@ -1,8 +1,0 @@
-{
-  "name": "todo.txt Studio",
-  "short_name": "todo.txt",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#101017",
-  "theme_color": "#3a7afe"
-}
