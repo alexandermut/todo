@@ -22,6 +22,19 @@ test('formatDate supports fractional timezone offsets', () => {
   assert.equal(formatDate(date, { timeZoneOffsetMinutes: -345 }), '2023-01-02');
 });
 
+test('formatDate defaults to the instance timezone offset', () => {
+  const date = new Date(Date.UTC(2023, 4, 17, 22, 30, 0));
+  date.getTimezoneOffset = () => -120;
+  assert.equal(formatDate(date), '2023-05-18');
+});
+
+test('formatDate does not mutate the provided date', () => {
+  const date = new Date(Date.UTC(2023, 4, 17, 12, 0, 0));
+  const originalTime = date.getTime();
+  formatDate(date, { timeZoneOffsetMinutes: -120 });
+  assert.equal(date.getTime(), originalTime);
+});
+
 test('formatDate always returns a YYYY-MM-DD string', () => {
   const date = new Date(Date.UTC(2023, 0, 5, 0, 0, 0));
   assert.match(formatDate(date), /^\d{4}-\d{2}-\d{2}$/);
