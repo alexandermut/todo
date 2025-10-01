@@ -1,8 +1,11 @@
 {
   "name": "todo.txt Studio",
   "short_name": "todo.txt",
+  "id": "./",
+  "scope": "./",
   "start_url": "./index.html",
   "display": "standalone",
+  "description": "Schnelle Offline-Verwaltung von todo.txt-Dateien mit Filtern, Shortcuts und Import/Export.",
   "background_color": "#101017",
   "theme_color": "#3a7afe"
 }
