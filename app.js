@@ -1,3 +1,5 @@
+import { formatDate } from './date-utils.js';
+
 const STORAGE_KEYS = {
   TEXT: 'todotxt-lines',
   ORDER: 'todotxt-order',
@@ -79,11 +81,6 @@ function parseISO(str) {
   const [year, month, day] = str.split('-').map(Number);
   if (!year || !month || !day) return null;
   return new Date(year, month - 1, day);
-}
-
-function formatDate(date) {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  return d.toISOString().slice(0, 10);
 }
 
 function shiftDate(date, { days = 0, weeks = 0, months = 0, years = 0 }) {
