@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { formatDate } from '../date-utils.js';
+
+test('formatDate keeps the current day in neutral timezone', () => {
+  const date = new Date(Date.UTC(2023, 4, 17, 12, 0, 0));
+  assert.equal(formatDate(date), '2023-05-17');
+});
+
+test('formatDate respects positive timezone offsets', () => {
+  const date = new Date(Date.UTC(2023, 4, 17, 22, 30, 0));
+  assert.equal(formatDate(date, { timeZoneOffsetMinutes: -120 }), '2023-05-18');
+});
+
+test('formatDate respects negative timezone offsets', () => {
+  const date = new Date(Date.UTC(2023, 4, 18, 5, 30, 0));
+  assert.equal(formatDate(date, { timeZoneOffsetMinutes: 420 }), '2023-05-17');
+});
+
+test('formatDate supports fractional timezone offsets', () => {
+  const date = new Date(Date.UTC(2023, 0, 1, 18, 30, 0));
+  assert.equal(formatDate(date, { timeZoneOffsetMinutes: -345 }), '2023-01-02');
+});
+
+test('formatDate always returns a YYYY-MM-DD string', () => {
+  const date = new Date(Date.UTC(2023, 0, 5, 0, 0, 0));
+  assert.match(formatDate(date), /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('throws for invalid dates', () => {
+  assert.throws(() => formatDate(new Date('invalid')), {
+    name: 'TypeError'
+  });
+});
+
+test('throws when timezone offset is not finite', () => {
+  const date = new Date(Date.UTC(2023, 0, 1, 0, 0, 0));
+  assert.throws(() => formatDate(date, { timeZoneOffsetMinutes: Number.POSITIVE_INFINITY }), {
+    name: 'TypeError',
+    message: 'Expected a finite timezone offset'
+  });
+});

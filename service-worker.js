@@ -1,9 +1,10 @@
-const CACHE_NAME = 'todotxt-studio-v1';
+const CACHE_NAME = 'todotxt-studio-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './date-utils.js',
   './todo.txt',
   './manifest.webmanifest'
 ];
