@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>todo.txt Studio</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell" data-theme="auto">
+    <header class="top-bar" role="banner">
+      <div class="top-left">
+        <h1 class="app-title">todo.txt Studio</h1>
+        <div class="quick-add" role="form" aria-label="Neue Aufgabe hinzufügen">
+          <input id="quick-add-input" type="text" placeholder="Neue Aufgabe… (A) Bericht +Projekt @Kontext due:2025-10-10" autocomplete="off" aria-label="Neue Aufgabe" />
+          <button id="quick-add-btn" type="button">Hinzufügen</button>
+        </div>
+        <div class="quick-add-preview" id="quick-add-preview" aria-live="polite"></div>
+      </div>
+      <div class="top-right">
+        <button id="import-btn" type="button">Import</button>
+        <input id="file-input" type="file" accept=".txt" hidden />
+        <button id="export-btn" type="button">Export</button>
+        <button id="toggle-theme" type="button" aria-pressed="false">🌗</button>
+      </div>
+    </header>
+    <main class="main-layout" role="main">
+      <aside class="sidebar" aria-label="Filter">
+        <section class="sidebar-group" aria-labelledby="quick-filters-title">
+          <header class="group-header">
+            <h2 id="quick-filters-title">Quickfilter</h2>
+            <button id="save-current-view" type="button" title="Aktuelle Ansicht speichern">+</button>
+          </header>
+          <nav class="filter-list" id="quick-filters" aria-label="Schnellzugriffe"></nav>
+        </section>
+        <section class="sidebar-group" aria-labelledby="saved-views-title">
+          <header class="group-header">
+            <h2 id="saved-views-title">Gespeicherte Ansichten</h2>
+          </header>
+          <nav class="filter-list" id="saved-views" aria-label="Gespeicherte Ansichten"></nav>
+        </section>
+        <section class="sidebar-group" aria-labelledby="projects-title">
+          <header class="group-header">
+            <h2 id="projects-title">Projekte</h2>
+          </header>
+          <nav class="filter-list" id="projects-list" aria-label="Projekte"></nav>
+        </section>
+        <section class="sidebar-group" aria-labelledby="contexts-title">
+          <header class="group-header">
+            <h2 id="contexts-title">Kontexte</h2>
+          </header>
+          <nav class="filter-list" id="contexts-list" aria-label="Kontexte"></nav>
+        </section>
+      </aside>
+      <section class="task-board">
+        <div class="board-toolbar">
+          <div class="search">
+            <input id="search-input" type="search" placeholder="Suche / Filter" aria-label="Aufgaben filtern" />
+          </div>
+          <div class="sort-controls" aria-label="Sortierung">
+            <label for="sort-select">Sortierung</label>
+            <select id="sort-select">
+              <option value="default">Standard</option>
+              <option value="is:open desc:prio asc:due asc:project asc:created">Offen, Priorität ⇣, Fällig ⇡, Projekt ⇡, Erstellt ⇡</option>
+              <option value="asc:due asc:prio">Fällig ⇡, Priorität ⇡</option>
+              <option value="desc:created">Neueste zuerst</option>
+            </select>
+          </div>
+          <div class="bulk-actions" aria-label="Sammelaktionen">
+            <button data-bulk="complete">Erledigt</button>
+            <button data-bulk="priority">Prio</button>
+            <button data-bulk="due">Due</button>
+            <button data-bulk="project">Projekt</button>
+            <button data-bulk="context">Kontext</button>
+          </div>
+        </div>
+        <ul id="task-list" class="task-list" role="listbox" aria-multiselectable="true"></ul>
+      </section>
+      <aside class="inspector" aria-label="Details">
+        <div id="inspector-content" class="inspector-content" tabindex="0"></div>
+      </aside>
+    </main>
+    <footer class="status-bar" role="contentinfo">
+      <div id="status-info">Bereit</div>
+      <div id="stats"></div>
+    </footer>
+  </div>
+  <template id="task-item-template">
+    <li class="task-item" draggable="true" role="option" aria-selected="false">
+      <div class="task-main">
+        <label class="task-check">
+          <input type="checkbox" class="task-toggle" />
+          <span class="checkbox"></span>
+        </label>
+        <div class="task-body">
+          <div class="task-header">
+            <span class="priority-badge" aria-hidden="true"></span>
+            <input class="task-title" type="text" />
+            <span class="task-meta"></span>
+          </div>
+          <div class="task-tags" aria-label="Projekte und Kontexte"></div>
+          <div class="task-badges"></div>
+        </div>
+        <div class="task-actions">
+          <button class="task-more" aria-label="Mehr Aktionen">⋮</button>
+        </div>
+      </div>
+    </li>
+  </template>
+  <div id="context-menu" class="context-menu" role="menu" hidden>
+    <button role="menuitem" data-action="duplicate">Duplizieren</button>
+    <button role="menuitem" data-action="copy-link">Link kopieren</button>
+    <button role="menuitem" data-action="open">In neuem Fenster</button>
+  </div>
+  <script src="app.js" type="module"></script>
+</body>
+</html>
