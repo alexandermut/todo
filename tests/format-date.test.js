@@ -40,6 +40,11 @@ test('formatDate always returns a YYYY-MM-DD string', () => {
   assert.match(formatDate(date), /^\d{4}-\d{2}-\d{2}$/);
 });
 
+test('formatDate normalises historical dates across offsets', () => {
+  const date = new Date(Date.UTC(1965, 0, 1, 3, 0, 0));
+  assert.equal(formatDate(date, { timeZoneOffsetMinutes: 600 }), '1964-12-31');
+});
+
 test('throws for invalid dates', () => {
   assert.throws(() => formatDate(new Date('invalid')), {
     name: 'TypeError'
