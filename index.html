@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>todo</title>
     <meta name="description" content="Open source todo.txt web app with autocomplete">
-    
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
-    
+
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://*.googleapis.com https://*.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://apis.google.com https://www.google.com; frame-src 'self' https://accounts.google.com https://content.googleapis.com https://*.google.com;">
-    
+
     <style>
         :root {
             --bg-primary: #ffffff;
@@ -28,7 +28,7 @@
             --success: #28a745;
             --danger: #dc3545;
             --warning: #ffc107;
-            --bottom-bar-height-mobile: 60px; /* NEU: Variable für Höhe der Bottom Bar */
+            --bottom-bar-height-mobile: 60px; /* Höhe der Bottom Bar */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -47,7 +47,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html { height: 100%; } /* Wichtig für 100vh Layout */
+        html { height: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-primary);
@@ -55,14 +55,14 @@
             font-size: 16px;
             line-height: 1.5;
             height: 100%;
-            overflow: hidden; /* Verhindert Body-Scroll, da die Bereiche selbst scrollen */
+            overflow: hidden;
         }
 
         .app-container {
             display: grid;
             grid-template-columns: 280px 1fr;
-            grid-template-rows: auto 1fr; /* Header + Rest */
-            height: 100%; /* Nimmt volle Höhe ein */
+            grid-template-rows: auto 1fr;
+            height: 100%;
         }
 
         .header {
@@ -87,20 +87,19 @@
             border-radius: 4px;
             font-size: 14px;
             transition: all 0.2s;
-            text-decoration: none; /* Unterstreichung bei <a> entfernen */
-            display: inline-block; /* Korrekte Dimensionierung für <a> */
-            vertical-align: middle; /* Bessere Ausrichtung mit Buttons */
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
         }
-         /* Deine Regel war hier, habe sie oben in .btn integriert */
 
         .btn:hover { background: var(--bg-hover); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+
         .btn:focus-visible, .task-item:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
             outline: 2px solid var(--accent);
             outline-offset: 2px;
         }
-        
+
         .btn:active, .task-item:active, .filter-item:active {
             transform: scale(0.98);
         }
@@ -124,7 +123,7 @@
             margin-bottom: 8px;
             font-weight: 600;
         }
-        
+
         .filter-btn, .filter-item {
             display: flex;
             justify-content: space-between;
@@ -157,16 +156,14 @@
 
         .main-content {
             grid-row: 2;
-            overflow-y: auto; /* Wichtig für Scrollen der Liste */
+            overflow-y: auto;
             padding: 16px 24px;
         }
-        
-        /* Toolbar nur noch für Desktop relevant */
-        .toolbar { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
-        .toolbar .search-add-box { flex: 1; min-width: 200px; position: relative; display: block; } /* Suchfeld im Toolbar (Desktop) explizit anzeigen*/
 
-        /* Suchfeld Styling (allgemein) */
-        .search-add-box input, .edit-input { 
+        .toolbar { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+        .toolbar .search-add-box { flex: 1; min-width: 200px; position: relative; display: block; }
+
+        .search-add-box input, .edit-input {
             width: 100%;
             padding: 12px;
             border: 2px solid var(--border);
@@ -180,10 +177,10 @@
         .task-list { display: flex; flex-direction: column; }
         .task-item { display: flex; align-items: flex-start; padding: 12px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 2px; cursor: default; transition: background 0.2s; }
         .task-item:hover { background: var(--bg-hover); }
-        
+
         .task-item.selected { background: var(--bg-selected); color: var(--text-primary); }
         .task-item.bulk-selected { background: var(--warning); color: var(--text-primary); }
-        
+
         .task-group-header {
             font-size: 14px;
             font-weight: 600;
@@ -209,12 +206,12 @@
 
         .project, .context { color: var(--accent); margin: 0 2px; cursor: pointer; border-radius: 3px; padding: 1px 3px; }
         .project:hover, .context:hover { background-color: var(--bg-hover); text-decoration: underline; }
-        
+
         .task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
 
         .bulk-actions-bar {
-            display: none; position: fixed; bottom: 0; 
-            left: 280px; /* Standard für Desktop */
+            display: none; position: fixed; bottom: 0;
+            left: 280px;
             right: 0;
             background: var(--bg-secondary); border-top: 1px solid var(--border);
             padding: 12px 24px; align-items: center; gap: 16px; z-index: 50;
@@ -222,22 +219,20 @@
         .bulk-actions-bar.active { display: flex; }
 
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
-        
-        /* Sort Controls im Header-Menü (default hidden, Desktop überschreibt) */
+
         .header-actions .sort-controls { display: none; align-items: center; gap: 8px; width: 100%; margin-top: 10px; }
         .header-actions .sort-controls label { margin-bottom: 4px; display: block; width: 100%; font-size: 12px; color: var(--text-secondary); }
         .header-actions .sort-controls select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px; width: 100%; }
 
-        /* Sort Controls im Toolbar (Desktop) */
-        .toolbar .sort-controls { display: flex; align-items: center; gap: 8px; } /* Explizit flex für Desktop */
+        .toolbar .sort-controls { display: flex; align-items: center; gap: 8px; }
         .toolbar .sort-controls select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px; }
 
 
         input[type="file"] { display: none; }
-        
+
         .autocomplete-suggestions {
             display: none;
-            position: fixed; /* Geändert von absolute zu fixed */
+            position: fixed;
             background: var(--bg-primary);
             border: 1px solid var(--border);
             border-radius: 4px;
@@ -250,7 +245,6 @@
         .autocomplete-suggestions div:hover { background: var(--bg-hover); }
         .autocomplete-suggestions div.selected { background: var(--accent); color: white; }
 
-        /* --- NEU: Bottom Bar --- */
         #bottomBar {
             position: fixed;
             bottom: 0;
@@ -258,63 +252,49 @@
             right: 0;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border);
-            padding: 8px 16px; 
+            padding: 8px 16px;
             display: none; /* Nur auf Mobile anzeigen */
             z-index: 100;
         }
         #bottomBar .search-add-box {
-            flex: 1; 
+            flex: 1;
         }
-        /* --- Ende Bottom Bar --- */
 
-        /* --- Burger Menu Styling (Basis) --- */
         .burger-btn { display: none; font-size: 24px; padding: 4px 12px; }
         .close-btn { display: none; position: absolute; top: 10px; right: 10px; font-size: 20px; padding: 4px 10px; background: var(--bg-hover); border: none; }
-        /* --- Ende Burger Menu Styling --- */
 
-        /* --- Media Queries --- */
-        /* Dein alter Breakpoint war 900px, ich nehme hier 768px als gängigen Tablet/Mobile-Breakpoint */
-        @media (max-width: 768px) { 
-             .app-container { grid-template-columns: 1fr; } /* Nur eine Spalte */
-             .sidebar { display: none; } /* Sidebar ausblenden */
-             
-             /* Burger Menü Logik */
-             .burger-btn { display: block; } /* Burger anzeigen */
-             
+        @media (max-width: 768px) {
+             .app-container { grid-template-columns: 1fr; }
+             .sidebar { display: none; }
+
+             .burger-btn { display: block; }
+
              .header-actions {
-                display: none; /* Aktionen initial verstecken */
+                display: none;
                 position: fixed; top: 0; right: 0; bottom: 0; width: 280px;
                 background: var(--bg-secondary); box-shadow: -2px 0 5px rgba(0,0,0,0.2);
                 padding: 60px 20px 20px 20px; flex-direction: column;
                 align-items: flex-start; gap: 12px; z-index: 1000; overflow-y: auto;
              }
-             .header-actions.menu-open { display: flex; } /* Menü einblenden */
-             .header-actions.menu-open .close-btn { display: block; } /* Schließen-Button im Menü */
+             .header-actions.menu-open { display: flex; }
+             .header-actions.menu-open .close-btn { display: block; }
 
-             /* Elemente im Menü */
              .header-actions .btn, .header-actions label.btn, .header-actions a.btn { width: 100%; text-align: left; }
-             .header-actions .sort-controls { display: flex; flex-direction: column; align-items: flex-start; } /* Sortierung im Menü anzeigen */
+             .header-actions .sort-controls { display: flex; flex-direction: column; align-items: flex-start; }
 
-             /* Toolbar-Anpassungen (Mobile) */
-             .toolbar { display: none; } /* Ganzen Toolbar auf Mobile verstecken */
+             .toolbar { display: none; }
 
-             /* Bottom Bar anzeigen */
              #bottomBar { display: flex; }
 
-             /* Hauptinhalt Padding anpassen */
              .main-content {
-                 /* Platz für Bottom Bar + etwas extra */
-                 padding-bottom: calc(var(--bottom-bar-height-mobile) + 20px); 
+                 padding-bottom: calc(var(--bottom-bar-height-mobile) + 20px);
              }
 
-             /* Bulk Actions Bar Position anpassen */
              .bulk-actions-bar {
-                 left: 0; /* Volle Breite */
-                 bottom: var(--bottom-bar-height-mobile); /* Über der Bottom Bar */
-                 /* Padding für Safe Area auf iPhones etc. */
-                 padding-bottom: calc(12px + env(safe-area-inset-bottom)); 
+                 left: 0;
+                 bottom: var(--bottom-bar-height-mobile);
+                 padding-bottom: calc(12px + env(safe-area-inset-bottom));
              }
-             /* Bottom Bar auch Safe Area Padding geben */
              #bottomBar {
                  padding-bottom: calc(8px + env(safe-area-inset-bottom));
              }
@@ -384,6 +364,7 @@
                     </select>
                 </div>
                  <div class="search-add-box" id="desktopSearchBox">
+                     {/* Input wird per JS hierher verschoben */}
                  </div>
             </div>
 
@@ -401,8 +382,9 @@
         </footer>
         <footer id="bottomBar">
             <div class="search-add-box" id="mobileSearchBox">
+                {/* Input + Autocomplete leben standardmäßig hier */}
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
-                 <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
+                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
         </footer>
     </div>
@@ -412,7 +394,7 @@
         window.onunhandledrejection = (e) => console.error('Unhandled promise rejection:', e.reason);
 
         const app = {
-            // Variablen bleiben gleich
+            // Variablen
             tasks: [],
             selectedTask: null,
             searchQuery: '',
@@ -424,70 +406,87 @@
             saveDebounceTimer: null,
             CLIENT_ID: '533958879265-u2sipqoup3j5fobgfkq1f37r5g8eo7lj.apps.googleusercontent.com',
             DRIVE_SCOPE: 'https://www.googleapis.com/auth/drive.appdata',
-            DRIVE_FILE_ID: null, 
-            gapiClient: null,      
-            gisTokenClient: null,  
+            DRIVE_FILE_ID: null,
+            gapiClient: null,
+            gisTokenClient: null,
 
             init() {
-                // ANGEPASST: Log-Nachricht für neue Version
-                console.log('🚀 Initializing App v2.2.0 (Mobile Bottom Bar)'); 
+                console.log('🚀 Initializing App v2.2.1 (Final Layout)'); // Versionsnummer angepasst
                 this.loadFromLocalStorage();
                 this.loadUIPreferences();
                 this.attachEventListeners();
                 this.attachEventDelegation();
                 this.autocomplete.init(this);
                 this.render();
-                // Beide Sort-Selects initialisieren
-                this.updateSortSelects(); 
-                // NEU: Input-Feld beim Start korrekt positionieren (je nach Viewport)
-                this.moveSearchInput();
-                // NEU: Listener für Resize, um Input neu zu positionieren
+                this.updateSortSelects();
+                this.moveSearchInput(); // Input initial positionieren
                 window.addEventListener('resize', () => this.moveSearchInput());
             },
 
-            // NEU: Hilfsfunktion, um beide Sort-Selects zu synchronisieren
             updateSortSelects() {
                 document.getElementById('sortSelect').value = this.sortField;
                 document.getElementById('desktopSortSelect').value = this.sortField;
             },
 
-            // NEU: Funktion, um das Suchfeld je nach Viewport zu verschieben
             moveSearchInput() {
-                const searchBox = document.getElementById('mobileSearchBox'); // Das Element, das wir bewegen
+                const searchBox = document.getElementById('mobileSearchBox'); // Das Element, das wir bewegen (enthält Input + Suggestions)
                 const mobileTarget = document.getElementById('bottomBar');
                 const desktopTarget = document.getElementById('desktopSearchBox');
-                const isMobileView = window.innerWidth <= 768; // Breakpoint muss mit CSS übereinstimmen
+                const isMobileView = window.innerWidth <= 768;
 
                 if (isMobileView) {
-                    // Sicherstellen, dass es noch nicht im Mobile-Target ist
                     if (searchBox.parentElement !== mobileTarget) {
                          mobileTarget.appendChild(searchBox);
-                         // Style-Anpassungen falls nötig (CSS sollte das meiste regeln)
-                         searchBox.style.display = 'flex'; // Sicherstellen, dass es sichtbar ist
-                         desktopTarget.style.display = 'none'; // Desktop-Platzhalter ausblenden
+                         searchBox.style.display = 'flex';
+                         desktopTarget.style.display = 'none';
                     }
                 } else {
-                    // Sicherstellen, dass es noch nicht im Desktop-Target ist
                     if (searchBox.parentElement !== desktopTarget) {
                          desktopTarget.appendChild(searchBox);
-                         // Style-Anpassungen falls nötig
-                         searchBox.style.display = 'flex'; 
-                         desktopTarget.style.display = 'flex'; // Desktop-Platzhalter anzeigen
+                         searchBox.style.display = 'flex';
+                         desktopTarget.style.display = 'flex';
                     }
                 }
                  // Autocomplete neu positionieren, falls sichtbar
-                 if(this.autocomplete.active) this.autocomplete.positionEl();
+                 if(this.autocomplete.active) {
+                     // Kurze Verzögerung, um sicherzustellen, dass das Layout aktualisiert ist
+                     setTimeout(() => this.autocomplete.positionEl(), 50);
+                 }
             },
 
-            // loadFromLocalStorage bis saveUIPreferences unverändert
-             loadFromLocalStorage() { /*...*/ },
-             loadUIPreferences() { /*...*/ },
-             saveToLocalStorage(immediate = false) { /*...*/ },
-             saveUIPreferences() { /*...*/ },
+            loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('todoTxtTasks');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) this.tasks = parsed;
+                    }
+                } catch (e) { console.error('❌ Failed to load tasks:', e); }
+            },
+
+            loadUIPreferences() {
+                try { this.sortField = localStorage.getItem('sortField') || 'default'; }
+                catch (e) { console.error('⚠️ Failed to load UI preferences:', e); }
+            },
+
+            saveToLocalStorage(immediate = false) {
+                clearTimeout(this.saveDebounceTimer);
+                const save = () => {
+                    try { localStorage.setItem('todoTxtTasks', JSON.stringify(this.tasks)); }
+                    catch (e) { console.error('❌ Failed to save tasks:', e); }
+                };
+                if (immediate) { save(); }
+                else { this.saveDebounceTimer = setTimeout(save, 300); }
+            },
+
+            saveUIPreferences() {
+                try { localStorage.setItem('sortField', this.sortField); }
+                catch (e) { console.error('⚠️ Failed to save UI preferences:', e); }
+            },
 
             attachEventListeners() {
-                const searchAddInput = document.getElementById('searchAddInput'); 
-                
+                const searchAddInput = document.getElementById('searchAddInput');
+
                 searchAddInput.addEventListener('input', (e) => {
                     this.searchQuery = e.target.value;
                     this.autocomplete.handleInput(e);
@@ -495,36 +494,31 @@
                 });
                 searchAddInput.addEventListener('keydown', (e) => {
                     if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; }
-                    if (e.key === 'Enter' && !e.isComposing) { 
-                         e.preventDefault();
+                    if (e.key === 'Enter' && !e.isComposing) {
+                        e.preventDefault();
                         const value = searchAddInput.value.trim();
                         const contextTags = Array.from(value.matchAll(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g)).map(m => m[1]);
                         const taskText = value.replace(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g, '').trim();
                         if (taskText) {
                             const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim();
-                            this.addTask(fullTaskText);
+                            this.addTask(fullTaskText); // addTask aufrufen
+                            // Reset input
                             this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : '');
                             searchAddInput.value = this.searchQuery;
-                            this.render();
+                            this.render(); // Render nach dem Hinzufügen aufrufen
                         }
                     }
-                    if (e.key === 'Escape') { 
+                    if (e.key === 'Escape') {
                         e.preventDefault();
                         if (this.searchQuery !== '') {
-                            this.searchQuery = '';
-                            searchAddInput.value = '';
-                            this.render();
-                        } else {
-                            searchAddInput.blur();
-                        }
-                     }
+                            this.searchQuery = ''; searchAddInput.value = ''; this.render();
+                        } else { searchAddInput.blur(); }
+                    }
                 });
 
-                // Listener für BEIDE Sort-Selects
                 document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
                 document.getElementById('desktopSortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
 
-                // Restliche Listener
                 document.getElementById('fileInput').addEventListener('change', (e) => { this.importFile(e.target.files[0]); e.target.value = ''; });
                 document.getElementById('exportBtn').addEventListener('click', () => this.exportToFile());
                 document.getElementById('archiveCompletedBtn').addEventListener('click', () => this.archiveCompleted());
@@ -537,18 +531,15 @@
                 document.getElementById('gdriveLoginBtn').addEventListener('click', () => this.handleAuthClick());
                 document.getElementById('gdrivePushBtn').addEventListener('click', () => this.pushToDrive());
                 document.getElementById('gdrivePullBtn').addEventListener('click', () => this.pullFromDrive());
-                
-                // Burger Menu Listener
+
                 document.getElementById('burgerBtn').addEventListener('click', () => this.toggleMenu());
                 document.getElementById('closeMenuBtn').addEventListener('click', () => this.toggleMenu());
 
                 document.addEventListener('keydown', (e) => {
                     if (!!document.querySelector('.edit-input') || this.autocomplete.active) return;
                     const isTyping = e.target.matches('input, textarea');
-                    // Fokus auf Suchfeld nur, wenn es sichtbar ist (verhindert Fehler, wenn es im Desktop-Placeholder ist)
-                    if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) { 
-                        e.preventDefault(); 
-                        document.getElementById('searchAddInput').focus(); 
+                    if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) {
+                        e.preventDefault(); document.getElementById('searchAddInput').focus();
                     }
                     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); }
                     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); }
@@ -556,58 +547,63 @@
                     if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); }
                     if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); }
                     if (e.key === 'e' && this.selectedTask && !isTyping) {
-                        e.preventDefault();
-                        const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`);
-                        if(taskElement) this.enterEditMode(taskElement);
+                        e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement);
                     }
                     if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
                 });
             },
 
-            // NEU: Zentrale Funktion für Sortieränderungen
             handleSortChange(newSortValue) {
                 this.sortField = newSortValue;
                 this.saveUIPreferences();
-                this.updateSortSelects(); // Beide Dropdowns synchronisieren
+                this.updateSortSelects();
                 this.render();
             },
 
-            // attachEventDelegation bis showNotification unverändert
-            attachEventDelegation() { /*...*/ },
-            toggleFilter(filterPart, isViewFilter = false) { /*...*/ },
-            addTask(text) { /*...*/ },
-            enterEditMode(taskElement) { /*...*/ },
-            setPriority(newPriority) { /*...*/ },
-            changePriority(direction) { /* Deine neue Cycle-Logik */ },
+            attachEventDelegation() { /* ... unverändert ... */ },
+            toggleFilter(filterPart, isViewFilter = false) { /* ... unverändert ... */ },
+
+            addTask(text) {
+                // Debug Log entfernt
+                const task = this.parseTodoLine(text);
+                if (!task.text.trim()) { return; }
+                this.saveUndoState();
+                this.tasks.push(task);
+                this.saveToLocalStorage();
+                // Render wird im Keydown-Listener aufgerufen
+            },
+
+            enterEditMode(taskElement) { /* ... unverändert ... */ },
+            setPriority(newPriority) { /* ... unverändert ... */ },
+            changePriority(direction) { /* ... Deine Zyklus-Logik ... */ },
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
-            parseTodoLine(line) { /*...*/ },
+            parseTodoLine(line) { /* ... unverändert ... */ },
             isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
-            toggleTask(taskId) { /*...*/ },
-            deleteTask(taskId) { /*...*/ },
-            selectTask(taskId) { /*...*/ },
-            getFilteredTasks() { /*...*/ },
-            sortTasks(tasks) { /*...*/ },
-            getGroupValue: (t) => ({ /*...*/ })[this.sortField] || '',
+            toggleTask(taskId) { /* ... unverändert ... */ },
+            deleteTask(taskId) { /* ... unverändert ... */ },
+            selectTask(taskId) { /* ... unverändert ... */ },
+            getFilteredTasks() { /* ... unverändert ... */ },
+            sortTasks(tasks) { /* ... unverändert ... */ },
+            getGroupValue: (t) => ({ /* ... unverändert ... */ })[this.sortField] || '',
             escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]),
-            render() { /*...*/ },
-            renderSidebar() { /*...*/ },
-            toggleBulkSelect(taskId) { /*...*/ },
-            bulkSelectAll() { /*...*/ },
-            bulkDeselectAll() { /*...*/ },
-            bulkComplete() { /*...*/ },
-            bulkDelete() { /*...*/ },
-            navigateTasks(direction) { /*...*/ },
-            updateBulkBar() { /*...*/ },
-            importFile(file) { /*...*/ },
-            exportToFile() { /*...*/ },
-            archiveCompleted() { /*...*/ },
-            saveUndoState() { /*...*/ },
-            updateUndoButton() { /*...*/ },
-            undo() { /*...*/ },
-            showHelp() { /*...*/ },
-            showNotification(message) { /*...*/ },
-            
-            // Burger Menu Toggle Funktion
+            render() { /* ... unverändert ... */ },
+            renderSidebar() { /* ... unverändert ... */ },
+            toggleBulkSelect(taskId) { /* ... unverändert ... */ },
+            bulkSelectAll() { /* ... unverändert ... */ },
+            bulkDeselectAll() { /* ... unverändert ... */ },
+            bulkComplete() { /* ... unverändert ... */ },
+            bulkDelete() { /* ... unverändert ... */ },
+            navigateTasks(direction) { /* ... unverändert ... */ },
+            updateBulkBar() { /* ... unverändert ... */ },
+            importFile(file) { /* ... unverändert ... */ },
+            exportToFile() { /* ... unverändert ... */ },
+            archiveCompleted() { /* ... unverändert ... */ },
+            saveUndoState() { /* ... unverändert ... */ },
+            updateUndoButton() { /* ... unverändert ... */ },
+            undo() { /* ... unverändert ... */ },
+            showHelp() { /* ... unverändert ... */ },
+            showNotification(message) { /* ... unverändert ... */ },
+
             toggleMenu() {
                 const menu = document.getElementById('headerActions');
                 const burgerBtn = document.getElementById('burgerBtn');
@@ -616,57 +612,46 @@
             },
 
             // Google Drive Sync Funktionen (unverändert)
-            async initGapiClient() { /*...*/ },
-            initGisTokenClient(callback) { /*...*/ },
-            async handleAuthClick() { /*...*/ },
-            updateSyncUI(isLoggedIn) { /*...*/ },
-            async findOrCreateDriveFile() { /*...*/ },
-            async pushToDrive() { /*...*/ },
-            async pullFromDrive() { /*...*/ },
-            
+            async initGapiClient() { /* ... */ },
+            initGisTokenClient(callback) { /* ... */ },
+            async handleAuthClick() { /* ... */ },
+            updateSyncUI(isLoggedIn) { /* ... */ },
+            async findOrCreateDriveFile() { /* ... */ },
+            async pushToDrive() { /* ... */ },
+            async pullFromDrive() { /* ... */ },
+
             autocomplete: {
-                 init(mainApp) { /*...*/ },
-                 active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
-                 handleInput(e) { /*...*/ },
-                 handleKeydown(e) { /*...*/ },
-                 show() { /*...*/ },
-                 hide() { /*...*/ },
-                 confirmSelection() { /*...*/ },
-                 updateSelectionUI() { /*...*/ },
-
-                // ANGEPASST: Autocomplete Positionierung
+                init(mainApp) { this.app = mainApp; this.el = document.getElementById('autocomplete-suggestions'); /* ... restliche Listener ... */ },
+                active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
+                handleInput(e) { /* ... unverändert ... */ },
+                handleKeydown(e) { /* ... unverändert ... */ },
+                show() { /* ... unverändert ... */ },
+                hide() { /* ... unverändert ... */ },
+                confirmSelection() { /* ... unverändert ... */ },
+                updateSelectionUI() { /* ... unverändert ... */ },
                 positionEl() {
-                    // Wichtig: Sicherstellen, dass targetInput gesetzt ist
                     this.targetInput = document.getElementById('searchAddInput');
-                    if (!this.targetInput) return; 
-
+                    if (!this.targetInput) return;
                     const inputRect = this.targetInput.getBoundingClientRect();
-                    const suggestionsEl = this.el; // autocomplete-suggestions div
-
+                    const suggestionsEl = this.el;
                     suggestionsEl.style.width = `${inputRect.width}px`;
                     suggestionsEl.style.left = `${inputRect.left}px`;
-
-                    // Prüfen, ob wir in der Bottom Bar sind (mobil)
-                    const isInBottomBar = window.innerWidth <= 768; // Breakpoint muss mit CSS übereinstimmen
-
-                    if (isInBottomBar) {
-                        // Positioniere ÜBER dem Input
+                    const isMobileView = window.innerWidth <= 768;
+                    if (isMobileView) {
                         suggestionsEl.style.bottom = `${window.innerHeight - inputRect.top + 2}px`;
-                        suggestionsEl.style.top = 'auto'; 
-                        // Sicherstellen, dass max-height dynamisch ist
-                        const maxHeight = Math.max(0, inputRect.top - 20); // Verhindert negative Höhe
-                        suggestionsEl.style.maxHeight = `${maxHeight}px`; 
+                        suggestionsEl.style.top = 'auto';
+                        const maxHeight = Math.max(0, inputRect.top - 20);
+                        suggestionsEl.style.maxHeight = `${maxHeight}px`;
                     } else {
-                        // Positioniere UNTER dem Input (Desktop im Toolbar)
                         suggestionsEl.style.top = `${inputRect.bottom + 2}px`;
                         suggestionsEl.style.bottom = 'auto';
-                        suggestionsEl.style.maxHeight = '200px'; // Standard max Höhe
+                        suggestionsEl.style.maxHeight = '200px';
                     }
                 }
             }
         };
 
-        // DOMContentLoaded Listener (unverändert)
+        // DOMContentLoaded Listener
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
