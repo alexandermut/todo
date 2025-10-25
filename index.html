@@ -568,32 +568,80 @@
                 }
             },
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
-            parseTodoLine(line) { /* ... unverändert ... */ },
-            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
-            toggleTask(taskId) { /* ... unverändert ... */ },
-            deleteTask(taskId) { /* ... unverändert ... */ },
-            selectTask(taskId) { /* ... unverändert ... */ },
-            getFilteredTasks() { /* ... unverändert ... */ },
-            sortTasks(tasks) { /* ... unverändert ... */ },
-            getGroupValue: (t) => ({ /* ... unverändert ... */ })[this.sortField] || '',
-            escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]),
-            render() { /* ... unverändert ... */ },
-            renderSidebar() { /* ... unverändert ... */ },
-            toggleBulkSelect(taskId) { /* ... unverändert ... */ },
-            bulkSelectAll() { /* ... unverändert ... */ },
-            bulkDeselectAll() { /* ... unverändert ... */ },
-            bulkComplete() { /* ... unverändert ... */ },
-            bulkDelete() { /* ... unverändert ... */ },
-            navigateTasks(direction) { /* ... unverändert ... */ },
-            updateBulkBar() { /* ... unverändert ... */ },
-            importFile(file) { /* ... unverändert ... */ },
-            exportToFile() { /* ... unverändert ... */ },
-            archiveCompleted() { /* ... unverändert ... */ },
-            saveUndoState() { /* ... unverändert ... */ },
-            updateUndoButton() { /* ... unverändert ... */ },
-            undo() { /* ... unverändert ... */ },
-            showHelp() { /* ... unverändert ... */ },
-            showNotification(message) { /* ... unverändert ... */ },
+            parseTodoLine(line) {
+                // Erstellt ein Basis-Task-Objekt, auch für leere Zeilen
+                const task = { 
+                    id: this.generateUniqueId(), 
+                    raw: line.trim(), 
+                    completed: false, 
+                    priority: null, 
+                    completionDate: null, 
+                    creationDate: null, 
+                    text: '', // Wichtig: Standardmäßig leerer Text
+                    projects: [], 
+                    contexts: [], 
+                    metadata: {} 
+                };
+                
+                let r = line.trim();
+                // Wenn die Zeile nach dem Trimmen leer ist, gib das Basis-Objekt zurück
+                if (!r) {
+                    console.warn("[parseTodoLine] Input line is empty or whitespace only.");
+                    return task; 
+                }
+
+                // Completed-Logik
+                if (r.startsWith('x ')) {
+                    task.completed = true; 
+                    r = r.substring(2);
+                    const d = r.match(/^\d{4}-\d{2}-\d{2}\s/);
+                    if (d && this.isValidDate(d[0].trim())) { 
+                        task.completionDate = d[0].trim(); 
+                        r = r.substring(d[0].length); 
+                    }
+                }
+
+                // Priority-Logik
+                const p = r.match(/^\(([A-Za-z])\)\s/);
+                if (p) { 
+                    task.priority = p[1].toUpperCase(); 
+                    r = r.substring(p[0].length); 
+                }
+
+                // Creation Date-Logik
+                const c = r.match(/^\d{4}-\d{2}-\d{2}\s/);
+                if (c && this.isValidDate(c[0].trim())) { 
+                    task.creationDate = c[0].trim(); 
+                    r = r.substring(c[0].length); 
+                }
+
+                // Projects und Contexts extrahieren (beeinflusst r nicht!)
+                const proj = r.match(/\+[\w.-]+/g); 
+                if (proj) {
+                    task.projects = [...new Set(proj.map(p_match => p_match.substring(1)))];
+                }
+                const ctx = r.match(/@[\w.-]+/g); 
+                if (ctx) {
+                    task.contexts = [...new Set(ctx.map(c_match => c_match.substring(1)))];
+                }
+
+                // Metadata extrahieren (beeinflusst r nicht!)
+                const meta = r.match(/(\w+):([^\s]+)/g);
+                if (meta) {
+                    meta.forEach(pair => {
+                        const [key, ...val] = pair.split(':');
+                        if (key && val.length) {
+                            task.metadata[key] = val.join(':');
+                        }
+                    });
+                }
+
+                // Der verbleibende String r ist der eigentliche Task-Text
+                task.text = r; // Setze den (potenziell modifizierten) Text
+
+                // Gib IMMER das Task-Objekt zurück
+                return task;
+            },
 
             toggleMenu() {
                 const menu = document.getElementById('headerActions');
