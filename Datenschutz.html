@@ -1,1 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datenschutzerklärung</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto; }
+        h1, h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Datenschutzerklärung</h1>
 
+    <h2>1. Verantwortlicher</h2>
+    <p>
+        Verantwortlicher für die Datenverarbeitung im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:
+    </p>
+    <p>
+        Alexander Mut<br>
+        Falkenbergsweg 66<br>
+        21149 Hamburg<br>
+        E-Mail: mutalex (at) gmail (punkt) com
+    </p>
+    <p>
+        (Weitere Angaben siehe Impressum)
+    </p>
+
+    <h2>2. Geltungsbereich</h2>
+    <p>
+        Diese Datenschutzerklärung klärt Sie über die Art, den Umfang und Zweck der Verarbeitung von personenbezogenen Daten innerhalb dieser Webanwendung (im Folgenden "App"), die unter https://alexandermut.github.io/protodo/index.html und deren Unterseiten betrieben wird, auf.
+    </p>
+
+    <h2>3. Datenverarbeitung im Überblick</h2>
+    <p>Diese App ist als "Offline-First"-Anwendung konzipiert. Die Kernfunktionalität erfordert keine Übertragung Ihrer persönlichen Daten an den Anbieter dieser App.</p>
+    <ul>
+        <li><b>Hosting (GitHub Pages):</b> Beim Aufruf der App werden zwangsläufig Daten (z.B. Ihre IP-Adresse) an den Hosting-Anbieter (GitHub, Inc.) übertragen.</li>
+        <li><b>Lokale Speicherung (LocalStorage):</b> Ihre To-Do-Listen werden standardmäßig ausschließlich lokal in Ihrem Browser (im "LocalStorage") gespeichert. Der Anbieter hat hierauf keinen Zugriff.</li>
+        <li><b>Google Drive Sync (Optional):</b> Nur wenn Sie aktiv auf "G-Drive verbinden" klicken, wird eine Verbindung zu Google-Servern hergestellt, um die Datensynchronisation zu ermöglichen.</li>
+    </ul>
+
+    <h2>4. Datenverarbeitung im Detail</h2>
+
+    <h3>a) Hosting durch GitHub Pages</h3>
+    <p>
+        Diese App wird bei GitHub Pages, einem Dienst der GitHub, Inc. (88 Colin P Kelly Jr St, San Francisco, CA 94107, USA - gehört zur Microsoft Corporation), gehostet.
+    </p>
+    <p>
+        Beim Aufruf der App werden von GitHub zwangsläufig Zugriffsdaten (sog. Server-Logfiles) erhoben. Dazu gehören Ihre IP-Adresse, Datum und Uhrzeit des Abrufs, Browsertyp und die aufgerufene URL. Diese Daten sind technisch notwendig, um die App auszuliefern und die Stabilität und Sicherheit des Dienstes zu gewährleisten.
+    </p>
+    <p>
+        Rechtsgrundlage hierfür ist unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO) an einer sicheren und effizienten Bereitstellung dieser App.
+    </p>
+    <p>
+        Weitere Informationen finden Sie in der Datenschutzerklärung von GitHub/Microsoft: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-privacy-statement" target="_blank" rel="noopener noreferrer">https://docs.github.com/de/site-policy/privacy-policies/github-privacy-statement</a>
+    </p>
+
+    <h3>b) Lokale Speicherung (LocalStorage)</h3>
+    <p>
+        Alle von Ihnen eingegebenen Aufgaben (`todo.txt`-Daten) werden standardmäßig ausschließlich im "LocalStorage" Ihres Webbrowsers auf Ihrem Endgerät gespeichert. Diese Daten verbleiben auf Ihrem Gerät und werden nicht an den Anbieter dieser App oder an Dritte übertragen. Die Löschung dieser Daten obliegt Ihnen (z.B. durch Löschen des Browser-Cache).
+    </p>
+
+    <h3>c) Optionale Google Drive-Synchronisation</h3>
+    <p>
+        Sie haben die freiwillige Möglichkeit, Ihre To-Do-Liste mit Ihrem eigenen Google Drive-Konto zu synchronisieren.
+    </p>
+    <p>
+        <b>Rechtsgrundlage:</b> Diese Datenverarbeitung erfolgt ausschließlich auf Grundlage Ihrer aktiven und ausdrücklichen Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie durch das Klicken auf den Button "G-Drive verbinden" und die anschließende Bestätigung im Google-Anmeldefenster erteilen.
+    </p>
+    <p>
+        <b>Ablauf und Zweck:</b> Wenn Sie die Synchronisation initiieren, wird ein OAuth 2.0-Anmeldefenster von Google geöffnet. Diese App erhält die Berechtigung (Scope: `.../auth/drive.appdata`), auf einen speziellen, für andere Apps nicht sichtbaren "App-Datenordner" (appDataFolder) in Ihrem Google Drive zuzugreifen. Die App legt dort eine `todo.txt`-Datei an bzw. liest und überschreibt diese auf Ihren Wunsch (via "Push" oder "Pull").
+    </p>
+    <p>
+        <b>WICHTIGER HINWEIS:</b> Der Anbieter dieser App (Alexander Mut) hat zu keinem Zeitpunkt Zugriff auf Ihr Google-Konto, Ihre Anmeldedaten oder die in Ihrem Google Drive gespeicherte `todo.txt`-Datei. Die gesamte Kommunikation findet ausschließlich zwischen Ihrem Browser und den Google-Servern statt.
+    </p>
+    <p>
+        <b>Anbieter des Dienstes:</b> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.
+    </p>
+    <p>
+        Weitere Informationen finden Sie in der Datenschutzerklärung von Google: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>
+    </p>
+
+    <h2>5. Ihre Rechte (Betroffenenrechte)</h2>
+    <p>
+        Ihnen stehen bezüglich Ihrer bei uns gespeicherten Daten (z.B. Kontaktaufnahmen per E-Mail) oder der durch Hosting erhobenen Daten folgende Rechte zu:
+    </p>
+    <ul>
+        <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
+        <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
+        <li>Recht auf Löschung (Art. 17 DSGVO)</li>
+        <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+        <li>Recht auf Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)</li>
+        <li>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</li>
+    </ul>
+    <p>
+        Bezüglich der in Ihrem Google Drive gespeicherten Daten müssen Sie Ihre Rechte direkt gegenüber Google bzw. durch Löschen der Daten in Ihrem Konto wahrnehmen.
+    </p>
+    <p>
+        Sie haben zudem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten durch uns zu beschweren.
+    </p>
+
+</body>
+</html>
