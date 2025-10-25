@@ -246,18 +246,18 @@
 <body>
     <div class="app-container">
         <header class="header">
-            <h1>📝 todo</h1>
+            <h1>todo</h1>
             <div class="header-actions">
                 <button class="btn" id="helpBtn">?</button>
-                <button class="btn" id="undoBtn" disabled>↶ Undo</button>
-                <button class="btn" id="archiveCompletedBtn">Archive</button>
-                <label for="fileInput" class="btn">Import</label>
+                <button class="btn" id="undoBtn" disabled>↶ undo</button>
+                <button class="btn" id="archiveCompletedBtn">archive</button>
+                <label for="fileInput" class="btn">import</label>
                 <input type="file" id="fileInput" accept=".txt,text/plain">
-                <button class="btn" id="exportBtn">Export</button>
+                <button class="btn" id="exportBtn">export</button>
                 
                 <button class="btn" id="gdriveLoginBtn">G-Drive verbinden</button>
                 <button class="btn" id="gdrivePushBtn" style="display: none;">G-Drive ➔ Speichern</button>
-                <button class="btn" id="gdrivePullBtn" style="display: none;">G-Drive 🡸 Laden</button>
+                <button class="btn" id="gdrivePullBtn" style="display: none;">G-Drive Datei Laden</button>
         
                 <a href="impressum.html" target="_blank" class="btn">Impressum</a>
                 <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
@@ -267,16 +267,16 @@
         <aside class="sidebar">
             <section class="sidebar-section">
                 <h3>Views</h3>
-                <button class="filter-btn" data-view-filter="all">All</button>
-                <button class="filter-btn" data-view-filter="open">Open</button>
-                <button class="filter-btn" data-view-filter="done">Done</button>
+                <button class="filter-btn" data-view-filter="all">all</button>
+                <button class="filter-btn" data-view-filter="open">open</button>
+                <button class="filter-btn" data-view-filter="done">done</button>
             </section>
             <section class="sidebar-section">
                 <h3>Filter</h3>
-                <button class="filter-btn" data-special-filter="no-due">Ohne Fälligkeit</button>
-                <button class="filter-btn" data-special-filter="no-project">Ohne Projekt</button>
-                <button class="filter-btn" data-special-filter="no-context">Ohne Kontext</button>
-                <button class="filter-btn" data-special-filter="no-prio">Ohne Priorität</button>
+                <button class="filter-btn" data-special-filter="no-due">no due</button>
+                <button class="filter-btn" data-special-filter="no-project">no project</button>
+                <button class="filter-btn" data-special-filter="no-context">no context</button>
+                <button class="filter-btn" data-special-filter="no-prio">no prio</button>
             </section>
             <section class="sidebar-section"><h3>Priorities</h3><div id="prioritiesList"></div></section>
             <section class="sidebar-section"><h3>Projects</h3><div id="projectsList"></div></section>
