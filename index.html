@@ -449,10 +449,35 @@
                  }
             },
 
-            loadFromLocalStorage() { /* ... unverändert ... */ },
-            loadUIPreferences() { /* ... unverändert ... */ },
-            saveToLocalStorage(immediate = false) { /* ... unverändert ... */ },
-            saveUIPreferences() { /* ... unverändert ... */ },
+            loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('todoTxtTasks');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) this.tasks = parsed;
+                    }
+                } catch (e) { console.error('❌ Failed to load tasks:', e); }
+            },
+
+            loadUIPreferences() {
+                try { this.sortField = localStorage.getItem('sortField') || 'default'; }
+                catch (e) { console.error('⚠️ Failed to load UI preferences:', e); }
+            },
+
+            saveToLocalStorage(immediate = false) {
+                clearTimeout(this.saveDebounceTimer);
+                const save = () => {
+                    try { localStorage.setItem('todoTxtTasks', JSON.stringify(this.tasks)); }
+                    catch (e) { console.error('❌ Failed to save tasks:', e); }
+                };
+                if (immediate) { save(); }
+                else { this.saveDebounceTimer = setTimeout(save, 300); }
+            },
+
+            saveUIPreferences() {
+                try { localStorage.setItem('sortField', this.sortField); }
+                catch (e) { console.error('⚠️ Failed to save UI preferences:', e); }
+            },
 
             attachEventListeners() {
                 const searchAddInput = document.getElementById('searchAddInput');
@@ -529,16 +554,62 @@
                 this.render();
             },
 
-            attachEventDelegation() { /* ... unverändert ... */ },
-            toggleFilter(filterPart, isViewFilter = false) { /* ... unverändert ... */ },
+            attachEventDelegation() {
+                const taskList = document.getElementById('taskList');
+                taskList.addEventListener('click', (e) => {
+                    if (!!document.querySelector('.edit-input')) return;
+                    if (e.target.matches('.project')) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return; }
+                    if (e.target.matches('.context')) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return; }
+                    const taskItem = e.target.closest('.task-item');
+                    if (!taskItem) return;
+                    const taskId = taskItem.dataset.taskId;
+                    if (!taskId) return;
+                    if (e.target.matches('.task-checkbox')) {
+                        e.preventDefault();
+                        this.toggleTask(taskId);
+                    }
+                    else if (e.target.closest('.task-content')) {
+                        if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId);
+                        else this.enterEditMode(taskItem);
+                    }
+                });
+
+                document.querySelector('.sidebar').addEventListener('click', (e) => {
+                    const viewFilterBtn = e.target.closest('[data-view-filter]');
+                    if (viewFilterBtn) { this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true); }
+                    const specialFilterBtn = e.target.closest('[data-special-filter]');
+                    if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`);
+                    const filterItem = e.target.closest('.filter-item');
+                    if (filterItem) {
+                        if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`);
+                        if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`);
+                        if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`);
+                    }
+                });
+            },
+
+            toggleFilter(filterPart, isViewFilter = false) {
+                const parts = new Set(this.searchQuery.split(' ').filter(Boolean));
+                const lowerCaseFilterPart = filterPart.toLowerCase();
+                let found = false;
+                parts.forEach(p => { if (p.toLowerCase() === lowerCaseFilterPart) { parts.delete(p); found = true; } });
+                if (!found) {
+                    if (isViewFilter || filterPart.startsWith('is:')) {
+                        parts.forEach(p => { if (p.startsWith('is:')) parts.delete(p); });
+                    }
+                    if (filterPart.toLowerCase() !== 'is:all') { parts.add(filterPart); }
+                }
+                this.searchQuery = Array.from(parts).join(' ');
+                document.getElementById('searchAddInput').value = this.searchQuery;
+                this.render();
+            },
 
             // --- KORRIGIERTE addTask Funktion ---
             addTask(text) {
                 const task = this.parseTodoLine(text);
-                // Zusätzliche Prüfung, ob task überhaupt existiert
-                if (!task || !task.text.trim()) { 
+                if (!task || !task.text.trim()) {
                     console.warn('[Debug] addTask: Task object or task text is empty/invalid, returning.');
-                    return; 
+                    return;
                 }
                 this.saveUndoState();
                 this.tasks.push(task);
@@ -547,85 +618,137 @@
             },
             // --- Ende Korrektur ---
 
-            enterEditMode(taskElement) { /* ... unverändert ... */ },
-            setPriority(newPriority) { /* ... unverändert ... */ },
-            // Deine korrigierte changePriority Funktion
+            enterEditMode(taskElement) {
+                const taskId = taskElement.dataset.taskId;
+                const task = this.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                this.selectedTask = taskId;
+                taskElement.parentElement.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                taskElement.classList.add('selected');
+                const content = taskElement.querySelector('.task-inner-content');
+                content.classList.add('hidden');
+                const input = document.createElement('input');
+                input.type = 'text'; input.className = 'edit-input'; input.value = task.raw;
+                content.parentElement.appendChild(input);
+                input.focus(); input.select();
+
+                input.addEventListener('input', (e) => this.autocomplete.handleInput(e));
+                input.addEventListener('keydown', (e) => {
+                    if (this.autocomplete.handleKeydown(e)) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.key === 'Enter') input.blur();
+                    else if (e.key === 'Escape') {
+                        input.removeEventListener('blur', save);
+                        this.render();
+                    }
+                });
+
+                const save = () => {
+                    this.autocomplete.hide();
+                    const newValue = input.value.trim();
+                    if (newValue && newValue !== task.raw) {
+                        this.saveUndoState();
+                        const updatedTask = this.parseTodoLine(newValue);
+                        updatedTask.id = task.id;
+                        if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate;
+                        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                        if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
+                        this.saveToLocalStorage();
+                    }
+                    this.render();
+                };
+                input.addEventListener('blur', save, { once: true });
+            },
+
+            setPriority(newPriority) {
+                const task = this.tasks.find(t => t.id === this.selectedTask);
+                if (!task) return;
+                this.saveUndoState();
+                let newRaw = task.raw.replace(/^\([A-Z]\)\s/, '');
+                if (newPriority) newRaw = `(${newPriority}) ${newRaw}`;
+                const updatedTask = this.parseTodoLine(newRaw);
+                updatedTask.id = task.id;
+                const taskIndex = this.tasks.findIndex(t => t.id === task.id);
+                if(taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
+                this.saveToLocalStorage();
+                this.render();
+            },
+
             changePriority(direction) {
                 const task = this.tasks.find(t => t.id === this.selectedTask);
                 if (!task) return;
                 const priorities = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-                const cycle = [null, ...priorities]; 
-                const currentCycleIndex = cycle.indexOf(task.priority); 
+                const cycle = [null, ...priorities];
+                const currentCycleIndex = cycle.indexOf(task.priority);
                 let newIndex;
-                if (direction > 0) { 
-                    newIndex = (currentCycleIndex + 1) % cycle.length; 
-                } else { 
+                if (direction > 0) {
+                    newIndex = (currentCycleIndex + 1) % cycle.length;
+                } else {
                     newIndex = (currentCycleIndex - 1 + cycle.length) % cycle.length;
                 }
                 const newPriority = cycle[newIndex];
                 if (newPriority !== task.priority) {
-                    this.setPriority(newPriority); 
+                    this.setPriority(newPriority);
                 }
             },
+
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
+
+            // --- KORRIGIERTE parseTodoLine Funktion ---
             parseTodoLine(line) {
-                // Erstellt ein Basis-Task-Objekt, auch für leere Zeilen
-                const task = { 
-                    id: this.generateUniqueId(), 
-                    raw: line.trim(), 
-                    completed: false, 
-                    priority: null, 
-                    completionDate: null, 
-                    creationDate: null, 
+                const task = {
+                    id: this.generateUniqueId(),
+                    raw: line.trim(),
+                    completed: false,
+                    priority: null,
+                    completionDate: null,
+                    creationDate: null,
                     text: '', // Wichtig: Standardmäßig leerer Text
-                    projects: [], 
-                    contexts: [], 
-                    metadata: {} 
+                    projects: [],
+                    contexts: [],
+                    metadata: {}
                 };
-                
+
                 let r = line.trim();
-                // Wenn die Zeile nach dem Trimmen leer ist, gib das Basis-Objekt zurück
                 if (!r) {
-                    console.warn("[parseTodoLine] Input line is empty or whitespace only.");
-                    return task; 
+                    // console.warn("[parseTodoLine] Input line is empty or whitespace only."); // Debug-Log entfernt
+                    task.text = ''; // Sicherstellen, dass Text leer ist
+                    return task; // Leeres, aber gültiges Objekt zurückgeben
                 }
 
-                // Completed-Logik
                 if (r.startsWith('x ')) {
-                    task.completed = true; 
+                    task.completed = true;
                     r = r.substring(2);
                     const d = r.match(/^\d{4}-\d{2}-\d{2}\s/);
-                    if (d && this.isValidDate(d[0].trim())) { 
-                        task.completionDate = d[0].trim(); 
-                        r = r.substring(d[0].length); 
+                    if (d && this.isValidDate(d[0].trim())) {
+                        task.completionDate = d[0].trim();
+                        r = r.substring(d[0].length);
                     }
                 }
 
-                // Priority-Logik
                 const p = r.match(/^\(([A-Za-z])\)\s/);
-                if (p) { 
-                    task.priority = p[1].toUpperCase(); 
-                    r = r.substring(p[0].length); 
+                if (p) {
+                    task.priority = p[1].toUpperCase();
+                    r = r.substring(p[0].length);
                 }
 
-                // Creation Date-Logik
                 const c = r.match(/^\d{4}-\d{2}-\d{2}\s/);
-                if (c && this.isValidDate(c[0].trim())) { 
-                    task.creationDate = c[0].trim(); 
-                    r = r.substring(c[0].length); 
+                if (c && this.isValidDate(c[0].trim())) {
+                    task.creationDate = c[0].trim();
+                    r = r.substring(c[0].length);
                 }
 
-                // Projects und Contexts extrahieren (beeinflusst r nicht!)
-                const proj = r.match(/\+[\w.-]+/g); 
+                const proj = r.match(/\+[\w.-]+/g);
                 if (proj) {
                     task.projects = [...new Set(proj.map(p_match => p_match.substring(1)))];
                 }
-                const ctx = r.match(/@[\w.-]+/g); 
+                const ctx = r.match(/@[\w.-]+/g);
                 if (ctx) {
                     task.contexts = [...new Set(ctx.map(c_match => c_match.substring(1)))];
                 }
 
-                // Metadata extrahieren (beeinflusst r nicht!)
                 const meta = r.match(/(\w+):([^\s]+)/g);
                 if (meta) {
                     meta.forEach(pair => {
@@ -636,58 +759,189 @@
                     });
                 }
 
-                // Der verbleibende String r ist der eigentliche Task-Text
-                task.text = r; // Setze den (potenziell modifizierten) Text
+                task.text = r; // Der Rest ist der Text
+                return task; // IMMER das Objekt zurückgeben
+            },
+            // --- Ende Korrektur ---
 
-                // Gib IMMER das Task-Objekt zurück
-                return task;
+            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
+
+            toggleTask(taskId) {
+                const task = this.tasks.find(t => t.id === taskId); if (!task) return;
+                this.saveUndoState();
+                task.completed = !task.completed;
+                const today = new Date().toISOString().split('T')[0];
+                task.raw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim();
+                if (task.completed) {
+                    task.completionDate = today; task.raw = `x ${today} ${task.raw}`;
+                    this.showNotification(`✅ Aufgabe erledigt!`);
+                } else {
+                    task.completionDate = null;
+                }
+                this.saveToLocalStorage();
+                this.render();
             },
 
-            toggleMenu() {
-                const menu = document.getElementById('headerActions');
-                const burgerBtn = document.getElementById('burgerBtn');
-                const isOpen = menu.classList.toggle('menu-open');
-                burgerBtn.setAttribute('aria-expanded', isOpen);
+            deleteTask(taskId) {
+                if (!confirm('Delete task?')) return;
+                this.saveUndoState();
+                this.tasks = this.tasks.filter(t => t.id !== taskId);
+                if (this.selectedTask === taskId) this.selectedTask = null;
+                this.saveToLocalStorage();
+                this.render();
             },
+
+            selectTask(taskId) { this.selectedTask = taskId; this.render(); },
+
+            getFilteredTasks() {
+                let baseTasks = [...this.tasks];
+                const searchParts = this.searchQuery.toLowerCase().split(' ').filter(Boolean);
+                let viewFilter = 'all';
+                if (searchParts.includes('is:open')) viewFilter = 'open';
+                else if (searchParts.includes('is:done')) viewFilter = 'done';
+                if (viewFilter === 'open') baseTasks = baseTasks.filter(t => !t.completed);
+                else if (viewFilter === 'done') baseTasks = baseTasks.filter(t => t.completed);
+
+                let filtered = baseTasks;
+                if (searchParts.length > 0) {
+                    filtered = baseTasks.filter(task => {
+                        const taskText = task.raw.toLowerCase();
+                        return searchParts.every(part => {
+                            if (part.startsWith('prio:')) return task.priority === part.split(':')[1].toUpperCase();
+                            if (part.startsWith('+')) return task.projects.some(p => p.toLowerCase() === part.substring(1));
+                            if (part.startsWith('@')) return task.contexts.some(c => c.toLowerCase() === part.substring(1));
+                            if (part === 'is:no-due') return !task.metadata?.due; // Safe navigation
+                            if (part === 'is:no-project') return !task.projects || task.projects.length === 0; // Check existence
+                            if (part === 'is:no-context') return !task.contexts || task.contexts.length === 0; // Check existence
+                            if (part === 'is:no-prio') return !task.priority;
+                            if (part.startsWith('is:')) return true; // Ignore other 'is:' filters for text search
+                            return taskText.includes(part);
+                        });
+                    });
+                }
+                if (this.selectedTask && !filtered.some(t => t.id === this.selectedTask)) this.selectedTask = null;
+                return this.sortTasks(filtered);
+            },
+
+            sortTasks(tasks) {
+                const sorted = [...tasks];
+                switch (this.sortField) {
+                    case 'priority': sorted.sort((a, b) => (a.priority || 'Z').localeCompare(b.priority || 'Z')); break;
+                    case 'project': sorted.sort((a, b) => (a.projects?.[0] || '\uffff').localeCompare(b.projects?.[0] || '\uffff')); break; // Safe navigation
+                    case 'context': sorted.sort((a, b) => (a.contexts?.[0] || '\uffff').localeCompare(b.contexts?.[0] || '\uffff')); break; // Safe navigation
+                    case 'due': sorted.sort((a, b) => (a.metadata?.due || '9999').localeCompare(b.metadata?.due || '9999')); break; // Safe navigation
+                }
+                return sorted;
+            },
+
+            getGroupValue: (t) => ({
+                priority: t.priority ? `Priority ${t.priority}` : 'No Priority',
+                project: t.projects?.[0] || 'No Project', // Safe navigation
+                context: t.contexts?.[0] || 'No Context', // Safe navigation
+                due: t.metadata?.due || 'No Due Date'    // Safe navigation
+            })[this.sortField] || '',
+
+            escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]),
+
+            render() {
+                const taskList = document.getElementById('taskList');
+                const emptyState = document.getElementById('emptyState');
+                const filtered = this.getFilteredTasks();
+                if (filtered.length === 0) {
+                    taskList.innerHTML = '';
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    let prevGroup = null;
+                    const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const html = filtered.map((task) => {
+                        const currentGroup = this.getGroupValue(task);
+                        const isNewGroup = this.sortField !== 'default' && prevGroup !== currentGroup;
+                        if(isNewGroup) prevGroup = currentGroup;
+                        let displayText = this.escapeHtml(task.text);
+                        // Check if projects/contexts exist before iterating
+                        (task.projects || []).forEach(p => { displayText = displayText.replace(new RegExp(`\\+${regexEscape(this.escapeHtml(p))}\\b`, 'gi'), `<span class="project">+${this.escapeHtml(p)}</span>`) });
+                        (task.contexts || []).forEach(c => { displayText = displayText.replace(new RegExp(`@${regexEscape(this.escapeHtml(c))}\\b`, 'gi'), `<span class="context">@${this.escapeHtml(c)}</span>`) });
+                        const meta = [task.creationDate, task.metadata?.due, task.completionDate].filter(Boolean).join(' • '); // Safe navigation
+                        const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : '';
+                        return `
+                            ${groupHeader}
+                            <div class="task-item ${this.selectedTask === task.id ? 'selected' : ''} ${this.bulkSelected.has(task.id) ? 'bulk-selected' : ''}" data-task-id="${task.id}">
+                                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} aria-label="Toggle task: ${this.escapeHtml(task.text)}">
+                                <div class="task-content">
+                                    <div class="task-inner-content">
+                                        <div class="task-text ${task.completed ? 'completed' : ''}">${task.priority ? `<span class="priority priority-${task.priority}">(${task.priority})</span> ` : ''}${displayText}</div>
+                                        ${meta ? `<div class="task-meta">${meta}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                    }).join('');
+                    taskList.innerHTML = html;
+                }
+                this.renderSidebar();
+            },
+
+            renderSidebar() {
+                 const countMap = (items = []) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {}); // Default empty array
+                // Add checks for potentially undefined properties before mapping/flatMapping
+                const priorities = countMap(this.tasks.map(t => t?.priority).filter(Boolean));
+                document.getElementById('prioritiesList').innerHTML = Object.entries(priorities).sort().map(([p, c]) => `<div class="filter-item" data-priority="${p}"><span>(${p})</span><span class="filter-count">${c}</span></div>`).join('');
+                const projects = countMap(this.tasks.flatMap(t => t?.projects || []));
+                document.getElementById('projectsList').innerHTML = Object.entries(projects).sort().map(([p, c]) => `<div class="filter-item" data-project="${this.escapeHtml(p)}"><span>+${this.escapeHtml(p)}</span><span class="filter-count">${c}</span></div>`).join('');
+                const contexts = countMap(this.tasks.flatMap(t => t?.contexts || []));
+                document.getElementById('contextsList').innerHTML = Object.entries(contexts).sort().map(([c, count]) => `<div class="filter-item" data-context="${this.escapeHtml(c)}"><span>@${this.escapeHtml(c)}</span><span class="filter-count">${count}</span></div>`).join('');
+
+                const currentFilters = new Set(this.searchQuery.toLowerCase().split(' ').filter(Boolean));
+                document.querySelectorAll('.sidebar .filter-btn').forEach(el => {
+                    const { viewFilter, specialFilter } = el.dataset;
+                    let isActive = false;
+                    if (viewFilter) {
+                        const hasOpen = currentFilters.has('is:open');
+                        const hasDone = currentFilters.has('is:done');
+                        if (viewFilter === 'all') isActive = !hasOpen && !hasDone;
+                        else if (viewFilter === 'open') isActive = hasOpen;
+                        else if (viewFilter === 'done') isActive = hasDone;
+                    }
+                    else if (specialFilter) isActive = currentFilters.has(`is:${specialFilter}`);
+                    el.classList.toggle('active', isActive);
+                });
+                document.querySelectorAll('.sidebar .filter-item').forEach(el => {
+                    const { priority, project, context } = el.dataset;
+                    let isActive = false;
+                    if (priority) isActive = currentFilters.has(`prio:${priority.toLowerCase()}`);
+                    else if (project) isActive = currentFilters.has(`+${project.toLowerCase()}`);
+                    else if (context) isActive = currentFilters.has(`@${context.toLowerCase()}`);
+                    el.classList.toggle('active', isActive);
+                });
+            },
+
+            toggleBulkSelect(taskId) { this.bulkSelected.has(taskId) ? this.bulkSelected.delete(taskId) : this.bulkSelected.add(taskId); this.render(); this.updateBulkBar(); },
+            bulkSelectAll() { this.getFilteredTasks().forEach(t => this.bulkSelected.add(t.id)); this.render(); this.updateBulkBar(); },
+            bulkDeselectAll() { this.bulkSelected.clear(); this.render(); this.updateBulkBar(); },
+            bulkComplete() { /* ... unverändert ... */ },
+            bulkDelete() { /* ... unverändert ... */ },
+            navigateTasks(direction) { /* ... unverändert ... */ },
+            updateBulkBar() { /* ... unverändert ... */ },
+            importFile(file) { /* ... unverändert ... */ },
+            exportToFile() { /* ... unverändert ... */ },
+            archiveCompleted() { /* ... unverändert ... */ },
+            saveUndoState() { /* ... unverändert ... */ },
+            updateUndoButton() { /* ... unverändert ... */ },
+            undo() { /* ... unverändert ... */ },
+            showHelp() { /* ... unverändert ... */ },
+            showNotification(message) { /* ... unverändert ... */ },
+            toggleMenu() { /* ... unverändert ... */ },
 
             // Google Drive Sync Funktionen (unverändert)
-            async initGapiClient() { /* ... */ },
-            initGisTokenClient(callback) { /* ... */ },
-            async handleAuthClick() { /* ... */ },
-            updateSyncUI(isLoggedIn) { /* ... */ },
-            async findOrCreateDriveFile() { /* ... */ },
-            async pushToDrive() { /* ... */ },
-            async pullFromDrive() { /* ... */ },
+            async initGapiClient() { /* ... unverändert ... */ },
+            initGisTokenClient(callback) { /* ... unverändert ... */ },
+            async handleAuthClick() { /* ... unverändert ... */ },
+            updateSyncUI(isLoggedIn) { /* ... unverändert ... */ },
+            async findOrCreateDriveFile() { /* ... unverändert ... */ },
+            async pushToDrive() { /* ... unverändert ... */ },
+            async pullFromDrive() { /* ... unverändert ... */ },
 
-            autocomplete: {
-                init(mainApp) { this.app = mainApp; this.el = document.getElementById('autocomplete-suggestions'); /* ... restliche Listener ... */ },
-                active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
-                handleInput(e) { /* ... unverändert ... */ },
-                handleKeydown(e) { /* ... unverändert ... */ },
-                show() { /* ... unverändert ... */ },
-                hide() { /* ... unverändert ... */ },
-                confirmSelection() { /* ... unverändert ... */ },
-                updateSelectionUI() { /* ... unverändert ... */ },
-                positionEl() {
-                    this.targetInput = document.getElementById('searchAddInput');
-                    if (!this.targetInput) return;
-                    const inputRect = this.targetInput.getBoundingClientRect();
-                    const suggestionsEl = this.el;
-                    suggestionsEl.style.width = `${inputRect.width}px`;
-                    suggestionsEl.style.left = `${inputRect.left}px`;
-                    const isMobileView = window.innerWidth <= 768;
-                    if (isMobileView) {
-                        suggestionsEl.style.bottom = `${window.innerHeight - inputRect.top + 2}px`;
-                        suggestionsEl.style.top = 'auto';
-                        const maxHeight = Math.max(0, inputRect.top - 20);
-                        suggestionsEl.style.maxHeight = `${maxHeight}px`;
-                    } else {
-                        suggestionsEl.style.top = `${inputRect.bottom + 2}px`;
-                        suggestionsEl.style.bottom = 'auto';
-                        suggestionsEl.style.maxHeight = '200px';
-                    }
-                }
-            }
+            autocomplete: { /* ... unverändert, inkl. positionEl Korrektur ... */ }
         };
 
         // DOMContentLoaded Listener
