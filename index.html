@@ -589,22 +589,36 @@
             changePriority(direction) {
                 const task = this.tasks.find(t => t.id === this.selectedTask);
                 if (!task) return;
+
                 const priorities = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-                let currentIndex = priorities.indexOf(task.priority);
-                let newPriority = task.priority;
-                if (direction > 0) { // Increase prio
-                    if (task.priority === null) newPriority = 'C';
-                    else if (currentIndex > 0) newPriority = priorities[currentIndex - 1];
-                } else { // Decrease prio
-                    if (task.priority !== null) {
-                        newPriority = (currentIndex < priorities.length - 1) ? priorities[currentIndex + 1] : null;
-                    }
+                // Erstelle den kompletten Zyklus: null, A, B, ..., Z
+                const cycle = [null, ...priorities]; // Länge ist 27 (0=null, 1=A, ..., 26=Z)
+
+                // Finde den Index der aktuellen Priorität im Zyklus
+                const currentCycleIndex = cycle.indexOf(task.priority); // -1 wenn nicht gefunden (sollte nie passieren)
+
+                let newIndex;
+                if (direction > 0) { // Rechts-Pfeil: Nächster im Zyklus
+                    newIndex = (currentCycleIndex + 1) % cycle.length; 
+                    // Beispiel: 
+                    // Aktuell null (Index 0) -> (0+1)%27 = 1 (A)
+                    // Aktuell Z   (Index 26) -> (26+1)%27 = 0 (null)
+                } else { // Links-Pfeil: Vorheriger im Zyklus
+                    newIndex = (currentCycleIndex - 1 + cycle.length) % cycle.length;
+                    // Beispiel:
+                    // Aktuell A   (Index 1) -> (1-1+27)%27 = 0 (null)
+                    // Aktuell null (Index 0) -> (0-1+27)%27 = 26 (Z)
                 }
+
+                const newPriority = cycle[newIndex];
+
+                // Nur updaten, wenn sich die Priorität geändert hat
                 if (newPriority !== task.priority) {
-                    this.setPriority(newPriority);
+                    // Ruft die bestehende Funktion auf, die den Task-String aktualisiert
+                    this.setPriority(newPriority); 
                 }
             },
-
+            
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
 
             parseTodoLine(line) {
