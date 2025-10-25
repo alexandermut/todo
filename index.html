@@ -408,13 +408,13 @@
             gisTokenClient: null,
 
             init() {
-                console.log('🚀 Initializing App v2.2.1 (Final Layout)');
+                console.log('🚀 Initializing App v2.2.2 (Full Code)'); // Versionsnummer angepasst
                 this.loadFromLocalStorage();
                 this.loadUIPreferences();
                 this.attachEventListeners();
                 this.attachEventDelegation();
                 this.autocomplete.init(this);
-                this.render();
+                this.render(); // Wichtig: Sicherstellen, dass render existiert
                 this.updateSortSelects();
                 this.moveSearchInput();
                 window.addEventListener('resize', () => this.moveSearchInput());
@@ -429,6 +429,11 @@
                 const searchBox = document.getElementById('mobileSearchBox');
                 const mobileTarget = document.getElementById('bottomBar');
                 const desktopTarget = document.getElementById('desktopSearchBox');
+                // Prüfen, ob die Elemente existieren, bevor darauf zugegriffen wird
+                if (!searchBox || !mobileTarget || !desktopTarget) {
+                    console.error("Fehler: Eines der Layout-Elemente (mobileSearchBox, bottomBar, desktopSearchBox) wurde nicht im DOM gefunden.");
+                    return;
+                }
                 const isMobileView = window.innerWidth <= 768;
 
                 if (isMobileView) {
@@ -604,11 +609,10 @@
                 this.render();
             },
 
-            // --- KORRIGIERTE addTask Funktion ---
             addTask(text) {
                 const task = this.parseTodoLine(text);
-                if (!task || !task.text.trim()) {
-                    console.warn('[Debug] addTask: Task object or task text is empty/invalid, returning.');
+                if (!task || !task.text?.trim()) { // Safe navigation for text property
+                    // console.warn('[Debug] addTask: Task object or task text is empty/invalid, returning.'); // Debug Log entfernt
                     return;
                 }
                 this.saveUndoState();
@@ -616,7 +620,6 @@
                 this.saveToLocalStorage();
                 // Render wird im Keydown-Listener aufgerufen
             },
-            // --- Ende Korrektur ---
 
             enterEditMode(taskElement) {
                 const taskId = taskElement.dataset.taskId;
@@ -670,6 +673,8 @@
                 if (newPriority) newRaw = `(${newPriority}) ${newRaw}`;
                 const updatedTask = this.parseTodoLine(newRaw);
                 updatedTask.id = task.id;
+                // Preserve creation date if it existed and wasn't re-parsed
+                if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate;
                 const taskIndex = this.tasks.findIndex(t => t.id === task.id);
                 if(taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
                 this.saveToLocalStorage();
@@ -696,7 +701,6 @@
 
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
 
-            // --- KORRIGIERTE parseTodoLine Funktion ---
             parseTodoLine(line) {
                 const task = {
                     id: this.generateUniqueId(),
@@ -713,9 +717,8 @@
 
                 let r = line.trim();
                 if (!r) {
-                    // console.warn("[parseTodoLine] Input line is empty or whitespace only."); // Debug-Log entfernt
-                    task.text = ''; // Sicherstellen, dass Text leer ist
-                    return task; // Leeres, aber gültiges Objekt zurückgeben
+                    task.text = '';
+                    return task;
                 }
 
                 if (r.startsWith('x ')) {
@@ -735,7 +738,8 @@
                 }
 
                 const c = r.match(/^\d{4}-\d{2}-\d{2}\s/);
-                if (c && this.isValidDate(c[0].trim())) {
+                // Check if the date is actually the creation date (shouldn't exist if completion date was parsed)
+                if (c && this.isValidDate(c[0].trim()) && !task.completionDate) {
                     task.creationDate = c[0].trim();
                     r = r.substring(c[0].length);
                 }
@@ -759,25 +763,40 @@
                     });
                 }
 
-                task.text = r; // Der Rest ist der Text
-                return task; // IMMER das Objekt zurückgeben
+                task.text = r;
+                return task;
             },
-            // --- Ende Korrektur ---
 
-            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
+            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(new Date(d)) && (new Date(d)).toISOString().startsWith(d),
 
             toggleTask(taskId) {
                 const task = this.tasks.find(t => t.id === taskId); if (!task) return;
                 this.saveUndoState();
                 task.completed = !task.completed;
                 const today = new Date().toISOString().split('T')[0];
-                task.raw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim();
+                let newRaw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim(); // Remove old completion
                 if (task.completed) {
-                    task.completionDate = today; task.raw = `x ${today} ${task.raw}`;
+                    task.completionDate = today;
+                    // Prepend completion marker and date, preserving original priority/creation date order
+                    const prioMatch = newRaw.match(/^\(([A-Z])\)\s/);
+                    const dateMatch = newRaw.match(/^\d{4}-\d{2}-\d{2}\s/);
+                    let rest = newRaw;
+                    if (prioMatch) rest = rest.substring(prioMatch[0].length);
+                    if (dateMatch && (!prioMatch || newRaw.startsWith(dateMatch[0]))) rest = rest.substring(dateMatch[0].length); // Avoid removing date if prio was first
+
+                    newRaw = `x ${today} ${prioMatch ? prioMatch[0] : ''}${dateMatch && (!prioMatch || newRaw.startsWith(dateMatch[0])) ? dateMatch[0] : ''}${rest}`;
+                    task.raw = newRaw.trim(); // Update raw string
                     this.showNotification(`✅ Aufgabe erledigt!`);
                 } else {
                     task.completionDate = null;
+                    task.raw = newRaw; // Update raw string without completion marker
                 }
+                // Re-parse to update object properties consistently
+                const updatedTask = this.parseTodoLine(task.raw);
+                updatedTask.id = task.id; // Keep original ID
+                const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
+
                 this.saveToLocalStorage();
                 this.render();
             },
@@ -797,8 +816,13 @@
                 let baseTasks = [...this.tasks];
                 const searchParts = this.searchQuery.toLowerCase().split(' ').filter(Boolean);
                 let viewFilter = 'all';
-                if (searchParts.includes('is:open')) viewFilter = 'open';
-                else if (searchParts.includes('is:done')) viewFilter = 'done';
+                // Extract view filter first
+                const viewFilterIndex = searchParts.findIndex(part => part === 'is:open' || part === 'is:done');
+                if (viewFilterIndex !== -1) {
+                    viewFilter = searchParts[viewFilterIndex].split(':')[1];
+                    searchParts.splice(viewFilterIndex, 1); // Remove from search parts
+                }
+
                 if (viewFilter === 'open') baseTasks = baseTasks.filter(t => !t.completed);
                 else if (viewFilter === 'done') baseTasks = baseTasks.filter(t => t.completed);
 
@@ -808,13 +832,14 @@
                         const taskText = task.raw.toLowerCase();
                         return searchParts.every(part => {
                             if (part.startsWith('prio:')) return task.priority === part.split(':')[1].toUpperCase();
-                            if (part.startsWith('+')) return task.projects.some(p => p.toLowerCase() === part.substring(1));
-                            if (part.startsWith('@')) return task.contexts.some(c => c.toLowerCase() === part.substring(1));
-                            if (part === 'is:no-due') return !task.metadata?.due; // Safe navigation
-                            if (part === 'is:no-project') return !task.projects || task.projects.length === 0; // Check existence
-                            if (part === 'is:no-context') return !task.contexts || task.contexts.length === 0; // Check existence
+                            if (part.startsWith('+')) return task.projects?.some(p => p.toLowerCase() === part.substring(1)); // Safe navigation
+                            if (part.startsWith('@')) return task.contexts?.some(c => c.toLowerCase() === part.substring(1)); // Safe navigation
+                            if (part === 'is:no-due') return !task.metadata?.due;
+                            if (part === 'is:no-project') return !task.projects || task.projects.length === 0;
+                            if (part === 'is:no-context') return !task.contexts || task.contexts.length === 0;
                             if (part === 'is:no-prio') return !task.priority;
-                            if (part.startsWith('is:')) return true; // Ignore other 'is:' filters for text search
+                            // Silently ignore unknown 'is:' filters for text search compatibility
+                            if (part.startsWith('is:')) return true;
                             return taskText.includes(part);
                         });
                     });
@@ -827,18 +852,18 @@
                 const sorted = [...tasks];
                 switch (this.sortField) {
                     case 'priority': sorted.sort((a, b) => (a.priority || 'Z').localeCompare(b.priority || 'Z')); break;
-                    case 'project': sorted.sort((a, b) => (a.projects?.[0] || '\uffff').localeCompare(b.projects?.[0] || '\uffff')); break; // Safe navigation
-                    case 'context': sorted.sort((a, b) => (a.contexts?.[0] || '\uffff').localeCompare(b.contexts?.[0] || '\uffff')); break; // Safe navigation
-                    case 'due': sorted.sort((a, b) => (a.metadata?.due || '9999').localeCompare(b.metadata?.due || '9999')); break; // Safe navigation
+                    case 'project': sorted.sort((a, b) => (a.projects?.[0] || '\uffff').localeCompare(b.projects?.[0] || '\uffff')); break;
+                    case 'context': sorted.sort((a, b) => (a.contexts?.[0] || '\uffff').localeCompare(b.contexts?.[0] || '\uffff')); break;
+                    case 'due': sorted.sort((a, b) => (a.metadata?.due || '9999').localeCompare(b.metadata?.due || '9999')); break;
                 }
                 return sorted;
             },
 
             getGroupValue: (t) => ({
                 priority: t.priority ? `Priority ${t.priority}` : 'No Priority',
-                project: t.projects?.[0] || 'No Project', // Safe navigation
-                context: t.contexts?.[0] || 'No Context', // Safe navigation
-                due: t.metadata?.due || 'No Due Date'    // Safe navigation
+                project: t.projects?.[0] || 'No Project',
+                context: t.contexts?.[0] || 'No Context',
+                due: t.metadata?.due || 'No Due Date'
             })[this.sortField] || '',
 
             escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]),
@@ -846,6 +871,10 @@
             render() {
                 const taskList = document.getElementById('taskList');
                 const emptyState = document.getElementById('emptyState');
+                if (!taskList || !emptyState) {
+                    console.error("Render failed: Task list or empty state element not found.");
+                    return;
+                }
                 const filtered = this.getFilteredTasks();
                 if (filtered.length === 0) {
                     taskList.innerHTML = '';
@@ -855,14 +884,18 @@
                     let prevGroup = null;
                     const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const html = filtered.map((task) => {
+                         // Fallback for potentially malformed task objects during development
+                         if (!task || typeof task.text === 'undefined') {
+                            console.warn("Skipping rendering of invalid task object:", task);
+                            return '';
+                        }
                         const currentGroup = this.getGroupValue(task);
                         const isNewGroup = this.sortField !== 'default' && prevGroup !== currentGroup;
                         if(isNewGroup) prevGroup = currentGroup;
                         let displayText = this.escapeHtml(task.text);
-                        // Check if projects/contexts exist before iterating
                         (task.projects || []).forEach(p => { displayText = displayText.replace(new RegExp(`\\+${regexEscape(this.escapeHtml(p))}\\b`, 'gi'), `<span class="project">+${this.escapeHtml(p)}</span>`) });
                         (task.contexts || []).forEach(c => { displayText = displayText.replace(new RegExp(`@${regexEscape(this.escapeHtml(c))}\\b`, 'gi'), `<span class="context">@${this.escapeHtml(c)}</span>`) });
-                        const meta = [task.creationDate, task.metadata?.due, task.completionDate].filter(Boolean).join(' • '); // Safe navigation
+                        const meta = [task.creationDate, task.metadata?.due, task.completionDate].filter(Boolean).join(' • ');
                         const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : '';
                         return `
                             ${groupHeader}
@@ -882,8 +915,7 @@
             },
 
             renderSidebar() {
-                 const countMap = (items = []) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {}); // Default empty array
-                // Add checks for potentially undefined properties before mapping/flatMapping
+                 const countMap = (items = []) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {});
                 const priorities = countMap(this.tasks.map(t => t?.priority).filter(Boolean));
                 document.getElementById('prioritiesList').innerHTML = Object.entries(priorities).sort().map(([p, c]) => `<div class="filter-item" data-priority="${p}"><span>(${p})</span><span class="filter-count">${c}</span></div>`).join('');
                 const projects = countMap(this.tasks.flatMap(t => t?.projects || []));
@@ -918,30 +950,551 @@
             toggleBulkSelect(taskId) { this.bulkSelected.has(taskId) ? this.bulkSelected.delete(taskId) : this.bulkSelected.add(taskId); this.render(); this.updateBulkBar(); },
             bulkSelectAll() { this.getFilteredTasks().forEach(t => this.bulkSelected.add(t.id)); this.render(); this.updateBulkBar(); },
             bulkDeselectAll() { this.bulkSelected.clear(); this.render(); this.updateBulkBar(); },
-            bulkComplete() { /* ... unverändert ... */ },
-            bulkDelete() { /* ... unverändert ... */ },
-            navigateTasks(direction) { /* ... unverändert ... */ },
-            updateBulkBar() { /* ... unverändert ... */ },
-            importFile(file) { /* ... unverändert ... */ },
-            exportToFile() { /* ... unverändert ... */ },
-            archiveCompleted() { /* ... unverändert ... */ },
-            saveUndoState() { /* ... unverändert ... */ },
-            updateUndoButton() { /* ... unverändert ... */ },
-            undo() { /* ... unverändert ... */ },
-            showHelp() { /* ... unverändert ... */ },
-            showNotification(message) { /* ... unverändert ... */ },
-            toggleMenu() { /* ... unverändert ... */ },
 
-            // Google Drive Sync Funktionen (unverändert)
-            async initGapiClient() { /* ... unverändert ... */ },
-            initGisTokenClient(callback) { /* ... unverändert ... */ },
-            async handleAuthClick() { /* ... unverändert ... */ },
-            updateSyncUI(isLoggedIn) { /* ... unverändert ... */ },
-            async findOrCreateDriveFile() { /* ... unverändert ... */ },
-            async pushToDrive() { /* ... unverändert ... */ },
-            async pullFromDrive() { /* ... unverändert ... */ },
+            bulkComplete() {
+                if (this.bulkSelected.size === 0) return;
+                this.saveUndoState();
+                // Avoid calling toggleTask in a loop which saves/renders multiple times
+                let changed = false;
+                this.tasks.forEach(t => {
+                    if (this.bulkSelected.has(t.id)) {
+                        // Directly modify the completed status and raw string logic from toggleTask
+                        t.completed = !t.completed;
+                        const today = new Date().toISOString().split('T')[0];
+                        let newRaw = t.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim();
+                        if (t.completed) {
+                             t.completionDate = today;
+                             // Simplified raw string update for bulk
+                             t.raw = `x ${today} ${newRaw}`;
+                        } else {
+                            t.completionDate = null;
+                            t.raw = newRaw;
+                        }
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    const count = this.bulkSelected.size; this.bulkSelected.clear();
+                    this.saveToLocalStorage(); this.render(); this.updateBulkBar();
+                    this.showNotification(`✅ ${count} Aufgaben umgeschaltet`);
+                } else {
+                     this.bulkSelected.clear(); // Clear selection even if nothing changed
+                     this.updateBulkBar();
+                }
+            },
 
-            autocomplete: { /* ... unverändert, inkl. positionEl Korrektur ... */ }
+            bulkDelete() {
+                if (this.bulkSelected.size === 0 || !confirm(`Delete ${this.bulkSelected.size} task(s)?`)) return;
+                this.saveUndoState();
+                const count = this.bulkSelected.size;
+                this.tasks = this.tasks.filter(t => !this.bulkSelected.has(t.id));
+                if (this.selectedTask && this.bulkSelected.has(this.selectedTask)) this.selectedTask = null;
+                this.bulkSelected.clear();
+                this.saveToLocalStorage(); this.render(); this.updateBulkBar();
+                this.showNotification(`🗑️ ${count} Aufgaben gelöscht`);
+            },
+
+            navigateTasks(direction) {
+                const filtered = this.getFilteredTasks(); if (filtered.length === 0) return;
+                const currentIndex = this.selectedTask ? filtered.findIndex(t => t.id === this.selectedTask) : -1;
+                const newIndex = (currentIndex + direction + filtered.length) % filtered.length;
+                this.selectTask(filtered[newIndex].id);
+                setTimeout(() => document.querySelector(`[data-task-id="${filtered[newIndex].id}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50);
+            },
+
+            updateBulkBar() {
+                const bulkBar = document.getElementById('bulkBar');
+                const count = this.bulkSelected.size;
+                if (!bulkBar) return; // Guard against missing element
+                if (count > 0) {
+                    bulkBar.classList.add('active');
+                    document.getElementById('bulkCount').textContent = `${count} selected`;
+                } else {
+                    bulkBar.classList.remove('active');
+                }
+            },
+
+            importFile(file) {
+                if (!file || (file.size > 1024*1024 && !confirm(`Large file (${(file.size/1024/1024).toFixed(2)}MB). Continue?`))) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        let content = e.target.result;
+                        if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1); // Handle BOM
+                        const lines = content.split('\n').filter(l => l.trim());
+                        if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return;
+                        this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l)));
+                        this.saveToLocalStorage(true);
+                        this.render();
+                        this.showNotification(`✅ Imported ${lines.length} tasks`);
+                    } catch (readError) {
+                        console.error("Error processing imported file:", readError);
+                        alert("Error processing file. Please check the format.");
+                    }
+                };
+                 reader.onerror = (e) => {
+                     console.error("Error reading file:", e);
+                     alert("Error reading file.");
+                 };
+                reader.readAsText(file);
+            },
+
+            exportToFile() {
+                if (this.tasks.length === 0) { alert('No tasks to export'); return; }
+                try {
+                    const content = this.tasks.map(t => t.raw).join('\n');
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `todo-${new Date().toISOString().slice(0, 10)}.txt`;
+                    document.body.appendChild(a); // Required for Firefox
+                    a.click();
+                    document.body.removeChild(a); // Clean up
+                    URL.revokeObjectURL(url);
+                 } catch (exportError) {
+                     console.error("Error exporting file:", exportError);
+                     alert("Error exporting file.");
+                 }
+            },
+
+            archiveCompleted() {
+                const completed = this.tasks.filter(t => t.completed);
+                if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return;
+                try {
+                    this.saveUndoState();
+                    const content = completed.map(t => t.raw).join('\n');
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `done-${new Date().toISOString().slice(0, 10)}.txt`;
+                    document.body.appendChild(a); // Required for Firefox
+                    a.click();
+                    document.body.removeChild(a); // Clean up
+                    URL.revokeObjectURL(url);
+
+                    this.tasks = this.tasks.filter(t => !t.completed);
+                    if (this.selectedTask && completed.some(ct => ct.id === this.selectedTask)) this.selectedTask = null;
+                    this.bulkSelected.clear();
+                    this.saveToLocalStorage(); this.render(); this.updateBulkBar();
+                    this.showNotification(`✅ Archived ${completed.length} tasks`);
+                } catch (archiveError) {
+                    console.error("Error archiving tasks:", archiveError);
+                    alert("Error archiving tasks.");
+                }
+            },
+
+            saveUndoState() {
+                try {
+                    this.undoStack.push(JSON.parse(JSON.stringify(this.tasks)));
+                    if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift();
+                    this.updateUndoButton();
+                } catch (e) {
+                    console.error("Failed to save undo state:", e);
+                    // Reset undo stack potentially?
+                }
+            },
+            updateUndoButton() {
+                const undoBtn = document.getElementById('undoBtn');
+                if (undoBtn) undoBtn.disabled = this.undoStack.length === 0;
+            },
+            undo() {
+                if (this.undoStack.length === 0) return;
+                try {
+                    this.tasks = this.undoStack.pop();
+                    this.saveToLocalStorage(); this.render(); this.updateUndoButton();
+                } catch (e) {
+                    console.error("Failed to restore undo state:", e);
+                    // Reset undo stack potentially?
+                }
+            },
+
+            showHelp() { alert(`KEYBOARD SHORTCUTS:\n\n/ - Focus search/add\n↑ ↓ - Navigate tasks\n← → - Change priority\ne - Edit selected\nx - Toggle done\np then A-Z - Set priority\n(Ctrl|Cmd)+Z - Undo\nDelete - Delete selected\nEsc - Clear search/filters\n\nSEARCH SYNTAX:\n\nprio:A\n+project\n@context\nis:open / is:done\nis:no-due`); },
+
+            showNotification(message) {
+                 try {
+                    const el = document.createElement('div');
+                    // Basic styling + animation keyframes
+                    const styleId = 'notification-styles';
+                    if (!document.getElementById(styleId)) {
+                        const styleSheet = document.createElement("style");
+                        styleSheet.id = styleId;
+                        styleSheet.innerText = `
+                            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                            @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+                        `;
+                        document.head.appendChild(styleSheet);
+                    }
+                    el.style.cssText = `position:fixed;top:70px;right:20px;background:var(--success);color:white;padding:12px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;animation:slideIn 0.3s ease-out;`;
+                    el.textContent = message;
+                    document.body.appendChild(el);
+                    setTimeout(() => {
+                        el.style.animation = 'slideOut 0.3s ease-in forwards';
+                        // Remove after animation finishes
+                        el.addEventListener('animationend', () => el.remove(), { once: true });
+                    }, 2500);
+                } catch (e) {
+                    console.error("Failed to show notification:", e);
+                    // Fallback to simple alert?
+                    // alert(message);
+                }
+            },
+
+            toggleMenu() {
+                const menu = document.getElementById('headerActions');
+                const burgerBtn = document.getElementById('burgerBtn');
+                if (!menu || !burgerBtn) return; // Guard clause
+                const isOpen = menu.classList.toggle('menu-open');
+                burgerBtn.setAttribute('aria-expanded', isOpen);
+            },
+
+            // Google Drive Sync Funktionen
+            async initGapiClient() {
+                if (typeof gapi === 'undefined' || !gapi.load) {
+                    console.error('GAPI script ist nicht geladen.');
+                     alert('Fehler: Google API Script fehlt.');
+                    return;
+                }
+                console.log('Lade GAPI Client-Bibliothek...');
+                try {
+                    await new Promise((resolve, reject) => {
+                        gapi.load('client', {
+                            callback: resolve,
+                            onerror: reject,
+                            timeout: 5000,
+                            ontimeout: reject
+                        });
+                    });
+                    console.log('GAPI Client-Bibliothek geladen. Lade Drive API-Definitionen...');
+                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+                    this.gapiClient = gapi.client;
+                    console.log('GAPI Client (Drive) initialisiert.');
+                } catch (error) {
+                    console.error('Fehler beim GAPI Init:', error);
+                    alert('Fehler: Google Drive API konnte nicht geladen werden.');
+                    this.gapiClient = null; // Ensure client is null on error
+                }
+            },
+            initGisTokenClient(callback) {
+                if (this.gisTokenClient) {
+                    if(callback) callback();
+                    return;
+                }
+                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                    console.error('GIS script ist nicht geladen.');
+                    alert('Fehler: Google Login-Service konnte nicht geladen werden.');
+                    return;
+                }
+                console.log('Initialisiere GIS Token Client...');
+                try {
+                    this.gisTokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: this.CLIENT_ID,
+                        scope: this.DRIVE_SCOPE,
+                        callback: (tokenResponse) => {
+                            if (tokenResponse.error) {
+                                console.error('GIS Error:', tokenResponse.error, tokenResponse);
+                                // Handle specific errors like 'popup_closed_by_user' silently
+                                if (tokenResponse.error !== 'popup_closed_by_user' && tokenResponse.error !== 'access_denied') {
+                                     alert(`Login-Fehler: ${tokenResponse.error}`);
+                                }
+                                this.updateSyncUI(false); // Ensure UI reflects logged-out state
+                                return;
+                            }
+                            if (!this.gapiClient) {
+                                console.error('GAPI Client nicht bereit, Token kann nicht gesetzt werden.');
+                                alert('Fehler: Drive-Client nicht bereit.');
+                                // Potentially revoke token? google.accounts.oauth2.revoke(tokenResponse.access_token, () => {});
+                                this.updateSyncUI(false);
+                                return;
+                            }
+                            this.gapiClient.setToken(tokenResponse);
+                            console.log('GIS Token an GAPI übergeben.');
+                            console.log('GIS Login erfolgreich, Token erhalten.');
+                            this.updateSyncUI(true);
+                            this.findOrCreateDriveFile();
+                        },
+                        error_callback: (error) => { // Added error_callback for more robust error handling
+                             console.error("GIS Init Error Callback:", error);
+                             alert(`Fehler beim Initialisieren des Google Logins: ${error.type}`);
+                        }
+                    });
+                    console.log('GIS Token Client initialisiert.');
+                    if(callback) callback();
+                } catch (error) {
+                    console.error('Fehler beim GIS Init (try-catch):', error);
+                    alert('Fehler beim Initialisieren des Google Logins.');
+                    this.gisTokenClient = null; // Ensure client is null on error
+                }
+            },
+             async handleAuthClick() {
+                if (typeof gapi === 'undefined' || typeof google === 'undefined') {
+                    alert('Google-API-Skripte sind noch nicht geladen. Bitte Moment warten und erneut klicken.');
+                    return;
+                }
+                if (!this.gapiClient) {
+                    console.log('User-Klick: Initialisiere GAPI (Drive) Client...');
+                    await this.initGapiClient();
+                    if (!this.gapiClient) {
+                        console.error('GAPI Client-Initialisierung fehlgeschlagen. Breche ab.');
+                        return;
+                    }
+                }
+                if (!this.gisTokenClient) {
+                    console.log('GAPI ist bereit. Initialisiere GIS (Login) Client...');
+                    // Ensure init completes before requesting token
+                    this.initGisTokenClient(() => {
+                         if (this.gisTokenClient) { // Check if init was successful
+                            console.log('GIS ist bereit. Fordere Token an...');
+                            this.gisTokenClient.requestAccessToken({prompt: ''}); // prompt:'' potentially avoids unnecessary popups if already logged in
+                         } else {
+                            console.error("GIS Client konnte nicht initialisiert werden.");
+                         }
+                    });
+                } else {
+                    console.log('GAPI und GIS sind bereit. Fordere Token an...');
+                    this.gisTokenClient.requestAccessToken({prompt: ''});
+                }
+            },
+            updateSyncUI(isLoggedIn) {
+                // Add checks to ensure elements exist
+                const loginBtn = document.getElementById('gdriveLoginBtn');
+                const pushBtn = document.getElementById('gdrivePushBtn');
+                const pullBtn = document.getElementById('gdrivePullBtn');
+                if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+                if (pushBtn) pushBtn.style.display = isLoggedIn ? 'block' : 'none';
+                if (pullBtn) pullBtn.style.display = isLoggedIn ? 'block' : 'none';
+            },
+            async findOrCreateDriveFile() {
+                if (!this.gapiClient) { console.warn('GAPI nicht bereit für Dateisuche.'); return; }
+                if (!gapi?.client?.drive?.files) { console.error("Drive API 'files' resource not loaded."); return; } // Check specific API part
+                console.log('Suche nach todo.txt in appDataFolder...');
+                try {
+                    const response = await this.gapiClient.drive.files.list({
+                        spaces: 'appDataFolder',
+                        fields: 'files(id, name)',
+                        q: "name='todo.txt'"
+                    });
+                    const files = response?.result?.files; // Safe navigation
+                    if (files && files.length > 0) {
+                        this.DRIVE_FILE_ID = files[0].id;
+                        console.log(`Datei gefunden mit ID: ${this.DRIVE_FILE_ID}`);
+                    } else {
+                        console.log('Keine todo.txt gefunden. Erstelle neue Datei...');
+                        const createResponse = await this.gapiClient.drive.files.create({
+                            resource: { name: 'todo.txt', parents: ['appDataFolder'] },
+                            fields: 'id'
+                        });
+                        this.DRIVE_FILE_ID = createResponse?.result?.id; // Safe navigation
+                        if (this.DRIVE_FILE_ID) {
+                            console.log(`Neue Datei erstellt mit ID: ${this.DRIVE_FILE_ID}`);
+                        } else {
+                             console.error("Datei konnte nicht erstellt werden, keine ID erhalten.");
+                             alert("Fehler: Konnte keine Datei in Google Drive erstellen.");
+                        }
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Suchen/Erstellen der Drive-Datei:', error);
+                    // Handle potential 401/403 errors -> maybe token expired?
+                    if (error.status === 401 || error.status === 403) {
+                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
+                         // Consider attempting to refresh token or forcing re-login
+                         this.updateSyncUI(false); // Show login button again
+                         this.gisTokenClient = null; // Force re-init on next click
+                         this.gapiClient?.setToken(null); // Clear token from gapi
+                    } else {
+                         alert("Fehler bei der Kommunikation mit Google Drive.");
+                    }
+                    this.DRIVE_FILE_ID = null; // Reset file ID on error
+                }
+            },
+             async pushToDrive() {
+                if (!this.DRIVE_FILE_ID) { alert('Fehler: Keine Datei-ID. Bitte neu verbinden.'); return; }
+                if (!this.gapiClient) { alert('Fehler: GAPI Client nicht bereit.'); return; }
+                if (!confirm('Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)')) return;
+                console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`);
+                try {
+                    const content = this.tasks.map(t => t.raw).join('\n');
+                    // Use media upload for potentially large files
+                    const response = await gapi.client.request({
+                        path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`,
+                        method: 'PATCH',
+                        params: { uploadType: 'media' },
+                        headers: { 'Content-Type': 'text/plain' }, // Explicitly set content type
+                        body: content
+                    });
+                     // Check response status for success (optional but good practice)
+                    if (response?.status >= 200 && response?.status < 300) {
+                        this.showNotification('✅ In Google Drive gespeichert');
+                    } else {
+                         console.error('Fehler beim PUSH, unerwartete Antwort:', response);
+                         alert("Fehler beim Speichern in Google Drive.");
+                    }
+                } catch (e) {
+                    console.error('Fehler beim PUSH (try-catch):', e);
+                     if (e.status === 401 || e.status === 403) {
+                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
+                         this.updateSyncUI(false); this.gisTokenClient = null; this.gapiClient?.setToken(null);
+                    } else {
+                         alert("Fehler beim Speichern in Google Drive.");
+                    }
+                }
+            },
+            async pullFromDrive() {
+                if (!this.DRIVE_FILE_ID) { alert('Fehler: Keine Datei-ID. Bitte neu verbinden.'); return; }
+                 if (!this.gapiClient) { alert('Fehler: GAPI Client nicht bereit.'); return; }
+                // Avoid confirmation if local tasks are empty
+                if (this.tasks.length > 0 && !confirm('Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)')) return;
+                console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`);
+                try {
+                    const response = await this.gapiClient.drive.files.get({
+                        fileId: this.DRIVE_FILE_ID,
+                        alt: 'media'
+                    });
+                    const content = response.body;
+                    this.saveUndoState();
+                    if (typeof content === 'string') { // Check if content is a string
+                        this.tasks = content.split('\n')
+                                            .filter(l => l.trim())
+                                            .map(l => this.parseTodoLine(l));
+                    } else {
+                         console.warn("Pull von GDrive: Inhalt ist keine Zeichenkette oder leer.");
+                        this.tasks = []; // Leere Datei oder Fehler
+                    }
+                    this.saveToLocalStorage(true);
+                    this.render();
+                    this.showNotification('✅ Von Google Drive geladen');
+                } catch (e) {
+                    console.error('Fehler beim PULL (try-catch):', e);
+                    if (e.status === 401 || e.status === 403) {
+                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
+                         this.updateSyncUI(false); this.gisTokenClient = null; this.gapiClient?.setToken(null);
+                    } else if (e.status === 404) {
+                         alert("Fehler: Die Datei wurde in Google Drive nicht gefunden. Möglicherweise wurde sie gelöscht?");
+                         this.DRIVE_FILE_ID = null; // Reset file ID
+                         this.updateSyncUI(false); // Force re-login/re-find
+                    } else {
+                        alert("Fehler beim Laden von Google Drive.");
+                    }
+                }
+            },
+
+            autocomplete: {
+                init(mainApp) {
+                    this.app = mainApp;
+                    this.el = document.getElementById('autocomplete-suggestions');
+                    if (!this.el) { console.error("Autocomplete init failed: Element not found."); return; }
+                    this.el.addEventListener('click', (e) => {
+                        if (e.target.matches('div')) {
+                            this.selectedIndex = Array.from(this.el.children).indexOf(e.target);
+                            this.confirmSelection();
+                        }
+                    });
+                    document.addEventListener('click', (e) => {
+                        const searchInput = document.getElementById('searchAddInput'); // Get reference to input
+                        if (this.active && !this.el.contains(e.target) && e.target !== searchInput) {
+                            this.hide();
+                        }
+                    });
+                },
+                active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
+                handleInput(e) {
+                    const input = e.target;
+                    const value = input.value;
+                    const cursorPos = input.selectionStart;
+                    const match = value.substring(0, cursorPos).match(/([+@])([\w.-]*)$/);
+                    if (match) {
+                        this.triggerInfo = { trigger: match[1], query: match[2], start: cursorPos - match[2].length };
+                        this.targetInput = input; // Set targetInput here
+                        this.show();
+                    } else {
+                        this.hide();
+                    }
+                 },
+                handleKeydown(e) {
+                     if (!this.active) return false;
+                    switch (e.key) {
+                        case 'ArrowDown': this.selectedIndex = Math.min(this.selectedIndex + 1, this.items.length - 1); this.updateSelectionUI(); break;
+                        case 'ArrowUp': this.selectedIndex = Math.max(this.selectedIndex - 1, 0); this.updateSelectionUI(); break;
+                        case 'Enter': case 'Tab':
+                            if (this.selectedIndex !== -1) this.confirmSelection();
+                            else this.hide();
+                            break; // Prevent default for Enter/Tab if selection made
+                        case 'Escape': this.hide(); break;
+                        default: return false; // Let other keys pass through
+                    }
+                    e.preventDefault(); // Prevent default action ONLY if we handled the key
+                    return true;
+                },
+                show() {
+                    if (!this.triggerInfo || !this.app) return; // Add guard clause
+                    const { trigger, query } = this.triggerInfo;
+                    const source = trigger === '+' ? this.app.tasks.flatMap(t => t?.projects || []) : this.app.tasks.flatMap(t => t?.contexts || []);
+                    this.items = [...new Set(source)].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).sort();
+                    if (this.items.length > 0 && this.el) {
+                        this.el.innerHTML = this.items.map(item => `<div>${this.app.escapeHtml(item)}</div>`).join('');
+                        this.el.style.display = 'block';
+                        this.positionEl();
+                        this.selectedIndex = 0;
+                        this.updateSelectionUI();
+                        this.active = true;
+                    } else {
+                        this.hide();
+                    }
+                },
+                hide() { if (!this.active || !this.el) return; this.active = false; this.el.style.display = 'none'; },
+                confirmSelection() {
+                    if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length || !this.targetInput) { this.hide(); return; }
+                    const input = this.targetInput;
+                    const selectedItem = this.items[this.selectedIndex];
+                    const { start, query } = this.triggerInfo;
+                    const value = input.value;
+                    const newValue = value.substring(0, start) + selectedItem + ' ' + value.substring(start + query.length);
+                    input.value = newValue;
+                    this.hide();
+                    input.focus();
+                    const newCursorPos = start + selectedItem.length + 1;
+                    // Ensure cursor position is set after potential browser interference
+                    requestAnimationFrame(() => {
+                        input.setSelectionRange(newCursorPos, newCursorPos);
+                    });
+                     // Trigger input event manually if needed for framework bindings
+                     // input.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Update app state if this was the main search input
+                    if (input.id === 'searchAddInput' && this.app) {
+                         this.app.searchQuery = newValue;
+                         this.app.render(); // Re-render after autocomplete selection
+                    }
+                },
+                updateSelectionUI() {
+                     if (!this.el) return;
+                    Array.from(this.el.children).forEach((child, index) => {
+                        child.classList.toggle('selected', index === this.selectedIndex);
+                         // Scroll into view if needed
+                         if (index === this.selectedIndex) {
+                             child.scrollIntoView({ block: 'nearest' });
+                         }
+                    });
+                },
+                positionEl() {
+                    // Use the potentially moved input field
+                    this.targetInput = document.getElementById('searchAddInput');
+                    if (!this.targetInput || !this.el) return;
+                    const inputRect = this.targetInput.getBoundingClientRect();
+                    const suggestionsEl = this.el;
+                    suggestionsEl.style.width = `${inputRect.width}px`;
+                    suggestionsEl.style.left = `${inputRect.left}px`;
+                    const isMobileView = window.innerWidth <= 768;
+                    if (isMobileView) {
+                        suggestionsEl.style.bottom = `${window.innerHeight - inputRect.top + 2}px`;
+                        suggestionsEl.style.top = 'auto';
+                        const maxHeight = Math.max(0, inputRect.top - 20);
+                        suggestionsEl.style.maxHeight = `${maxHeight}px`;
+                    } else {
+                        suggestionsEl.style.top = `${inputRect.bottom + 2}px`;
+                        suggestionsEl.style.bottom = 'auto';
+                        suggestionsEl.style.maxHeight = '200px';
+                    }
+                }
+            }
         };
 
         // DOMContentLoaded Listener
