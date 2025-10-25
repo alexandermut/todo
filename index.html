@@ -324,43 +324,35 @@
 <body>
     <div class="app-container">
         <header class="header">
-             {/* Dein Titel */}
             <h1>todo</h1>
-            {/* Burger Button */}
             <button class="btn burger-btn" id="burgerBtn" aria-label="Menü öffnen" aria-expanded="false">☰</button>
-            {/* Header Actions (Desktop sichtbar / Mobile Menu) */}
             <div class="header-actions" id="headerActions">
-                {/* Deine Buttons mit Textänderungen */}
                 <button class="btn" id="helpBtn">?</button>
                 <button class="btn" id="undoBtn" disabled>↶ undo</button>
                 <button class="btn" id="archiveCompletedBtn">archive</button>
                 <label for="fileInput" class="btn">import</label>
                 <input type="file" id="fileInput" accept=".txt,text/plain">
                 <button class="btn" id="exportBtn">export</button>
-                <button class="btn" id="gdriveLoginBtn">G-Drive verbinden</button>
-                <button class="btn" id="gdrivePushBtn" style="display: none;">G-Drive ➔ Speichern</button>
-                 {/* Deine Textänderung hier */}
-                <button class="btn" id="gdrivePullBtn" style="display: none;">G-Drive Datei Laden</button>
+                <button class="btn" id="gdriveLoginBtn">connect to G-Drive</button>
+                <button class="btn" id="gdrivePushBtn" style="display: none;">save to G-Drive</button>
+                <button class="btn" id="gdrivePullBtn" style="display: none;">load from G-Drive</button>
                 <a href="impressum.html" target="_blank" class="btn">Impressum</a>
                 <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
-                {/* Sortierung hierher verschoben */}
                 <div class="sort-controls">
                     <label for="sortSelect">Sort:</label>
                     <select id="sortSelect">
-                        <option value="default">Default</option>
-                        <option value="priority">Priority</option>
-                        <option value="project">Project</option>
-                        <option value="context">Context</option>
-                        <option value="due">Due</option>
+                        <option value="default">default</option>
+                        <option value="priority">priority</option>
+                        <option value="project">project</option>
+                        <option value="context">context</option>
+                        <option value="due">due</option>
                     </select>
                 </div>
-                {/* Schließen Button */}
                 <button class="btn close-btn" id="closeMenuBtn" aria-label="Menü schließen">✕</button>
             </div>
         </header>
 
         <aside class="sidebar">
-             {/* Deine Sidebar-Texte */}
             <section class="sidebar-section">
                 <h3>Views</h3>
                 <button class="filter-btn" data-view-filter="all">all</button>
@@ -380,7 +372,6 @@
         </aside>
 
         <main class="main-content">
-            {/* Toolbar enthält jetzt nur noch Desktop-Sortierung + Desktop-Suchfeld */}
             <div class="toolbar">
                  {/* Desktop Sortierung */}
                  <div class="sort-controls">
@@ -393,10 +384,7 @@
                         <option value="due">Due</option>
                     </select>
                 </div>
-                {/* Desktop Suchfeld */}
                  <div class="search-add-box" id="desktopSearchBox">
-                      {/* Das Input wird dynamisch hierher/weg bewegt ODER wir duplizieren es */}
-                      {/* Einfachste Lösung: Input bleibt immer in der Bottom Bar */}
                  </div>
             </div>
 
@@ -405,8 +393,6 @@
                 <h3>No tasks</h3><p>Add your first task above</p>
             </div>
         </main>
-
-        {/* Bulk Actions Bar */}
         <footer class="bulk-actions-bar" id="bulkBar">
             <span id="bulkCount">0 selected</span>
             <button class="btn" id="bulkSelectAllBtn">Select All</button>
@@ -414,10 +400,7 @@
             <button class="btn btn-primary" id="bulkCompleteBtn">Complete</button>
             <button class="btn" id="bulkDeleteBtn">Delete</button>
         </footer>
-
-        {/* NEU: Bottom Bar für Mobile */}
         <footer id="bottomBar">
-             {/* Das Suchfeld lebt jetzt hier */}
             <div class="search-add-box" id="mobileSearchBox">
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
                  <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
