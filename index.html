@@ -93,8 +93,9 @@
             outline-offset: 2px;
         }
         
-        .btn:active, .task-item:active, .filter-item:active {
-            transform: scale(0.98);
+        a.btn {
+            text-decoration: none; /* Entfernt die Unterstreichung */
+            display: inline-block; /* Sorgt für korrekte Button-Dimensionierung */
         }
 
         .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
