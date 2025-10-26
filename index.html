@@ -28,7 +28,7 @@
             --success: #28a745;
             --danger: #dc3545;
             --warning: #ffc107;
-            --header-height: 57px; /* Angepasste Höhe der TopBar */
+            --header-height: 57px; /* Höhe der TopBar */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -57,8 +57,8 @@
 
         .app-container {
             display: grid;
-            grid-template-columns: 280px 1fr; /* Sidebar + Main */
-            grid-template-rows: auto 1fr; /* TopBar, Main Content (scrollt) */
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto 1fr;
             height: 100%; position: relative; overflow: hidden;
         }
 
@@ -67,15 +67,31 @@
             padding: 8px 16px; background: var(--bg-secondary);
             border-bottom: 1px solid var(--border); position: sticky;
             top: 0; z-index: 200; gap: 8px;
-            height: var(--header-height); /* Feste Höhe */
+            height: var(--header-height);
         }
-        #topBar .search-add-box { flex-grow: 1; min-width: 150px; position: relative; }
+        #topBar .search-add-box {
+            flex-grow: 1; min-width: 150px; position: relative;
+            display: flex; /* Für X-Button Positionierung */
+            align-items: center;
+        }
         .search-add-box input {
              width: 100%; padding: 10px; border: 2px solid var(--border);
              background: var(--bg-primary); color: var(--text-primary);
              border-radius: 4px; font-size: 14px;
+             /* NEU: Platz für X-Button */
+             padding-right: 35px;
         }
         .search-add-box input:focus { outline: none; border-color: var(--accent); }
+
+        /* NEU: Styling für Clear-Button */
+        .clear-search-btn {
+            position: absolute; right: 10px; top: 50%;
+            transform: translateY(-50%); background: none; border: none;
+            font-size: 18px; color: var(--text-secondary); cursor: pointer;
+            padding: 0 5px; display: none; /* Initial versteckt */
+        }
+        .clear-search-btn:hover { color: var(--text-primary); }
+        .clear-search-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 50%; }
 
         .desktop-actions { display: flex; gap: 8px; flex-wrap: nowrap; }
         .burger-btn { display: none; font-size: 24px; padding: 4px 12px; margin-left: auto; }
@@ -89,10 +105,7 @@
         }
         #menuPanel.menu-open { display: flex; }
         #menuPanel h1 { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
-        .close-btn {
-            display: block; position: absolute; top: 10px; right: 10px;
-            font-size: 20px; padding: 4px 10px; background: var(--bg-hover); border: none;
-        }
+        .close-btn { display: block; position: absolute; top: 10px; right: 10px; font-size: 20px; padding: 4px 10px; background: var(--bg-hover); border: none; }
         #menuPanel .btn, #menuPanel label.btn, #menuPanel a.btn, #menuPanel .sort-controls { width: 100%; text-align: left; }
         #menuPanel .sort-controls { display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px; }
         #menuPanel .sort-controls label { margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
@@ -126,6 +139,9 @@
         .task-item:hover { background: var(--bg-hover); }
         .task-item.selected { background: var(--bg-selected); color: var(--text-primary); }
         .task-item.bulk-selected { background: var(--warning); color: var(--text-primary); }
+        /* NEU: Task Item Fokus-Styling */
+        .task-item:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--bg-selected); }
+
         .task-group-header { font-size: 14px; font-weight: 600; padding: 8px 12px; background-color: var(--bg-hover); border-bottom: 1px solid var(--border); margin-top: 24px; border-radius: 4px 4px 0 0; }
         .task-group-header:first-of-type { margin-top: 0; }
         .task-item .task-inner-content.hidden { display: none; }
@@ -141,22 +157,13 @@
         .project:hover, .context:hover { background-color: var(--bg-hover); text-decoration: underline; }
         .task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
 
-        .bulk-actions-bar {
-            display: none; position: fixed; bottom: 0; z-index: 150;
-            left: 280px; right: 0; background: var(--bg-secondary);
-            border-top: 1px solid var(--border); padding: 12px 24px;
-            align-items: center; gap: 16px;
-        }
+        .bulk-actions-bar { display: none; position: fixed; bottom: 0; z-index: 150; left: 280px; right: 0; background: var(--bg-secondary); border-top: 1px solid var(--border); padding: 12px 24px; align-items: center; gap: 16px; }
         .bulk-actions-bar.active { display: flex; }
 
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
         input[type="file"] { display: none; }
 
-        .autocomplete-suggestions {
-            display: none; position: fixed; background: var(--bg-primary); border: 1px solid var(--border);
-            border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-height: 200px;
-            overflow-y: auto; z-index: 1000;
-        }
+        .autocomplete-suggestions { display: none; position: fixed; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 1000; }
         .autocomplete-suggestions div { padding: 8px 12px; cursor: pointer; }
         .autocomplete-suggestions div:hover { background: var(--bg-hover); }
         .autocomplete-suggestions div.selected { background: var(--accent); color: white; }
@@ -184,14 +191,14 @@
         <div id="topBar">
             <div class="search-add-box">
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
+                <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search" style="display: none;">✕</button> {/* NEU */}
                 <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
             <div class="desktop-actions">
                  <button class="btn" id="helpBtnDesktop">?</button>
                  <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
                  <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
-                 <label for="fileInput" class="btn">import</label>
-                 <button class="btn" id="exportBtnDesktop">export</button>
+                 <label for="fileInput" class="btn">import</label> <button class="btn" id="exportBtnDesktop">export</button>
                  <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
