@@ -159,11 +159,6 @@
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
         input[type="file"] { display: none; }
 
-        .autocomplete-suggestions { display: none; position: fixed; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 1000; }
-        .autocomplete-suggestions div { padding: 8px 12px; cursor: pointer; }
-        .autocomplete-suggestions div:hover { background: var(--bg-hover); }
-        .autocomplete-suggestions div.selected { background: var(--accent); color: white; }
-
         @media (max-width: 768px) {
              .app-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
              .sidebar { display: none; }
@@ -185,7 +180,6 @@
             <div class="search-add-box">
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
                 <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search" style="display: none;">✕</button>
-                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
             <div class="desktop-actions">
                  <button class="btn" id="helpBtnDesktop">?</button>
@@ -693,16 +687,135 @@
             async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const content = this.tasks.map(t => t.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: content }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
             async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const response = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const content = response.body; this.saveUndoState(); if (content) { this.tasks = content.split("\n").filter(l => l.trim()).map(l => this.parseTodoLine(l)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (e) { console.error("Fehler beim PULL:", e); } },
 
+            // --- autocomplete OBJEKT ---
             autocomplete: {
-                init(mainApp) { this.app = mainApp; this.el = document.getElementById("autocomplete-suggestions"); this.el.addEventListener("click", e => { if (e.target.matches("div")) { this.selectedIndex = Array.from(this.el.children).indexOf(e.target); this.confirmSelection(); } }); document.addEventListener("click", e => { if (this.active && !this.el.contains(e.target) && e.target !== this.targetInput) { this.hide(); } }); }, active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
-                handleInput(e) { const input = e.target; const value = input.value; const cursorPos = input.selectionStart; const match = value.substring(0, cursorPos).match(/([+@])([\w.-]*)$/); if (match) { this.triggerInfo = { trigger: match[1], query: match[2], start: cursorPos - match[2].length }; this.targetInput = input; this.show(); } else { this.hide(); } },
-                handleKeydown(e) { if (!this.active) return false; switch (e.key) { case "ArrowDown": this.selectedIndex = Math.min(this.selectedIndex + 1, this.items.length - 1); this.updateSelectionUI(); break; case "ArrowUp": this.selectedIndex = Math.max(this.selectedIndex - 1, 0); this.updateSelectionUI(); break; case "Enter": case "Tab": if (this.selectedIndex !== -1) this.confirmSelection(); else this.hide(); break; case "Escape": this.hide(); break; default: return false; } return true; },
-                show() { const { trigger, query } = this.triggerInfo; const source = trigger === "+" ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts); this.items = [...new Set(source)].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).sort(); if (this.items.length > 0) { this.el.innerHTML = this.items.map(item => `<div>${this.app.escapeHtml(item)}</div>`).join(""); this.el.style.display = "block"; this.positionEl(); this.selectedIndex = 0; this.updateSelectionUI(); this.active = true; } else { this.hide(); } },
-                hide() { if (!this.active) return; this.active = false; this.el.style.display = "none"; },
-                confirmSelection() { if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length) { this.hide(); return; } const input = this.targetInput; const selectedItem = this.items[this.selectedIndex]; const { start, query } = this.triggerInfo; const value = input.value; input.value = `${value.substring(0, start)}${selectedItem} ${value.substring(start + query.length)}`; this.hide(); input.focus(); const newCursorPos = start + selectedItem.length + 1; input.setSelectionRange(newCursorPos, newCursorPos); if (input.id === "searchAddInput") { this.app.searchQuery = input.value; this.app.render(); } },
-                updateSelectionUI() { Array.from(this.el.children).forEach((child, index) => { child.classList.toggle("selected", index === this.selectedIndex); }); },
-                positionEl() { this.targetInput = document.getElementById("searchAddInput"); if (!this.targetInput) return; const inputRect = this.targetInput.getBoundingClientRect(); const suggestionsEl = this.el; suggestionsEl.style.width = `${inputRect.width}px`; suggestionsEl.style.left = `${inputRect.left}px`; suggestionsEl.style.top = `${inputRect.bottom + 2}px`; suggestionsEl.style.bottom = "auto"; suggestionsEl.style.maxHeight = "200px"; }
-            }
+                app: null, // Referenz zur Haupt-App
+                activeSuggestion: null, // Speichert den aktuell vorgeschlagenen Text-Teil
+                lastUserInput: '', // Speichert, was der User zuletzt tippte
+
+                init(mainApp) {
+                    this.app = mainApp;
+                    // Keine UI-Elemente mehr zu initialisieren
+                },
+
+                // Wird bei jedem Tastendruck im Input aufgerufen
+                handleInput(e) {
+                    const input = e.target;
+                    const value = input.value;
+                    const cursorPos = input.selectionStart;
+
+                    // Nur vorschlagen, wenn der Cursor am Ende ist
+                    if (cursorPos !== value.length) {
+                         this.clearSuggestion(input);
+                         this.lastUserInput = value; // Update user input tracker
+                         return;
+                    }
+
+                    // Prüfen, ob der letzte Teil wie +tag oder @tag aussieht
+                    const match = value.match(/([+@])([\w.-]*)$/);
+
+                    if (match && match[2].length > 0) { // Nur suchen, wenn mind. 1 Zeichen nach +/@
+                        const trigger = match[1];
+                        const query = match[2];
+                        const baseInput = value.substring(0, value.length - query.length); // Der Teil vor dem Query
+
+                        const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
+                        const suggestions = [...new Set(source)]
+                            .filter(item => item.toLowerCase().startsWith(query.toLowerCase()))
+                            .sort();
+
+                        if (suggestions.length > 0) {
+                            const bestSuggestion = suggestions[0]; // Nimm den ersten Treffer
+                            // Nur vorschlagen, wenn der Vorschlag länger ist als die Eingabe
+                            if (bestSuggestion.length > query.length) {
+                                const suggestionPart = bestSuggestion.substring(query.length); // Der Teil, der ergänzt wird
+                                this.activeSuggestion = suggestionPart;
+                                this.lastUserInput = value; // Merken, was der User tippte
+
+                                // Wert im Input aktualisieren und Vorschlag selektieren
+                                input.value = baseInput + bestSuggestion;
+                                input.setSelectionRange(value.length, input.value.length); // Selektiert den suggestionPart
+                                return; // Vorschlag angezeigt, fertig für dieses Input-Event
+                            }
+                        }
+                    }
+
+                    // Wenn kein Vorschlag (mehr) passt oder kein Trigger
+                    this.clearSuggestion(input);
+                    this.lastUserInput = value; // Update user input tracker
+                },
+
+                // Wird bei Keydown im Input aufgerufen
+                handleKeydown(e) {
+                    const input = e.target;
+
+                    // TAB zum Akzeptieren
+                    if (e.key === 'Tab' && this.activeSuggestion) {
+                         // Prüfen, ob der selektierte Text dem Vorschlag entspricht
+                        const currentSelection = input.value.substring(input.selectionStart, input.selectionEnd);
+                        if (currentSelection === this.activeSuggestion || input.selectionStart !== input.selectionEnd) { // Zweite Bedingung als Fallback
+                            e.preventDefault(); // Standard-Tab verhindern
+                            // Cursor ans Ende setzen (Selektion aufheben)
+                            input.setSelectionRange(input.value.length, input.value.length);
+                            this.clearSuggestion(input, false); // Nur internen Status löschen, nicht Input-Wert
+                            // Optional: Leerzeichen anhängen?
+                            // input.value += ' ';
+                            // input.setSelectionRange(input.value.length, input.value.length);
+                            this.app.searchQuery = input.value; // Wichtig: App-Status aktualisieren
+                            return true; // Keydown wurde behandelt
+                        }
+                    }
+
+                    // Pfeil rechts zum Akzeptieren (optional, aber oft intuitiv)
+                    if (e.key === 'ArrowRight' && this.activeSuggestion && input.selectionStart === input.value.length) {
+                         e.preventDefault();
+                         input.setSelectionRange(input.value.length, input.value.length);
+                         this.clearSuggestion(input, false);
+                         this.app.searchQuery = input.value;
+                         return true;
+                    }
+
+
+                    // Wenn eine andere Taste gedrückt wird (außerhalb der normalen Eingabe, die 'input' auslöst)
+                    // oder der User im Text navigiert -> Vorschlag löschen
+                     if (this.activeSuggestion && !['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'ArrowRight'].includes(e.key) && input.selectionStart !== input.selectionEnd ) {
+                         // Erwarte, dass das nächste 'input' Event den Vorschlag korrekt neu berechnet
+                         // Es ist oft sicherer, hier nichts zu tun und auf das Input-Event zu warten.
+                     }
+                    // Wichtig: Wenn Backspace gedrückt wird, während Vorschlag aktiv ist -> nur Vorschlag löschen
+                     if (e.key === 'Backspace' && this.activeSuggestion && input.selectionStart !== input.selectionEnd && input.selectionStart > this.lastUserInput.length) {
+                          e.preventDefault();
+                          input.value = this.lastUserInput; // Zurück zum User-Input
+                          input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
+                          this.clearSuggestion(input, false);
+                          this.app.searchQuery = input.value;
+                          // Trigger input event manually? No, browser should handle it.
+                          // Manually trigger input event might be needed if browser behaves unexpectedly
+                          // input.dispatchEvent(new Event('input', { bubbles: true }));
+                          return true; // Verhindert weiteres Backspace-Verhalten
+                     }
+
+
+                    return false; // Keydown wurde nicht speziell behandelt
+                },
+
+                // Hilfsfunktion zum Löschen des Vorschlagsstatus
+                clearSuggestion(input, shouldClearInputValue = false) {
+                    if (shouldClearInputValue && this.activeSuggestion) {
+                        // Implementierung, falls benötigt (z.B. bei Escape?)
+                        // input.value = this.lastUserInput; // Geht zurück zum User-Input
+                        // input.setSelectionRange(input.value.length, input.value.length);
+                    }
+                    this.activeSuggestion = null;
+                     // Sicherstellen, dass keine Selektion mehr aktiv ist, wenn kein Vorschlag da ist
+                     // Deaktiviert, da es beim normalen Tippen stören kann
+                    // if (input.selectionStart !== input.selectionEnd && !this.activeSuggestion) {
+                    //     input.setSelectionRange(input.value.length, input.value.length);
+                    // }
+                }
+            },
+            // --- ENDE autocomplete OBJEKT ---
+            
         };
 
         document.addEventListener('DOMContentLoaded', () => app.init());
