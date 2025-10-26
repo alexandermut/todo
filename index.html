@@ -600,7 +600,7 @@
                         const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : "";
                         return `
                             ${groupHeader}
-                            <div class="task-item ${this.selectedTask === task.id ? "selected" : ""} ${this.bulkSelected.has(task.id) ? "bulk-selected" : ""}" data-task-id="${task.id}" tabindex="-1"> {/* KORREKTUR: tabindex hinzugefügt */}
+                            <div class="task-item ${this.selectedTask === task.id ? "selected" : ""} ${this.bulkSelected.has(task.id) ? "bulk-selected" : ""}" data-task-id="${task.id}" tabindex="-1">
                                 <input type="checkbox" class="task-checkbox" ${task.completed ? "checked" : ""} aria-label="Toggle task: ${this.escapeHtml(task.text)}">
                                 <div class="task-content">
                                     <div class="task-inner-content">
