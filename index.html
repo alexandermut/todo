@@ -327,14 +327,76 @@
                 catch (e) { console.error('⚠️ Failed to save UI preferences:', e); }
             },
 
+            // --- Start attachEventListeners ---
             attachEventListeners() {
                 const searchAddInput = document.getElementById('searchAddInput');
-                searchAddInput.addEventListener('input', (e) => { this.searchQuery = e.target.value; this.autocomplete.handleInput(e); this.render(); });
-                searchAddInput.addEventListener('keydown', (e) => { if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; } if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); const value = searchAddInput.value.trim(); const contextTags = Array.from(value.matchAll(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g)).map(m => m[1]); const taskText = value.replace(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g, '').trim(); if (taskText) { const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim(); this.addTask(fullTaskText); this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : ''); searchAddInput.value = this.searchQuery; this.render(); } } if (e.key === 'Escape') { e.preventDefault(); if (this.searchQuery !== '') { this.searchQuery = ''; searchAddInput.value = ''; this.render(); } else { searchAddInput.blur(); } } });
+                // WICHTIG: Den Button hier oben holen, damit er im ganzen Scope verfügbar ist
+                const clearSearchBtn = document.getElementById('clearSearchBtn'); 
 
+                // Listener für Input-Änderungen (zeigt/versteckt 'X')
+                searchAddInput.addEventListener('input', (e) => {
+                    this.searchQuery = e.target.value;
+                    // Stelle sicher, dass clearSearchBtn existiert, bevor du darauf zugreifst
+                    if (clearSearchBtn) {
+                       clearSearchBtn.style.display = e.target.value ? 'block' : 'none'; // 'X' Button
+                    }
+                    this.autocomplete.handleInput(e);
+                    this.render(); // Render bei jeder Eingabe
+                });
+
+                // Listener für Keydown im Suchfeld (Enter, Escape, ArrowDown)
+                searchAddInput.addEventListener('keydown', (e) => {
+                    if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; }
+
+                    if (e.key === 'Enter' && !e.isComposing) {
+                        e.preventDefault();
+                        const value = searchAddInput.value.trim();
+                        const contextTags = Array.from(value.matchAll(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g)).map(m => m[1]);
+                        const taskText = value.replace(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g, '').trim();
+                        if (taskText) {
+                            const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim();
+                            this.addTask(fullTaskText);
+                            this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : '');
+                            searchAddInput.value = this.searchQuery;
+                             if (clearSearchBtn) { // 'X' Button Status nach dem Hinzufügen aktualisieren
+                                 clearSearchBtn.style.display = searchAddInput.value ? 'block' : 'none';
+                             }
+                            this.render();
+                        }
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        if (this.searchQuery !== '') {
+                            searchAddInput.value = ''; this.searchQuery = '';
+                            if (clearSearchBtn) clearSearchBtn.style.display = 'none'; // 'X' verstecken
+                            this.render();
+                        } else { searchAddInput.blur(); }
+                    }
+                    if (e.key === 'ArrowDown') {
+                        const firstTask = document.querySelector('#taskList .task-item');
+                        if (firstTask) {
+                            e.preventDefault();
+                            firstTask.focus(); // Fokus auf ersten Task
+                        }
+                    }
+                });
+
+                // Listener für den Clear-Button ('X') - Sicherstellen, dass er existiert
+                if (clearSearchBtn) {
+                    clearSearchBtn.addEventListener('click', () => {
+                        searchAddInput.value = ''; this.searchQuery = '';
+                        clearSearchBtn.style.display = 'none'; this.render();
+                        searchAddInput.focus();
+                    });
+                } else {
+                    console.error("Clear search button not found!"); // Fehlermeldung, falls Button fehlt
+                }
+
+
+                // Sortierungs-Listener (nur noch einer)
                 document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
 
-                // Helper to attach listeners to potentially duplicated buttons
+                // Helper zum Anhängen von Action-Listenern
                 const addActionListener = (idBase, eventType = 'click', fn) => {
                     const desktopEl = document.getElementById(idBase + 'Desktop');
                     const mobileEl = document.getElementById(idBase + 'Mobile');
@@ -343,20 +405,15 @@
                     if (desktopEl) desktopEl.addEventListener(eventType, boundFn);
                     if (mobileEl) mobileEl.addEventListener(eventType, boundFn);
 
-                    // Special case for file input label targeting the single hidden input
-                    if (idBase === 'fileInputLabel') { // Assuming labels have ID like 'fileInputLabelDesktop' etc.
-                       // Labels trigger click on input via 'for' attribute, only input needs listener
-                       const fileInput = document.getElementById('fileInput');
-                       if (fileInput && eventType === 'change') {
-                           // Remove previous listener if any to avoid duplicates
-                           // fileInput.removeEventListener(eventType, boundFn); // Need a way to store/remove old listener if re-attaching
-                           fileInput.addEventListener(eventType, boundFn, { once: true }); // Use once or manage listener removal
-                       }
-                    } else if (idBase === 'fileInput' && eventType === 'change') {
-                        // Attach listener directly to the single file input
+                    // Spezialfall für File Input (nur EIN Input-Element)
+                    if (idBase === 'fileInput' && eventType === 'change') {
                         const fileInput = document.getElementById('fileInput');
                         if (fileInput) {
-                            fileInput.addEventListener(eventType, boundFn);
+                            // Event Listener nur einmal hinzufügen, falls noch nicht vorhanden
+                            if (!fileInput.dataset.listenerAttached) {
+                                fileInput.addEventListener(eventType, boundFn);
+                                fileInput.dataset.listenerAttached = 'true';
+                            }
                         }
                     }
                 };
@@ -365,7 +422,6 @@
                 addActionListener('helpBtn', 'click', this.showHelp);
                 addActionListener('undoBtn', 'click', this.undo);
                 addActionListener('archiveCompletedBtn', 'click', this.archiveCompleted);
-                // Attach listener to the single input, labels work via 'for'
                 addActionListener('fileInput', 'change', (e) => { this.importFile(e.target.files[0]); e.target.value = ''; });
                 addActionListener('exportBtn', 'click', this.exportToFile);
                 addActionListener('gdriveLoginBtn', 'click', this.handleAuthClick);
@@ -383,8 +439,26 @@
                 document.getElementById('closeMenuBtn').addEventListener('click', () => this.toggleMenu());
 
                 // Global Keydown Listener
-                document.addEventListener('keydown', (e) => { if (!!document.querySelector('.edit-input') || this.autocomplete.active) return; const isTyping = e.target.matches('input, textarea'); if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) { e.preventDefault(); document.getElementById('searchAddInput').focus(); } if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); } if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); } if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); } if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); } if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); } if (e.key === 'e' && this.selectedTask && !isTyping) { e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement); } if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; } });
+                document.addEventListener('keydown', (e) => {
+                    if (!!document.querySelector('.edit-input') || this.autocomplete.active) return;
+                    const isTyping = e.target.matches('input, textarea');
+                    if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) {
+                        e.preventDefault(); document.getElementById('searchAddInput').focus();
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); }
+                    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping && document.activeElement !== searchAddInput) {
+                         e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1);
+                    }
+                    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); }
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); }
+                    if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); }
+                    if (e.key === 'e' && this.selectedTask && !isTyping) {
+                        e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement);
+                    }
+                    if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
+                });
             },
+            // --- ENDE attachEventListeners ---
 
             handleSortChange(newSortValue) { this.sortField = newSortValue; this.saveUIPreferences(); this.updateSortSelects(); this.render(); },
             attachEventDelegation() { const taskList = document.getElementById("taskList"); taskList.addEventListener("click", e => { if (!!document.querySelector(".edit-input")) return; if (e.target.matches(".project")) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return } if (e.target.matches(".context")) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return } const taskItem = e.target.closest(".task-item"); if (!taskItem) return; const taskId = taskItem.dataset.taskId; if (!taskId) return; if (e.target.matches(".task-checkbox")) { e.preventDefault(); this.toggleTask(taskId); } else if (e.target.closest(".task-content")) { if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId); else this.enterEditMode(taskItem); } }); const sidebar = document.querySelector(".sidebar"); if (sidebar) sidebar.addEventListener("click", e => { const viewFilterBtn = e.target.closest("[data-view-filter]"); if (viewFilterBtn) this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true); const specialFilterBtn = e.target.closest("[data-special-filter]"); if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`); const filterItem = e.target.closest(".filter-item"); if (filterItem) { if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`); if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`); if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`); } }) },
