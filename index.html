@@ -745,74 +745,141 @@
                     this.lastUserInput = value; // Update user input tracker
                 },
 
-                // Wird bei Keydown im Input aufgerufen
-                handleKeydown(e) {
-                    const input = e.target;
+            handleKeydown(e) {
+                const input = e.target;
+                const selectionStart = input.selectionStart;
+                const selectionEnd = input.selectionEnd;
+                const isSuggestionSelected = selectionStart !== selectionEnd && this.activeSuggestion;
 
-                    // TAB zum Akzeptieren
-                    if (e.key === 'Tab' && this.activeSuggestion) {
-                         // Prüfen, ob der selektierte Text dem Vorschlag entspricht
-                        const currentSelection = input.value.substring(input.selectionStart, input.selectionEnd);
-                        if (currentSelection === this.activeSuggestion || input.selectionStart !== input.selectionEnd) { // Zweite Bedingung als Fallback
-                            e.preventDefault(); // Standard-Tab verhindern
-                            // Cursor ans Ende setzen (Selektion aufheben)
-                            input.setSelectionRange(input.value.length, input.value.length);
-                            this.clearSuggestion(input, false); // Nur internen Status löschen, nicht Input-Wert
-                            // Optional: Leerzeichen anhängen?
-                            // input.value += ' ';
-                            // input.setSelectionRange(input.value.length, input.value.length);
-                            this.app.searchQuery = input.value; // Wichtig: App-Status aktualisieren
-                            return true; // Keydown wurde behandelt
+                // TAB zum Akzeptieren der vollen Suggestion
+                if (e.key === 'Tab' && this.activeSuggestion) {
+                    // Prüfen, ob der selektierte Text *Teil* des Vorschlags ist oder eine Selektion existiert
+                    if (isSuggestionSelected) {
+                        e.preventDefault(); // Standard-Tab verhindern
+                        // Komplette Suggestion einfügen (falls noch nicht vollständig)
+                        const baseValue = this.lastUserInput.match(/([+@])([\w.-]*)$/) ? this.lastUserInput.substring(0, this.lastUserInput.lastIndexOf(this.lastUserInput.match(/([+@])([\w.-]*)$/)[2])) : this.lastUserInput;
+                        const fullSuggestion = baseValue + this.activeSuggestion.fullWord; // Annahme: activeSuggestion enthält das ganze Wort
+                        if (input.value !== fullSuggestion) {
+                             input.value = fullSuggestion;
                         }
+
+                        // Cursor ans Ende setzen (Selektion aufheben)
+                        input.setSelectionRange(input.value.length, input.value.length);
+                        this.app.searchQuery = input.value; // Wichtig: App-Status aktualisieren
+                        this.clearSuggestion(input, false); // Nur internen Status löschen
+                        return true; // Keydown wurde behandelt
                     }
-
-                    // Pfeil rechts zum Akzeptieren (optional, aber oft intuitiv)
-                    if (e.key === 'ArrowRight' && this.activeSuggestion && input.selectionStart === input.value.length) {
-                         e.preventDefault();
-                         input.setSelectionRange(input.value.length, input.value.length);
-                         this.clearSuggestion(input, false);
-                         this.app.searchQuery = input.value;
-                         return true;
-                    }
-
-
-                    // Wenn eine andere Taste gedrückt wird (außerhalb der normalen Eingabe, die 'input' auslöst)
-                    // oder der User im Text navigiert -> Vorschlag löschen
-                     if (this.activeSuggestion && !['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'ArrowRight'].includes(e.key) && input.selectionStart !== input.selectionEnd ) {
-                         // Erwarte, dass das nächste 'input' Event den Vorschlag korrekt neu berechnet
-                         // Es ist oft sicherer, hier nichts zu tun und auf das Input-Event zu warten.
-                     }
-                    // Wichtig: Wenn Backspace gedrückt wird, während Vorschlag aktiv ist -> nur Vorschlag löschen
-                     if (e.key === 'Backspace' && this.activeSuggestion && input.selectionStart !== input.selectionEnd && input.selectionStart > this.lastUserInput.length) {
-                          e.preventDefault();
-                          input.value = this.lastUserInput; // Zurück zum User-Input
-                          input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
-                          this.clearSuggestion(input, false);
-                          this.app.searchQuery = input.value;
-                          // Trigger input event manually? No, browser should handle it.
-                          // Manually trigger input event might be needed if browser behaves unexpectedly
-                          // input.dispatchEvent(new Event('input', { bubbles: true }));
-                          return true; // Verhindert weiteres Backspace-Verhalten
-                     }
-
-
-                    return false; // Keydown wurde nicht speziell behandelt
-                },
-
-                // Hilfsfunktion zum Löschen des Vorschlagsstatus
-                clearSuggestion(input, shouldClearInputValue = false) {
-                    if (shouldClearInputValue && this.activeSuggestion) {
-                        // Implementierung, falls benötigt (z.B. bei Escape?)
-                        // input.value = this.lastUserInput; // Geht zurück zum User-Input
-                        // input.setSelectionRange(input.value.length, input.value.length);
-                    }
-                    this.activeSuggestion = null;
-                     // Sicherstellen, dass keine Selektion mehr aktiv ist, wenn kein Vorschlag da ist
-                     // Deaktiviert, da es beim normalen Tippen stören kann
-                    // if (input.selectionStart !== input.selectionEnd && !this.activeSuggestion) {
-                    //     input.setSelectionRange(input.value.length, input.value.length);
-                    // }
                 }
+
+                // Pfeil rechts zum Akzeptieren (Cursor muss am Ende der Eingabe sein)
+                if (e.key === 'ArrowRight' && isSuggestionSelected && selectionStart === input.value.length - this.activeSuggestion.length) {
+                     e.preventDefault();
+                     input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
+                     this.app.searchQuery = input.value;
+                     this.clearSuggestion(input, false);
+                     return true;
+                }
+
+                // Backspace zum Löschen der Suggestion (NICHT des User Inputs)
+                if (e.key === 'Backspace' && isSuggestionSelected) {
+                     e.preventDefault(); // Standard-Backspace verhindern
+                     // Nur die Selektion löschen -> entspricht dem User Input
+                     input.value = input.value.substring(0, selectionStart);
+                     // Cursor ans Ende des User Inputs setzen
+                     input.setSelectionRange(input.value.length, input.value.length);
+                     this.app.searchQuery = input.value;
+                     this.clearSuggestion(input, false); // Nur internen Status löschen
+                     // Das nächste 'input' Event wird automatisch ausgelöst
+                     return true; // Keydown wurde behandelt
+                }
+                
+                // Pfeil Hoch/Runter oder Links, wenn Suggestion aktiv -> Suggestion abbrechen
+                if ((e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft') && isSuggestionSelected) {
+                    // Verhindere Navigation, aber lösche die Suggestion implizit durch normales Tippen
+                    // Setze den Cursor einfach ans Ende des User-Inputs
+                    e.preventDefault();
+                    input.value = input.value.substring(0, selectionStart); // Nur User-Input behalten
+                    input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
+                    this.app.searchQuery = input.value;
+                    this.clearSuggestion(input, false);
+                    // Löse manuell ein Input-Event aus, damit ggf. eine neue Suggestion gesucht wird
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    return true;
+                }
+
+                // Wenn KEINE Suggestion ausgewählt ist, aber eine aktiv war (z.B. nach Tab)
+                // und der User Backspace drückt -> normalen Backspace zulassen, aber internen Status löschen
+                if (e.key === 'Backspace' && !isSuggestionSelected && this.activeSuggestion) {
+                     this.clearSuggestion(input, false);
+                     // Lasse das normale Backspace-Event durchlaufen (return false)
+                }
+
+                 // Falls der User tippt während eine Suggestion selektiert ist,
+                 // wird die Selektion standardmäßig überschrieben. Wir löschen nur den internen Status.
+                 if (isSuggestionSelected && e.key.length === 1) { // Nur bei druckbaren Zeichen
+                     this.clearSuggestion(input, false);
+                     // Lasse das normale Tipp-Event durchlaufen (return false)
+                 }
+
+                return false; // Keydown wurde nicht speziell von uns behandelt
+            },
+
+             // Hinzufügen einer Eigenschaft zum Speichern des vollständigen Vorschlagswortes
+             activeSuggestion: null, // Wird jetzt ein Objekt: { suggestionPart: '...', fullWord: '...' }
+             lastUserInput: '',
+
+             handleInput(e) {
+                 const input = e.target;
+                 const value = input.value;
+                 const cursorPos = input.selectionStart;
+
+                 // Nur vorschlagen, wenn der Cursor am Ende ist UND keine Selektion aktiv ist
+                 if (cursorPos !== value.length || input.selectionStart !== input.selectionEnd) {
+                      this.clearSuggestion(input);
+                      this.lastUserInput = value.substring(0, cursorPos); // Update user input based on cursor
+                      return;
+                 }
+
+                 const match = value.match(/([+@])([\w.-]*)$/);
+
+                 if (match && match[2].length > 0) {
+                     const trigger = match[1];
+                     const query = match[2];
+                     const baseInput = value.substring(0, value.length - query.length);
+
+                     const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
+                     const suggestions = [...new Set(source)]
+                         .filter(item => item.toLowerCase().startsWith(query.toLowerCase()))
+                         .sort();
+
+                     if (suggestions.length > 0) {
+                         const bestSuggestionFull = suggestions[0];
+                         if (bestSuggestionFull.length > query.length) {
+                             const suggestionPart = bestSuggestionFull.substring(query.length);
+                             // Speichere Objekt statt nur String
+                             this.activeSuggestion = { suggestionPart: suggestionPart, fullWord: bestSuggestionFull };
+                             this.lastUserInput = value;
+
+                             input.value = baseInput + bestSuggestionFull;
+                             input.setSelectionRange(value.length, input.value.length);
+                             return;
+                         }
+                     }
+                 }
+
+                 this.clearSuggestion(input);
+                 this.lastUserInput = value;
+             },
+
+             clearSuggestion(input, shouldClearInputValue = false) { // shouldClearInputValue wird hier nicht mehr verwendet
+                 // Wichtig: Nur den internen Status löschen, nicht den Input-Wert ändern
+                 this.activeSuggestion = null;
+                 // Selektion aufheben, FALLS eine aktiv war und KEIN Vorschlag mehr aktiv ist
+                 // if (input.selectionStart !== input.selectionEnd && !this.activeSuggestion) {
+                 //     input.setSelectionRange(input.value.length, input.value.length);
+                 // }
+             }
+                
             },
             // --- ENDE autocomplete OBJEKT ---
             
