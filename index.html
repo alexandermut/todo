@@ -28,7 +28,7 @@
             --success: #28a745;
             --danger: #dc3545;
             --warning: #ffc107;
-            --bottom-bar-height-mobile: 60px; /* Höhe der Bottom Bar */
+            --header-height: 57px; /* Angepasste Höhe der TopBar */
         }
 
         @media (prefers-color-scheme: dark) {
@@ -47,296 +47,186 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html { height: 100%; min-height: 100%; }
+        html { height: 100%; overflow: hidden; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 16px;
-            line-height: 1.5;
-            height: 100%;
-            min-height: 100%;
-            overflow: hidden;
+            background: var(--bg-primary); color: var(--text-primary);
+            font-size: 16px; line-height: 1.5; height: 100%;
+            overflow: hidden; position: relative; overscroll-behavior: none;
         }
 
         .app-container {
             display: grid;
-            grid-template-columns: 280px 1fr;
-            grid-template-rows: auto 1fr;
-            height: 100%;
-            min-height: 100%;
-            height: -webkit-fill-available;
+            grid-template-columns: 280px 1fr; /* Sidebar + Main */
+            grid-template-rows: auto 1fr; /* TopBar, Main Content (scrollt) */
+            height: 100%; position: relative; overflow: hidden;
         }
 
-        .header {
-            grid-column: 1 / -1;
-            padding: 16px 24px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        #topBar {
+            grid-column: 1 / -1; display: flex; align-items: center;
+            padding: 8px 16px; background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border); position: sticky;
+            top: 0; z-index: 200; gap: 8px;
+            height: var(--header-height); /* Feste Höhe */
         }
-
-        .header h1 { font-size: 20px; font-weight: 600; }
-        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-        .btn {
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .btn:hover { background: var(--bg-hover); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .btn:focus-visible, .task-item:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        .btn:active, .task-item:active, .filter-item:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-        .btn-primary:hover { background: var(--accent-hover); }
-
-        .sidebar {
-            grid-row: 2;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
-            padding: 16px;
-        }
-
-        .sidebar-section { margin-bottom: 24px; }
-        .sidebar-section h3 {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .filter-btn, .filter-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            text-align: left;
-            padding: 8px 12px;
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            cursor: pointer;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-
-        .filter-btn:hover, .filter-item:hover { background: var(--bg-hover); }
-        .filter-btn.active, .filter-item.active { background: var(--accent); color: white; }
-
-        .filter-count {
-            font-size: 12px;
-            color: var(--text-secondary);
-            background: var(--bg-primary);
-            padding: 2px 8px;
-            border-radius: 12px;
-        }
-
-        .filter-item.active .filter-count { background: rgba(255,255,255,0.2); color: white; }
-
-        .main-content {
-            grid-row: 2;
-            overflow-y: auto;
-            padding: 16px 24px;
-            overflow-y: auto;
-            overscroll-behavior: contain; /* Verhindert Scroll-Chain nach oben/unten */
-        }
-
-        .toolbar { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
-        .toolbar .search-add-box { flex: 1; min-width: 200px; position: relative; display: block; }
-
-        .search-add-box input, .edit-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border-radius: 4px;
-            font-size: 14px;
+        #topBar .search-add-box { flex-grow: 1; min-width: 150px; position: relative; }
+        .search-add-box input {
+             width: 100%; padding: 10px; border: 2px solid var(--border);
+             background: var(--bg-primary); color: var(--text-primary);
+             border-radius: 4px; font-size: 14px;
         }
         .search-add-box input:focus { outline: none; border-color: var(--accent); }
 
+        .desktop-actions { display: flex; gap: 8px; flex-wrap: nowrap; }
+        .burger-btn { display: none; font-size: 24px; padding: 4px 12px; margin-left: auto; }
+
+        #menuPanel {
+            display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 280px;
+            background: var(--bg-secondary); box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            padding: 60px 20px 20px 20px; flex-direction: column;
+            align-items: flex-start; gap: 12px; z-index: 1000; overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        #menuPanel.menu-open { display: flex; }
+        #menuPanel h1 { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+        .close-btn {
+            display: block; position: absolute; top: 10px; right: 10px;
+            font-size: 20px; padding: 4px 10px; background: var(--bg-hover); border: none;
+        }
+        #menuPanel .btn, #menuPanel label.btn, #menuPanel a.btn, #menuPanel .sort-controls { width: 100%; text-align: left; }
+        #menuPanel .sort-controls { display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px; }
+        #menuPanel .sort-controls label { margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); }
+        #menuPanel .sort-controls select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px; width: 100%; }
+
+        .btn { padding: 8px 16px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; border-radius: 4px; font-size: 14px; transition: all 0.2s; text-decoration: none; display: inline-block; vertical-align: middle; }
+        .btn:hover { background: var(--bg-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:focus-visible, .task-item:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .btn:active, .task-item:active, .filter-item:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        .sidebar { grid-row: 2; background: var(--bg-secondary); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; }
+        .sidebar-section { margin-bottom: 24px; }
+        .sidebar-section h3 { font-size: 12px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
+        .filter-btn, .filter-item { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 8px 12px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-radius: 4px; margin-bottom: 4px; font-size: 14px; transition: background 0.2s; }
+        .filter-btn:hover, .filter-item:hover { background: var(--bg-hover); }
+        .filter-btn.active, .filter-item.active { background: var(--accent); color: white; }
+        .filter-count { font-size: 12px; color: var(--text-secondary); background: var(--bg-primary); padding: 2px 8px; border-radius: 12px; }
+        .filter-item.active .filter-count { background: rgba(255,255,255,0.2); color: white; }
+
+        .main-content {
+            grid-row: 2; overflow-y: auto; padding: 0;
+            overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        }
+
+        .task-list-container { padding: 16px 24px; }
         .task-list { display: flex; flex-direction: column; }
         .task-item { display: flex; align-items: flex-start; padding: 12px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 2px; cursor: default; transition: background 0.2s; }
         .task-item:hover { background: var(--bg-hover); }
-
         .task-item.selected { background: var(--bg-selected); color: var(--text-primary); }
         .task-item.bulk-selected { background: var(--warning); color: var(--text-primary); }
-
-        .task-group-header {
-            font-size: 14px;
-            font-weight: 600;
-            padding: 8px 12px;
-            background-color: var(--bg-hover);
-            border-bottom: 1px solid var(--border);
-            margin-top: 24px;
-            border-radius: 4px 4px 0 0;
-        }
+        .task-group-header { font-size: 14px; font-weight: 600; padding: 8px 12px; background-color: var(--bg-hover); border-bottom: 1px solid var(--border); margin-top: 24px; border-radius: 4px 4px 0 0; }
         .task-group-header:first-of-type { margin-top: 0; }
-
         .task-item .task-inner-content.hidden { display: none; }
-        .task-item .edit-input { padding: 0; margin: 0; border: none; background: transparent; font-family: inherit; cursor: text; font-size: inherit; }
+        .task-item .edit-input { padding: 0; margin: 0; border: none; background: transparent; font-family: inherit; cursor: text; font-size: inherit; width: 100%; }
         .task-item.selected .edit-input { background: var(--bg-hover); }
-
         .task-checkbox { margin-right: 12px; margin-top: 2px; cursor: pointer; flex-shrink: 0; }
         .task-content { flex: 1; min-width: 0; cursor: text; position: relative; }
         .task-text { word-break: break-word; overflow-wrap: break-word; max-width: 100%; }
         .task-text.completed { text-decoration: line-through; opacity: 0.6; }
-
         .priority { font-weight: 600; margin-right: 4px; }
         .priority-A { color: var(--prio-a); } .priority-B { color: var(--prio-b); } .priority-C { color: var(--prio-c); }
-
         .project, .context { color: var(--accent); margin: 0 2px; cursor: pointer; border-radius: 3px; padding: 1px 3px; }
         .project:hover, .context:hover { background-color: var(--bg-hover); text-decoration: underline; }
-
         .task-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
 
         .bulk-actions-bar {
-            display: none; position: fixed; bottom: 0;
-            left: 280px;
-            right: 0;
-            background: var(--bg-secondary); border-top: 1px solid var(--border);
-            padding: 12px 24px; align-items: center; gap: 16px; z-index: 50;
+            display: none; position: fixed; bottom: 0; z-index: 150;
+            left: 280px; right: 0; background: var(--bg-secondary);
+            border-top: 1px solid var(--border); padding: 12px 24px;
+            align-items: center; gap: 16px;
         }
         .bulk-actions-bar.active { display: flex; }
 
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
-
-        .header-actions .sort-controls { display: none; align-items: center; gap: 8px; width: 100%; margin-top: 10px; }
-        .header-actions .sort-controls label { margin-bottom: 4px; display: block; width: 100%; font-size: 12px; color: var(--text-secondary); }
-        .header-actions .sort-controls select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px; width: 100%; }
-
-        .toolbar .sort-controls { display: flex; align-items: center; gap: 8px; }
-        .toolbar .sort-controls select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px; }
-
         input[type="file"] { display: none; }
 
         .autocomplete-suggestions {
-            display: none;
-            position: fixed;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
+            display: none; position: fixed; background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-height: 200px;
+            overflow-y: auto; z-index: 1000;
         }
         .autocomplete-suggestions div { padding: 8px 12px; cursor: pointer; }
         .autocomplete-suggestions div:hover { background: var(--bg-hover); }
         .autocomplete-suggestions div.selected { background: var(--accent); color: white; }
 
-        #bottomBar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-            padding: 8px 16px;
-            display: none; /* Nur auf Mobile anzeigen */
-            z-index: 100;
-        }
-        #bottomBar .search-add-box {
-            flex: 1;
-        }
-
-        .burger-btn { display: none; font-size: 24px; padding: 4px 12px; }
-        .close-btn { display: none; position: absolute; top: 10px; right: 10px; font-size: 20px; padding: 4px 10px; background: var(--bg-hover); border: none; }
-
         @media (max-width: 768px) {
-             .app-container { grid-template-columns: 1fr; }
+             .app-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
              .sidebar { display: none; }
 
+             #topBar { padding: 8px 10px; }
+             #topBar .desktop-actions { display: none; }
              .burger-btn { display: block; }
 
-             .header-actions {
-                display: none;
-                position: fixed; top: 0; right: 0; bottom: 0; width: 280px;
-                background: var(--bg-secondary); box-shadow: -2px 0 5px rgba(0,0,0,0.2);
-                padding: 60px 20px 20px 20px; flex-direction: column;
-                align-items: flex-start; gap: 12px; z-index: 1000; overflow-y: auto;
-                overflow-y: auto;
-                overscroll-behavior: contain; /* Verhindert Scroll-Chain im Menü */
-             }
-             .header-actions.menu-open { display: flex; }
-             .header-actions.menu-open .close-btn { display: block; }
-
-             .header-actions .btn, .header-actions label.btn, .header-actions a.btn { width: 100%; text-align: left; }
-             .header-actions .sort-controls { display: flex; flex-direction: column; align-items: flex-start; }
-
-             .toolbar { display: none; }
-
-             #bottomBar { display: flex; }
-
-             .main-content {
-                 padding-bottom: calc(var(--bottom-bar-height-mobile) + 20px);
-             }
+             .main-content { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+             .task-list-container { padding: 16px; }
 
              .bulk-actions-bar {
-                 left: 0;
-                 bottom: var(--bottom-bar-height-mobile);
+                 left: 0; right: 0; bottom: 0;
                  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-             }
-             #bottomBar {
-                 padding-bottom: calc(8px + env(safe-area-inset-bottom));
              }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <header class="header">
-            <h1>todo</h1>
-            <button class="btn burger-btn" id="burgerBtn" aria-label="Menü öffnen" aria-expanded="false">☰</button>
-            <div class="header-actions" id="headerActions">
-                <button class="btn" id="helpBtn">?</button>
-                <button class="btn" id="undoBtn" disabled>↶ undo</button>
-                <button class="btn" id="archiveCompletedBtn">archive</button>
-                <label for="fileInput" class="btn">import</label>
-                <input type="file" id="fileInput" accept=".txt,text/plain">
-                <button class="btn" id="exportBtn">export</button>
-                <button class="btn" id="gdriveLoginBtn">connect to G-Drive</button>
-                <button class="btn" id="gdrivePushBtn" style="display: none;">save to G-Drive</button>
-                <button class="btn" id="gdrivePullBtn" style="display: none;">load from G-Drive</button>
-                <a href="impressum.html" target="_blank" class="btn">Impressum</a>
-                <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
-                <div class="sort-controls">
-                    <label for="sortSelect">Sort:</label>
-                    <select id="sortSelect">
-                        <option value="default">default</option>
-                        <option value="priority">priority</option>
-                        <option value="project">project</option>
-                        <option value="context">context</option>
-                        <option value="due">due</option>
-                    </select>
-                </div>
-                <button class="btn close-btn" id="closeMenuBtn" aria-label="Menü schließen">✕</button>
+        <div id="topBar">
+            <div class="search-add-box">
+                <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
+                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
-        </header>
+            <div class="desktop-actions">
+                 <button class="btn" id="helpBtnDesktop">?</button>
+                 <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
+                 <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
+                 <label for="fileInput" class="btn">import</label>
+                 <button class="btn" id="exportBtnDesktop">export</button>
+                 <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
+                 <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
+                 <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
+                 <a href="impressum.html" target="_blank" class="btn">Impressum</a>
+                 <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
+            </div>
+            <button class="btn burger-btn" id="burgerBtn" aria-label="Menü öffnen" aria-expanded="false">☰</button>
+        </div>
+
+        <div id="menuPanel">
+            <h1>todo</h1>
+            <button class="btn" id="helpBtnMobile">?</button>
+            <button class="btn" id="undoBtnMobile" disabled>↶ undo</button>
+            <button class="btn" id="archiveCompletedBtnMobile">archive</button>
+            <label for="fileInput" class="btn">import</label>
+            <button class="btn" id="exportBtnMobile">export</button>
+            <button class="btn" id="gdriveLoginBtnMobile">connect to G-Drive</button>
+            <button class="btn" id="gdrivePushBtnMobile" style="display: none;">save to G-Drive</button>
+            <button class="btn" id="gdrivePullBtnMobile" style="display: none;">load from G-Drive</button>
+            <a href="impressum.html" target="_blank" class="btn">Impressum</a>
+            <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
+            <div class="sort-controls">
+                <label for="sortSelect">Sort:</label>
+                <select id="sortSelect">
+                    <option value="default">default</option>
+                    <option value="priority">priority</option>
+                    <option value="project">project</option>
+                    <option value="context">context</option>
+                    <option value="due">due</option>
+                </select>
+            </div>
+            <button class="btn close-btn" id="closeMenuBtn" aria-label="Menü schließen">✕</button>
+        </div>
+        
+        <input type="file" id="fileInput" accept=".txt,text/plain" style="display: none;">
 
         <aside class="sidebar">
             <section class="sidebar-section">
@@ -358,38 +248,20 @@
         </aside>
 
         <main class="main-content">
-            <div class="toolbar">
-                 <div class="sort-controls">
-                    <label for="desktopSortSelect">Sort:</label>
-                    <select id="desktopSortSelect">
-                        <option value="default">Default</option>
-                        <option value="priority">Priority</option>
-                        <option value="project">Project</option>
-                        <option value="context">Context</option>
-                        <option value="due">Due</option>
-                    </select>
+             <div class="task-list-container">
+                <div class="task-list" id="taskList"></div>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <h3>No tasks</h3><p>Add your first task above</p>
                 </div>
-                 <div class="search-add-box" id="desktopSearchBox">
-                     </div>
-            </div>
-
-            <div class="task-list" id="taskList"></div>
-            <div class="empty-state" id="emptyState" style="display: none;">
-                <h3>No tasks</h3><p>Add your first task above</p>
             </div>
         </main>
+
         <footer class="bulk-actions-bar" id="bulkBar">
             <span id="bulkCount">0 selected</span>
             <button class="btn" id="bulkSelectAllBtn">Select All</button>
             <button class="btn" id="bulkDeselectBtn">Deselect</button>
             <button class="btn btn-primary" id="bulkCompleteBtn">Complete</button>
             <button class="btn" id="bulkDeleteBtn">Delete</button>
-        </footer>
-        <footer id="bottomBar">
-            <div class="search-add-box" id="mobileSearchBox">
-                <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
-                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
-            </div>
         </footer>
     </div>
 
@@ -398,67 +270,24 @@
         window.onunhandledrejection = (e) => console.error('Unhandled promise rejection:', e.reason);
 
         const app = {
-            // Variablen
-            tasks: [],
-            selectedTask: null,
-            searchQuery: '',
-            sortField: 'default',
-            bulkSelected: new Set(),
-            undoStack: [],
-            maxUndoSize: 20,
-            isWaitingForPriority: false,
-            saveDebounceTimer: null,
-            CLIENT_ID: '533958879265-u2sipqoup3j5fobgfkq1f37r5g8eo7lj.apps.googleusercontent.com',
-            DRIVE_SCOPE: 'https://www.googleapis.com/auth/drive.appdata',
-            DRIVE_FILE_ID: null,
-            gapiClient: null,
-            gisTokenClient: null,
+            tasks: [], selectedTask: null, searchQuery: '', sortField: 'default', bulkSelected: new Set(),
+            undoStack: [], maxUndoSize: 20, isWaitingForPriority: false, saveDebounceTimer: null,
+            CLIENT_ID: '533958879265-u2sipqoup3j5fobgfkq1f37r5g8eo7lj.apps.googleusercontent.com', DRIVE_SCOPE: 'https://www.googleapis.com/auth/drive.appdata',
+            DRIVE_FILE_ID: null, gapiClient: null, gisTokenClient: null,
 
             init() {
-                console.log('🚀 Initializing App v2.2.2 (Full Code)'); // Versionsnummer angepasst
+                console.log('🚀 Initializing App v2.4.1 (Final Top Search Bar)'); // Version angepasst
                 this.loadFromLocalStorage();
                 this.loadUIPreferences();
                 this.attachEventListeners();
                 this.attachEventDelegation();
                 this.autocomplete.init(this);
-                this.render(); // Wichtig: Sicherstellen, dass render existiert
+                this.render();
                 this.updateSortSelects();
-                this.moveSearchInput();
-                window.addEventListener('resize', () => this.moveSearchInput());
             },
 
             updateSortSelects() {
                 document.getElementById('sortSelect').value = this.sortField;
-                document.getElementById('desktopSortSelect').value = this.sortField;
-            },
-
-            moveSearchInput() {
-                const searchBox = document.getElementById('mobileSearchBox');
-                const mobileTarget = document.getElementById('bottomBar');
-                const desktopTarget = document.getElementById('desktopSearchBox');
-                // Prüfen, ob die Elemente existieren, bevor darauf zugegriffen wird
-                if (!searchBox || !mobileTarget || !desktopTarget) {
-                    console.error("Fehler: Eines der Layout-Elemente (mobileSearchBox, bottomBar, desktopSearchBox) wurde nicht im DOM gefunden.");
-                    return;
-                }
-                const isMobileView = window.innerWidth <= 768;
-
-                if (isMobileView) {
-                    if (searchBox.parentElement !== mobileTarget) {
-                         mobileTarget.appendChild(searchBox);
-                         searchBox.style.display = 'flex';
-                         desktopTarget.style.display = 'none';
-                    }
-                } else {
-                    if (searchBox.parentElement !== desktopTarget) {
-                         desktopTarget.appendChild(searchBox);
-                         searchBox.style.display = 'flex';
-                         desktopTarget.style.display = 'flex';
-                    }
-                }
-                 if(this.autocomplete.active) {
-                     setTimeout(() => this.autocomplete.positionEl(), 50);
-                 }
             },
 
             loadFromLocalStorage() {
@@ -493,1018 +322,129 @@
 
             attachEventListeners() {
                 const searchAddInput = document.getElementById('searchAddInput');
-
-                searchAddInput.addEventListener('input', (e) => {
-                    this.searchQuery = e.target.value;
-                    this.autocomplete.handleInput(e);
-                    this.render();
-                });
-                searchAddInput.addEventListener('keydown', (e) => {
-                    if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; }
-                    if (e.key === 'Enter' && !e.isComposing) {
-                        e.preventDefault();
-                        const value = searchAddInput.value.trim();
-                        const contextTags = Array.from(value.matchAll(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g)).map(m => m[1]);
-                        const taskText = value.replace(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g, '').trim();
-                        if (taskText) {
-                            const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim();
-                            this.addTask(fullTaskText);
-                            this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : '');
-                            searchAddInput.value = this.searchQuery;
-                            this.render();
-                        }
-                    }
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        if (this.searchQuery !== '') {
-                            this.searchQuery = ''; searchAddInput.value = ''; this.render();
-                        } else { searchAddInput.blur(); }
-                    }
-                });
+                searchAddInput.addEventListener('input', (e) => { this.searchQuery = e.target.value; this.autocomplete.handleInput(e); this.render(); });
+                searchAddInput.addEventListener('keydown', (e) => { if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; } if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); const value = searchAddInput.value.trim(); const contextTags = Array.from(value.matchAll(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g)).map(m => m[1]); const taskText = value.replace(/(?:\s|^)(prio:[\w.-]+|is:[\w.-]+|[\+@][\w.-]+)/g, '').trim(); if (taskText) { const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim(); this.addTask(fullTaskText); this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : ''); searchAddInput.value = this.searchQuery; this.render(); } } if (e.key === 'Escape') { e.preventDefault(); if (this.searchQuery !== '') { this.searchQuery = ''; searchAddInput.value = ''; this.render(); } else { searchAddInput.blur(); } } });
 
                 document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
-                document.getElementById('desktopSortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
 
-                document.getElementById('fileInput').addEventListener('change', (e) => { this.importFile(e.target.files[0]); e.target.value = ''; });
-                document.getElementById('exportBtn').addEventListener('click', () => this.exportToFile());
-                document.getElementById('archiveCompletedBtn').addEventListener('click', () => this.archiveCompleted());
-                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                // Helper to attach listeners to potentially duplicated buttons
+                const addActionListener = (idBase, eventType = 'click', fn) => {
+                    const desktopEl = document.getElementById(idBase + 'Desktop');
+                    const mobileEl = document.getElementById(idBase + 'Mobile');
+                    const boundFn = fn.bind(this);
+
+                    if (desktopEl) desktopEl.addEventListener(eventType, boundFn);
+                    if (mobileEl) mobileEl.addEventListener(eventType, boundFn);
+
+                    // Special case for file input label targeting the single hidden input
+                    if (idBase === 'fileInputLabel') { // Assuming labels have ID like 'fileInputLabelDesktop' etc.
+                       // Labels trigger click on input via 'for' attribute, only input needs listener
+                       const fileInput = document.getElementById('fileInput');
+                       if (fileInput && eventType === 'change') {
+                           // Remove previous listener if any to avoid duplicates
+                           // fileInput.removeEventListener(eventType, boundFn); // Need a way to store/remove old listener if re-attaching
+                           fileInput.addEventListener(eventType, boundFn, { once: true }); // Use once or manage listener removal
+                       }
+                    } else if (idBase === 'fileInput' && eventType === 'change') {
+                        // Attach listener directly to the single file input
+                        const fileInput = document.getElementById('fileInput');
+                        if (fileInput) {
+                            fileInput.addEventListener(eventType, boundFn);
+                        }
+                    }
+                };
+
+                // Attach listeners using the helper
+                addActionListener('helpBtn', 'click', this.showHelp);
+                addActionListener('undoBtn', 'click', this.undo);
+                addActionListener('archiveCompletedBtn', 'click', this.archiveCompleted);
+                // Attach listener to the single input, labels work via 'for'
+                addActionListener('fileInput', 'change', (e) => { this.importFile(e.target.files[0]); e.target.value = ''; });
+                addActionListener('exportBtn', 'click', this.exportToFile);
+                addActionListener('gdriveLoginBtn', 'click', this.handleAuthClick);
+                addActionListener('gdrivePushBtn', 'click', this.pushToDrive);
+                addActionListener('gdrivePullBtn', 'click', this.pullFromDrive);
+
+                // Bulk Actions Listener
                 document.getElementById('bulkSelectAllBtn').addEventListener('click', () => this.bulkSelectAll());
                 document.getElementById('bulkDeselectBtn').addEventListener('click', () => this.bulkDeselectAll());
                 document.getElementById('bulkCompleteBtn').addEventListener('click', () => this.bulkComplete());
                 document.getElementById('bulkDeleteBtn').addEventListener('click', () => this.bulkDelete());
-                document.getElementById('helpBtn').addEventListener('click', () => this.showHelp());
-                document.getElementById('gdriveLoginBtn').addEventListener('click', () => this.handleAuthClick());
-                document.getElementById('gdrivePushBtn').addEventListener('click', () => this.pushToDrive());
-                document.getElementById('gdrivePullBtn').addEventListener('click', () => this.pullFromDrive());
 
+                // Burger Menu Listener
                 document.getElementById('burgerBtn').addEventListener('click', () => this.toggleMenu());
                 document.getElementById('closeMenuBtn').addEventListener('click', () => this.toggleMenu());
 
-                document.addEventListener('keydown', (e) => {
-                    if (!!document.querySelector('.edit-input') || this.autocomplete.active) return;
-                    const isTyping = e.target.matches('input, textarea');
-                    if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) {
-                        e.preventDefault(); document.getElementById('searchAddInput').focus();
-                    }
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); }
-                    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); }
-                    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); }
-                    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); }
-                    if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); }
-                    if (e.key === 'e' && this.selectedTask && !isTyping) {
-                        e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement);
-                    }
-                    if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
-                });
+                // Global Keydown Listener
+                document.addEventListener('keydown', (e) => { if (!!document.querySelector('.edit-input') || this.autocomplete.active) return; const isTyping = e.target.matches('input, textarea'); if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) { e.preventDefault(); document.getElementById('searchAddInput').focus(); } if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); } if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); } if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); } if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); } if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); } if (e.key === 'e' && this.selectedTask && !isTyping) { e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement); } if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; } });
             },
 
-            handleSortChange(newSortValue) {
-                this.sortField = newSortValue;
-                this.saveUIPreferences();
-                this.updateSortSelects();
-                this.render();
-            },
-
-            attachEventDelegation() {
-                const taskList = document.getElementById('taskList');
-                taskList.addEventListener('click', (e) => {
-                    if (!!document.querySelector('.edit-input')) return;
-                    if (e.target.matches('.project')) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return; }
-                    if (e.target.matches('.context')) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return; }
-                    const taskItem = e.target.closest('.task-item');
-                    if (!taskItem) return;
-                    const taskId = taskItem.dataset.taskId;
-                    if (!taskId) return;
-                    if (e.target.matches('.task-checkbox')) {
-                        e.preventDefault();
-                        this.toggleTask(taskId);
-                    }
-                    else if (e.target.closest('.task-content')) {
-                        if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId);
-                        else this.enterEditMode(taskItem);
-                    }
-                });
-
-                document.querySelector('.sidebar').addEventListener('click', (e) => {
-                    const viewFilterBtn = e.target.closest('[data-view-filter]');
-                    if (viewFilterBtn) { this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true); }
-                    const specialFilterBtn = e.target.closest('[data-special-filter]');
-                    if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`);
-                    const filterItem = e.target.closest('.filter-item');
-                    if (filterItem) {
-                        if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`);
-                        if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`);
-                        if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`);
-                    }
-                });
-            },
-
-            toggleFilter(filterPart, isViewFilter = false) {
-                const parts = new Set(this.searchQuery.split(' ').filter(Boolean));
-                const lowerCaseFilterPart = filterPart.toLowerCase();
-                let found = false;
-                parts.forEach(p => { if (p.toLowerCase() === lowerCaseFilterPart) { parts.delete(p); found = true; } });
-                if (!found) {
-                    if (isViewFilter || filterPart.startsWith('is:')) {
-                        parts.forEach(p => { if (p.startsWith('is:')) parts.delete(p); });
-                    }
-                    if (filterPart.toLowerCase() !== 'is:all') { parts.add(filterPart); }
-                }
-                this.searchQuery = Array.from(parts).join(' ');
-                document.getElementById('searchAddInput').value = this.searchQuery;
-                this.render();
-            },
-
-            addTask(text) {
-                const task = this.parseTodoLine(text);
-                if (!task || !task.text?.trim()) { // Safe navigation for text property
-                    // console.warn('[Debug] addTask: Task object or task text is empty/invalid, returning.'); // Debug Log entfernt
-                    return;
-                }
-                this.saveUndoState();
-                this.tasks.push(task);
-                this.saveToLocalStorage();
-                // Render wird im Keydown-Listener aufgerufen
-            },
-
-            enterEditMode(taskElement) {
-                const taskId = taskElement.dataset.taskId;
-                const task = this.tasks.find(t => t.id === taskId);
-                if (!task) return;
-                this.selectedTask = taskId;
-                taskElement.parentElement.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-                taskElement.classList.add('selected');
-                const content = taskElement.querySelector('.task-inner-content');
-                content.classList.add('hidden');
-                const input = document.createElement('input');
-                input.type = 'text'; input.className = 'edit-input'; input.value = task.raw;
-                content.parentElement.appendChild(input);
-                input.focus(); input.select();
-
-                input.addEventListener('input', (e) => this.autocomplete.handleInput(e));
-                input.addEventListener('keydown', (e) => {
-                    if (this.autocomplete.handleKeydown(e)) {
-                        e.preventDefault();
-                        return;
-                    }
-                    if (e.key === 'Enter') input.blur();
-                    else if (e.key === 'Escape') {
-                        input.removeEventListener('blur', save);
-                        this.render();
-                    }
-                });
-
-                const save = () => {
-                    this.autocomplete.hide();
-                    const newValue = input.value.trim();
-                    if (newValue && newValue !== task.raw) {
-                        this.saveUndoState();
-                        const updatedTask = this.parseTodoLine(newValue);
-                        updatedTask.id = task.id;
-                        if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate;
-                        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-                        if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
-                        this.saveToLocalStorage();
-                    }
-                    this.render();
-                };
-                input.addEventListener('blur', save, { once: true });
-            },
-
-            setPriority(newPriority) {
-                const task = this.tasks.find(t => t.id === this.selectedTask);
-                if (!task) return;
-                this.saveUndoState();
-                let newRaw = task.raw.replace(/^\([A-Z]\)\s/, '');
-                if (newPriority) newRaw = `(${newPriority}) ${newRaw}`;
-                const updatedTask = this.parseTodoLine(newRaw);
-                updatedTask.id = task.id;
-                // Preserve creation date if it existed and wasn't re-parsed
-                if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate;
-                const taskIndex = this.tasks.findIndex(t => t.id === task.id);
-                if(taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
-                this.saveToLocalStorage();
-                this.render();
-            },
-
-            changePriority(direction) {
-                const task = this.tasks.find(t => t.id === this.selectedTask);
-                if (!task) return;
-                const priorities = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-                const cycle = [null, ...priorities];
-                const currentCycleIndex = cycle.indexOf(task.priority);
-                let newIndex;
-                if (direction > 0) {
-                    newIndex = (currentCycleIndex + 1) % cycle.length;
-                } else {
-                    newIndex = (currentCycleIndex - 1 + cycle.length) % cycle.length;
-                }
-                const newPriority = cycle[newIndex];
-                if (newPriority !== task.priority) {
-                    this.setPriority(newPriority);
-                }
-            },
-
+            handleSortChange(newSortValue) { this.sortField = newSortValue; this.saveUIPreferences(); this.updateSortSelects(); this.render(); },
+            attachEventDelegation() { const taskList = document.getElementById("taskList"); taskList.addEventListener("click", e => { if (!!document.querySelector(".edit-input")) return; if (e.target.matches(".project")) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return } if (e.target.matches(".context")) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return } const taskItem = e.target.closest(".task-item"); if (!taskItem) return; const taskId = taskItem.dataset.taskId; if (!taskId) return; if (e.target.matches(".task-checkbox")) { e.preventDefault(); this.toggleTask(taskId); } else if (e.target.closest(".task-content")) { if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId); else this.enterEditMode(taskItem); } }); const sidebar = document.querySelector(".sidebar"); if (sidebar) sidebar.addEventListener("click", e => { const viewFilterBtn = e.target.closest("[data-view-filter]"); if (viewFilterBtn) this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true); const specialFilterBtn = e.target.closest("[data-special-filter]"); if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`); const filterItem = e.target.closest(".filter-item"); if (filterItem) { if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`); if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`); if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`); } }) },
+            toggleFilter(filterPart, isViewFilter = false) { const parts = new Set(this.searchQuery.split(" ").filter(Boolean)); const lowerCaseFilterPart = filterPart.toLowerCase(); let found = false; parts.forEach(p => { if (p.toLowerCase() === lowerCaseFilterPart) { parts.delete(p); found = true; } }); if (!found) { if (isViewFilter || filterPart.startsWith("is:")) { parts.forEach(p => { if (p.startsWith("is:")) parts.delete(p); }); } if (filterPart.toLowerCase() !== "is:all") { parts.add(filterPart); } } this.searchQuery = Array.from(parts).join(" "); document.getElementById("searchAddInput").value = this.searchQuery; this.render(); },
+            addTask(text) { const task = this.parseTodoLine(text); if (!task || !task.text || !task.text.trim()) { console.warn('addTask: Task object or task text is empty/invalid, returning.'); return; } this.saveUndoState(); this.tasks.push(task); this.saveToLocalStorage(); /* Render wird im Keydown-Listener aufgerufen */ },
+            enterEditMode(taskElement) { const taskId = taskElement.dataset.taskId; const task = this.tasks.find(t => t.id === taskId); if (!task) return; this.selectedTask = taskId; taskElement.parentElement.querySelectorAll(".selected").forEach(el => el.classList.remove("selected")); taskElement.classList.add("selected"); const content = taskElement.querySelector(".task-inner-content"); content.classList.add("hidden"); const input = document.createElement("input"); input.type = "text"; input.className = "edit-input"; input.value = task.raw; content.parentElement.appendChild(input); input.focus(); input.select(); input.addEventListener("input", e => this.autocomplete.handleInput(e)); input.addEventListener("keydown", e => { if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; } if (e.key === "Enter") input.blur(); else if (e.key === "Escape") { input.removeEventListener("blur", saveCallback); this.render(); } }); const saveCallback = () => { this.autocomplete.hide(); const newValue = input.value.trim(); if (newValue && newValue !== task.raw) { this.saveUndoState(); const updatedTask = this.parseTodoLine(newValue); updatedTask.id = task.id; if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate; const taskIndex = this.tasks.findIndex(t => t.id === taskId); if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask; this.saveToLocalStorage(); } this.render(); }; input.addEventListener("blur", saveCallback, { once: true }); },
+            setPriority(newPriority) { const task = this.tasks.find(t => t.id === this.selectedTask); if (!task) return; this.saveUndoState(); let newRaw = task.raw.replace(/^\([A-Z]\)\s/, ""); if (newPriority) newRaw = `(${newPriority}) ${newRaw}`; const updatedTask = this.parseTodoLine(newRaw); updatedTask.id = task.id; const taskIndex = this.tasks.findIndex(t => t.id === task.id); if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask; this.saveToLocalStorage(); this.render(); },
+            changePriority(direction) { const task = this.tasks.find(t => t.id === this.selectedTask); if (!task) return; const priorities = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""); const cycle = [null, ...priorities]; const currentCycleIndex = cycle.indexOf(task.priority); let newIndex; if (direction > 0) { newIndex = (currentCycleIndex + 1) % cycle.length; } else { newIndex = (currentCycleIndex - 1 + cycle.length) % cycle.length; } const newPriority = cycle[newIndex]; if (newPriority !== task.priority) { this.setPriority(newPriority); } },
             generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
-
-            parseTodoLine(line) {
-                const task = {
-                    id: this.generateUniqueId(),
-                    raw: line.trim(),
-                    completed: false,
-                    priority: null,
-                    completionDate: null,
-                    creationDate: null,
-                    text: '', // Wichtig: Standardmäßig leerer Text
-                    projects: [],
-                    contexts: [],
-                    metadata: {}
-                };
-
-                let r = line.trim();
-                if (!r) {
-                    task.text = '';
-                    return task;
-                }
-
-                if (r.startsWith('x ')) {
-                    task.completed = true;
-                    r = r.substring(2);
-                    const d = r.match(/^\d{4}-\d{2}-\d{2}\s/);
-                    if (d && this.isValidDate(d[0].trim())) {
-                        task.completionDate = d[0].trim();
-                        r = r.substring(d[0].length);
-                    }
-                }
-
-                const p = r.match(/^\(([A-Za-z])\)\s/);
-                if (p) {
-                    task.priority = p[1].toUpperCase();
-                    r = r.substring(p[0].length);
-                }
-
-                const c = r.match(/^\d{4}-\d{2}-\d{2}\s/);
-                // Check if the date is actually the creation date (shouldn't exist if completion date was parsed)
-                if (c && this.isValidDate(c[0].trim()) && !task.completionDate) {
-                    task.creationDate = c[0].trim();
-                    r = r.substring(c[0].length);
-                }
-
-                const proj = r.match(/\+[\w.-]+/g);
-                if (proj) {
-                    task.projects = [...new Set(proj.map(p_match => p_match.substring(1)))];
-                }
-                const ctx = r.match(/@[\w.-]+/g);
-                if (ctx) {
-                    task.contexts = [...new Set(ctx.map(c_match => c_match.substring(1)))];
-                }
-
-                const meta = r.match(/(\w+):([^\s]+)/g);
-                if (meta) {
-                    meta.forEach(pair => {
-                        const [key, ...val] = pair.split(':');
-                        if (key && val.length) {
-                            task.metadata[key] = val.join(':');
-                        }
-                    });
-                }
-
-                task.text = r;
-                return task;
-            },
-
-            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(new Date(d)) && (new Date(d)).toISOString().startsWith(d),
-
-            toggleTask(taskId) {
-                const task = this.tasks.find(t => t.id === taskId); if (!task) return;
-                this.saveUndoState();
-                task.completed = !task.completed;
-                const today = new Date().toISOString().split('T')[0];
-                let newRaw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim(); // Remove old completion
-                if (task.completed) {
-                    task.completionDate = today;
-                    // Prepend completion marker and date, preserving original priority/creation date order
-                    const prioMatch = newRaw.match(/^\(([A-Z])\)\s/);
-                    const dateMatch = newRaw.match(/^\d{4}-\d{2}-\d{2}\s/);
-                    let rest = newRaw;
-                    if (prioMatch) rest = rest.substring(prioMatch[0].length);
-                    if (dateMatch && (!prioMatch || newRaw.startsWith(dateMatch[0]))) rest = rest.substring(dateMatch[0].length); // Avoid removing date if prio was first
-
-                    newRaw = `x ${today} ${prioMatch ? prioMatch[0] : ''}${dateMatch && (!prioMatch || newRaw.startsWith(dateMatch[0])) ? dateMatch[0] : ''}${rest}`;
-                    task.raw = newRaw.trim(); // Update raw string
-                    this.showNotification(`✅ Aufgabe erledigt!`);
-                } else {
-                    task.completionDate = null;
-                    task.raw = newRaw; // Update raw string without completion marker
-                }
-                // Re-parse to update object properties consistently
-                const updatedTask = this.parseTodoLine(task.raw);
-                updatedTask.id = task.id; // Keep original ID
-                const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-                if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
-
-                this.saveToLocalStorage();
-                this.render();
-            },
-
-            deleteTask(taskId) {
-                if (!confirm('Delete task?')) return;
-                this.saveUndoState();
-                this.tasks = this.tasks.filter(t => t.id !== taskId);
-                if (this.selectedTask === taskId) this.selectedTask = null;
-                this.saveToLocalStorage();
-                this.render();
-            },
-
+            parseTodoLine(line) { const task = { id: this.generateUniqueId(), raw: line.trim(), completed: false, priority: null, completionDate: null, creationDate: null, text: "", projects: [], contexts: [], metadata: {} }; let r = line.trim(); if (!r) return task; if (r.startsWith("x ")) { task.completed = true; r = r.substring(2); const d = r.match(/^\d{4}-\d{2}-\d{2}\s/); if (d && this.isValidDate(d[0].trim())) { task.completionDate = d[0].trim(); r = r.substring(d[0].length); } } const p = r.match(/^\(([A-Za-z])\)\s/); if (p) { task.priority = p[1].toUpperCase(); r = r.substring(p[0].length); } const c = r.match(/^\d{4}-\d{2}-\d{2}\s/); if (c && this.isValidDate(c[0].trim())) { task.creationDate = c[0].trim(); r = r.substring(c[0].length); } const proj = r.match(/\+[\w.-]+/g); if (proj) task.projects = [...new Set(proj.map(pr => pr.substring(1)))]; const ctx = r.match(/@[\w.-]+/g); if (ctx) task.contexts = [...new Set(ctx.map(ct => ct.substring(1)))]; const meta = r.match(/(\w+):([^\s]+)/g); if (meta) meta.forEach(pair => { const [key, ...val] = pair.split(":"); if (key && val.length) task.metadata[key] = val.join(":"); }); task.text = r; return task; },
+            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
+            toggleTask(taskId) { const task = this.tasks.find(t => t.id === taskId); if (!task) return; this.saveUndoState(); task.completed = !task.completed; const today = (new Date).toISOString().split("T")[0]; task.raw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, "").trim(); if (task.completed) { task.completionDate = today; task.raw = `x ${today} ${task.raw}`; this.showNotification("✅ Aufgabe erledigt!"); } else { task.completionDate = null; } this.saveToLocalStorage(); this.render(); },
+            deleteTask(taskId) { if (!confirm("Delete task?")) return; this.saveUndoState(); this.tasks = this.tasks.filter(t => t.id !== taskId); if (this.selectedTask === taskId) this.selectedTask = null; this.saveToLocalStorage(); this.render(); },
             selectTask(taskId) { this.selectedTask = taskId; this.render(); },
-
-            getFilteredTasks() {
-                let baseTasks = [...this.tasks];
-                const searchParts = this.searchQuery.toLowerCase().split(' ').filter(Boolean);
-                let viewFilter = 'all';
-                // Extract view filter first
-                const viewFilterIndex = searchParts.findIndex(part => part === 'is:open' || part === 'is:done');
-                if (viewFilterIndex !== -1) {
-                    viewFilter = searchParts[viewFilterIndex].split(':')[1];
-                    searchParts.splice(viewFilterIndex, 1); // Remove from search parts
-                }
-
-                if (viewFilter === 'open') baseTasks = baseTasks.filter(t => !t.completed);
-                else if (viewFilter === 'done') baseTasks = baseTasks.filter(t => t.completed);
-
-                let filtered = baseTasks;
-                if (searchParts.length > 0) {
-                    filtered = baseTasks.filter(task => {
-                        const taskText = task.raw.toLowerCase();
-                        return searchParts.every(part => {
-                            if (part.startsWith('prio:')) return task.priority === part.split(':')[1].toUpperCase();
-                            if (part.startsWith('+')) return task.projects?.some(p => p.toLowerCase() === part.substring(1)); // Safe navigation
-                            if (part.startsWith('@')) return task.contexts?.some(c => c.toLowerCase() === part.substring(1)); // Safe navigation
-                            if (part === 'is:no-due') return !task.metadata?.due;
-                            if (part === 'is:no-project') return !task.projects || task.projects.length === 0;
-                            if (part === 'is:no-context') return !task.contexts || task.contexts.length === 0;
-                            if (part === 'is:no-prio') return !task.priority;
-                            // Silently ignore unknown 'is:' filters for text search compatibility
-                            if (part.startsWith('is:')) return true;
-                            return taskText.includes(part);
-                        });
-                    });
-                }
-                if (this.selectedTask && !filtered.some(t => t.id === this.selectedTask)) this.selectedTask = null;
-                return this.sortTasks(filtered);
-            },
-
-            sortTasks(tasks) {
-                const sorted = [...tasks];
-                switch (this.sortField) {
-                    case 'priority': sorted.sort((a, b) => (a.priority || 'Z').localeCompare(b.priority || 'Z')); break;
-                    case 'project': sorted.sort((a, b) => (a.projects?.[0] || '\uffff').localeCompare(b.projects?.[0] || '\uffff')); break;
-                    case 'context': sorted.sort((a, b) => (a.contexts?.[0] || '\uffff').localeCompare(b.contexts?.[0] || '\uffff')); break;
-                    case 'due': sorted.sort((a, b) => (a.metadata?.due || '9999').localeCompare(b.metadata?.due || '9999')); break;
-                }
-                return sorted;
-            },
-
-            getGroupValue: (t) => ({
-                priority: t.priority ? `Priority ${t.priority}` : 'No Priority',
-                project: t.projects?.[0] || 'No Project',
-                context: t.contexts?.[0] || 'No Context',
-                due: t.metadata?.due || 'No Due Date'
-            })[this.sortField] || '',
-
-            escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]),
-
-            render() {
-                const taskList = document.getElementById('taskList');
-                const emptyState = document.getElementById('emptyState');
-                if (!taskList || !emptyState) {
-                    console.error("Render failed: Task list or empty state element not found.");
-                    return;
-                }
-                const filtered = this.getFilteredTasks();
-                if (filtered.length === 0) {
-                    taskList.innerHTML = '';
-                    emptyState.style.display = 'block';
-                } else {
-                    emptyState.style.display = 'none';
-                    let prevGroup = null;
-                    const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const html = filtered.map((task) => {
-                         // Fallback for potentially malformed task objects during development
-                         if (!task || typeof task.text === 'undefined') {
-                            console.warn("Skipping rendering of invalid task object:", task);
-                            return '';
-                        }
-                        const currentGroup = this.getGroupValue(task);
-                        const isNewGroup = this.sortField !== 'default' && prevGroup !== currentGroup;
-                        if(isNewGroup) prevGroup = currentGroup;
-                        let displayText = this.escapeHtml(task.text);
-                        (task.projects || []).forEach(p => { displayText = displayText.replace(new RegExp(`\\+${regexEscape(this.escapeHtml(p))}\\b`, 'gi'), `<span class="project">+${this.escapeHtml(p)}</span>`) });
-                        (task.contexts || []).forEach(c => { displayText = displayText.replace(new RegExp(`@${regexEscape(this.escapeHtml(c))}\\b`, 'gi'), `<span class="context">@${this.escapeHtml(c)}</span>`) });
-                        const meta = [task.creationDate, task.metadata?.due, task.completionDate].filter(Boolean).join(' • ');
-                        const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : '';
-                        return `
+            getFilteredTasks() { let baseTasks = [...this.tasks]; const searchParts = this.searchQuery.toLowerCase().split(" ").filter(Boolean); let viewFilter = "all"; if (searchParts.includes("is:open")) viewFilter = "open"; else if (searchParts.includes("is:done")) viewFilter = "done"; if (viewFilter === "open") baseTasks = baseTasks.filter(t => !t.completed); else if (viewFilter === "done") baseTasks = baseTasks.filter(t => t.completed); let filtered = baseTasks; if (searchParts.length > 0) { filtered = baseTasks.filter(task => { const taskText = task.raw.toLowerCase(); return searchParts.every(part => { if (part.startsWith("prio:")) return task.priority === part.split(":")[1].toUpperCase(); if (part.startsWith("+")) return task.projects.some(p => p.toLowerCase() === part.substring(1)); if (part.startsWith("@")) return task.contexts.some(c => c.toLowerCase() === part.substring(1)); if (part === "is:no-due") return !task.metadata.due; if (part === "is:no-project") return task.projects.length === 0; if (part === "is:no-context") return task.contexts.length === 0; if (part === "is:no-prio") return !task.priority; if (part.startsWith("is:")) return true; return taskText.includes(part); }); }); } if (this.selectedTask && !filtered.some(t => t.id === this.selectedTask)) this.selectedTask = null; return this.sortTasks(filtered); },
+            sortTasks(tasks) { const sorted = [...tasks]; switch (this.sortField) { case "priority": sorted.sort((a, b) => (a.priority || "Z").localeCompare(b.priority || "Z")); break; case "project": sorted.sort((a, b) => (a.projects[0] || "\uffff").localeCompare(b.projects[0] || "\uffff")); break; case "context": sorted.sort((a, b) => (a.contexts[0] || "\uffff").localeCompare(b.contexts[0] || "\uffff")); break; case "due": sorted.sort((a, b) => (a.metadata.due || "9999").localeCompare(b.metadata.due || "9999")); break; } return sorted; },
+            getGroupValue: (t) => ({ priority: t.priority ? `Priority ${t.priority}` : "No Priority", project: t.projects[0] || "No Project", context: t.contexts[0] || "No Context", due: t.metadata.due || "No Due Date" })[this.sortField] || "",
+            escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]),
+            render() { const taskListEl = document.getElementById("taskList"); const emptyStateEl = document.getElementById("emptyState"); const filteredTasks = this.getFilteredTasks(); if (filteredTasks.length === 0) { taskListEl.innerHTML = ""; emptyStateEl.style.display = "block"; } else { emptyStateEl.style.display = "none"; let prevGroup = null; const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); const html = filteredTasks.map(task => { const currentGroup = this.getGroupValue(task); const isNewGroup = this.sortField !== "default" && prevGroup !== currentGroup; if (isNewGroup) prevGroup = currentGroup; let displayText = this.escapeHtml(task.text); task.projects.forEach(p => displayText = displayText.replace(new RegExp(`\\+${regexEscape(this.escapeHtml(p))}\\b`, "gi"), `<span class="project">+${this.escapeHtml(p)}</span>`)); task.contexts.forEach(c => displayText = displayText.replace(new RegExp(`@${regexEscape(this.escapeHtml(c))}\\b`, "gi"), `<span class="context">@${this.escapeHtml(c)}</span>`)); const meta = [task.creationDate, task.metadata.due, task.completionDate].filter(Boolean).join(" • "); const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : ""; return `
                             ${groupHeader}
-                            <div class="task-item ${this.selectedTask === task.id ? 'selected' : ''} ${this.bulkSelected.has(task.id) ? 'bulk-selected' : ''}" data-task-id="${task.id}">
-                                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} aria-label="Toggle task: ${this.escapeHtml(task.text)}">
+                            <div class="task-item ${this.selectedTask === task.id ? "selected" : ""} ${this.bulkSelected.has(task.id) ? "bulk-selected" : ""}" data-task-id="${task.id}">
+                                <input type="checkbox" class="task-checkbox" ${task.completed ? "checked" : ""} aria-label="Toggle task: ${this.escapeHtml(task.text)}">
                                 <div class="task-content">
                                     <div class="task-inner-content">
-                                        <div class="task-text ${task.completed ? 'completed' : ''}">${task.priority ? `<span class="priority priority-${task.priority}">(${task.priority})</span> ` : ''}${displayText}</div>
-                                        ${meta ? `<div class="task-meta">${meta}</div>` : ''}
+                                        <div class="task-text ${task.completed ? "completed" : ""}">${task.priority ? `<span class="priority priority-${task.priority}">(${task.priority})</span> ` : ""}${displayText}</div>
+                                        ${meta ? `<div class="task-meta">${meta}</div>` : ""}
                                     </div>
                                 </div>
-                            </div>`;
-                    }).join('');
-                    taskList.innerHTML = html;
-                }
-                this.renderSidebar();
-            },
-
-            renderSidebar() {
-                 const countMap = (items = []) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {});
-                const priorities = countMap(this.tasks.map(t => t?.priority).filter(Boolean));
-                document.getElementById('prioritiesList').innerHTML = Object.entries(priorities).sort().map(([p, c]) => `<div class="filter-item" data-priority="${p}"><span>(${p})</span><span class="filter-count">${c}</span></div>`).join('');
-                const projects = countMap(this.tasks.flatMap(t => t?.projects || []));
-                document.getElementById('projectsList').innerHTML = Object.entries(projects).sort().map(([p, c]) => `<div class="filter-item" data-project="${this.escapeHtml(p)}"><span>+${this.escapeHtml(p)}</span><span class="filter-count">${c}</span></div>`).join('');
-                const contexts = countMap(this.tasks.flatMap(t => t?.contexts || []));
-                document.getElementById('contextsList').innerHTML = Object.entries(contexts).sort().map(([c, count]) => `<div class="filter-item" data-context="${this.escapeHtml(c)}"><span>@${this.escapeHtml(c)}</span><span class="filter-count">${count}</span></div>`).join('');
-
-                const currentFilters = new Set(this.searchQuery.toLowerCase().split(' ').filter(Boolean));
-                document.querySelectorAll('.sidebar .filter-btn').forEach(el => {
-                    const { viewFilter, specialFilter } = el.dataset;
-                    let isActive = false;
-                    if (viewFilter) {
-                        const hasOpen = currentFilters.has('is:open');
-                        const hasDone = currentFilters.has('is:done');
-                        if (viewFilter === 'all') isActive = !hasOpen && !hasDone;
-                        else if (viewFilter === 'open') isActive = hasOpen;
-                        else if (viewFilter === 'done') isActive = hasDone;
-                    }
-                    else if (specialFilter) isActive = currentFilters.has(`is:${specialFilter}`);
-                    el.classList.toggle('active', isActive);
-                });
-                document.querySelectorAll('.sidebar .filter-item').forEach(el => {
-                    const { priority, project, context } = el.dataset;
-                    let isActive = false;
-                    if (priority) isActive = currentFilters.has(`prio:${priority.toLowerCase()}`);
-                    else if (project) isActive = currentFilters.has(`+${project.toLowerCase()}`);
-                    else if (context) isActive = currentFilters.has(`@${context.toLowerCase()}`);
-                    el.classList.toggle('active', isActive);
-                });
-            },
-
+                            </div>`; }).join(""); taskListEl.innerHTML = html; } this.renderSidebar(); },
+            renderSidebar() { const countMap = (items) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {}); const priorities = countMap(this.tasks.map(t => t.priority).filter(Boolean)); const prioList = document.getElementById("prioritiesList"); if(prioList) prioList.innerHTML = Object.entries(priorities).sort().map(([p, c]) => `<div class="filter-item" data-priority="${p}"><span>(${p})</span><span class="filter-count">${c}</span></div>`).join(""); const projects = countMap(this.tasks.flatMap(t => t.projects)); const projList = document.getElementById("projectsList"); if(projList) projList.innerHTML = Object.entries(projects).sort().map(([p, c]) => `<div class="filter-item" data-project="${this.escapeHtml(p)}"><span>+${this.escapeHtml(p)}</span><span class="filter-count">${c}</span></div>`).join(""); const contexts = countMap(this.tasks.flatMap(t => t.contexts)); const ctxList = document.getElementById("contextsList"); if(ctxList) ctxList.innerHTML = Object.entries(contexts).sort().map(([c, count]) => `<div class="filter-item" data-context="${this.escapeHtml(c)}"><span>@${this.escapeHtml(c)}</span><span class="filter-count">${count}</span></div>`).join(""); const currentFilters = new Set(this.searchQuery.toLowerCase().split(" ").filter(Boolean)); document.querySelectorAll(".sidebar .filter-btn").forEach(el => { const { viewFilter, specialFilter } = el.dataset; let isActive = false; if (viewFilter) { const hasOpen = currentFilters.has("is:open"); const hasDone = currentFilters.has("is:done"); if (viewFilter === "all") isActive = !hasOpen && !hasDone; else if (viewFilter === "open") isActive = hasOpen; else if (viewFilter === "done") isActive = hasDone; } else if (specialFilter) isActive = currentFilters.has(`is:${specialFilter}`); el.classList.toggle("active", isActive); }); document.querySelectorAll(".sidebar .filter-item").forEach(el => { const { priority, project, context } = el.dataset; let isActive = false; if (priority) isActive = currentFilters.has(`prio:${priority.toLowerCase()}`); else if (project) isActive = currentFilters.has(`+${project.toLowerCase()}`); else if (context) isActive = currentFilters.has(`@${context.toLowerCase()}`); el.classList.toggle("active", isActive); }); },
             toggleBulkSelect(taskId) { this.bulkSelected.has(taskId) ? this.bulkSelected.delete(taskId) : this.bulkSelected.add(taskId); this.render(); this.updateBulkBar(); },
             bulkSelectAll() { this.getFilteredTasks().forEach(t => this.bulkSelected.add(t.id)); this.render(); this.updateBulkBar(); },
             bulkDeselectAll() { this.bulkSelected.clear(); this.render(); this.updateBulkBar(); },
+            bulkComplete() { if (this.bulkSelected.size === 0) return; this.saveUndoState(); this.tasks.forEach(t => { if (this.bulkSelected.has(t.id)) this.toggleTask(t.id); /* toggleTask handles save & render */ }); const count = this.bulkSelected.size; this.bulkSelected.clear(); /* No extra save/render needed here */ this.updateBulkBar(); this.showNotification(`✅ ${count} Aufgaben umgeschaltet`); },
+            bulkDelete() { if (this.bulkSelected.size === 0 || !confirm(`Delete ${this.bulkSelected.size} task(s)?`)) return; this.saveUndoState(); const count = this.bulkSelected.size; this.tasks = this.tasks.filter(t => !this.bulkSelected.has(t.id)); if (this.selectedTask && this.bulkSelected.has(this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`🗑️ ${count} Aufgaben gelöscht`); },
+            navigateTasks(direction) { const filtered = this.getFilteredTasks(); if (filtered.length === 0) return; const currentIndex = this.selectedTask ? filtered.findIndex(t => t.id === this.selectedTask) : -1; const newIndex = (currentIndex + direction + filtered.length) % filtered.length; this.selectTask(filtered[newIndex].id); setTimeout(() => document.querySelector(`[data-task-id="${filtered[newIndex].id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50); },
+            updateBulkBar() { const bulkBar = document.getElementById("bulkBar"); const count = this.bulkSelected.size; if (count > 0) { bulkBar.classList.add("active"); document.getElementById("bulkCount").textContent = `${count} selected`; } else { bulkBar.classList.remove("active"); } },
+            importFile(file) { if (!file || file.size > 1048576 && !confirm(`Large file (${(file.size / 1024 / 1024).toFixed(2)}MB). Continue?`)) return; const reader = new FileReader; reader.onload = e => { let content = e.target.result; if (content.charCodeAt(0) === 65279) content = content.slice(1); const lines = content.split("\n").filter(l => l.trim()); if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return; this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l))); this.saveToLocalStorage(true); this.render(); this.showNotification(`✅ Imported ${lines.length} tasks`); }; reader.readAsText(file); },
+            exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const content = this.tasks.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); },
+            archiveCompleted() { const completed = this.tasks.filter(t => t.completed); if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return; this.saveUndoState(); const content = completed.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); this.tasks = this.tasks.filter(t => !t.completed); if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${completed.length} tasks`); },
+            saveUndoState() { this.undoStack.push(JSON.parse(JSON.stringify(this.tasks))); if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift(); this.updateUndoButton(); },
+            updateUndoButton() { const disabled = this.undoStack.length === 0; const undoBtnDesktop = document.getElementById("undoBtnDesktop"); const undoBtnMobile = document.getElementById("undoBtnMobile"); if (undoBtnDesktop) undoBtnDesktop.disabled = disabled; if (undoBtnMobile) undoBtnMobile.disabled = disabled; },
+            undo() { if (this.undoStack.length === 0) return; this.tasks = this.undoStack.pop(); this.saveToLocalStorage(); this.render(); this.updateUndoButton(); },
+            showHelp() { alert("KEYBOARD SHORTCUTS:\n\n/ - Focus search/add\n↑ ↓ - Navigate tasks\n← → - Change priority\ne - Edit selected\nx - Toggle done\np then A-Z - Set priority\n(Ctrl|Cmd)+Z - Undo\nDelete - Delete selected\nEsc - Clear search/filters\n\nSEARCH SYNTAX:\n\nprio:A\n+project\n@context\nis:open / is:done\nis:no-due"); },
+            showNotification(message) { const el = document.createElement("div"); el.style.cssText = "position:fixed;top:70px;right:20px;background:var(--success);color:white;padding:12px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;animation:slideIn 0.3s ease-out;"; el.textContent = message; document.body.appendChild(el); setTimeout(() => { el.style.animation = "slideOut 0.3s ease-in forwards"; setTimeout(() => el.remove(), 300); }, 2500); },
+            toggleMenu() { const menu = document.getElementById("menuPanel"); const burgerBtn = document.getElementById("burgerBtn"); const isOpen = menu.classList.toggle("menu-open"); burgerBtn.setAttribute("aria-expanded", isOpen); },
 
-            bulkComplete() {
-                if (this.bulkSelected.size === 0) return;
-                this.saveUndoState();
-                // Avoid calling toggleTask in a loop which saves/renders multiple times
-                let changed = false;
-                this.tasks.forEach(t => {
-                    if (this.bulkSelected.has(t.id)) {
-                        // Directly modify the completed status and raw string logic from toggleTask
-                        t.completed = !t.completed;
-                        const today = new Date().toISOString().split('T')[0];
-                        let newRaw = t.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, '').trim();
-                        if (t.completed) {
-                             t.completionDate = today;
-                             // Simplified raw string update for bulk
-                             t.raw = `x ${today} ${newRaw}`;
-                        } else {
-                            t.completionDate = null;
-                            t.raw = newRaw;
-                        }
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    const count = this.bulkSelected.size; this.bulkSelected.clear();
-                    this.saveToLocalStorage(); this.render(); this.updateBulkBar();
-                    this.showNotification(`✅ ${count} Aufgaben umgeschaltet`);
-                } else {
-                     this.bulkSelected.clear(); // Clear selection even if nothing changed
-                     this.updateBulkBar();
-                }
-            },
-
-            bulkDelete() {
-                if (this.bulkSelected.size === 0 || !confirm(`Delete ${this.bulkSelected.size} task(s)?`)) return;
-                this.saveUndoState();
-                const count = this.bulkSelected.size;
-                this.tasks = this.tasks.filter(t => !this.bulkSelected.has(t.id));
-                if (this.selectedTask && this.bulkSelected.has(this.selectedTask)) this.selectedTask = null;
-                this.bulkSelected.clear();
-                this.saveToLocalStorage(); this.render(); this.updateBulkBar();
-                this.showNotification(`🗑️ ${count} Aufgaben gelöscht`);
-            },
-
-            navigateTasks(direction) {
-                const filtered = this.getFilteredTasks(); if (filtered.length === 0) return;
-                const currentIndex = this.selectedTask ? filtered.findIndex(t => t.id === this.selectedTask) : -1;
-                const newIndex = (currentIndex + direction + filtered.length) % filtered.length;
-                this.selectTask(filtered[newIndex].id);
-                setTimeout(() => document.querySelector(`[data-task-id="${filtered[newIndex].id}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50);
-            },
-
-            updateBulkBar() {
-                const bulkBar = document.getElementById('bulkBar');
-                const count = this.bulkSelected.size;
-                if (!bulkBar) return; // Guard against missing element
-                if (count > 0) {
-                    bulkBar.classList.add('active');
-                    document.getElementById('bulkCount').textContent = `${count} selected`;
-                } else {
-                    bulkBar.classList.remove('active');
-                }
-            },
-
-            importFile(file) {
-                if (!file || (file.size > 1024*1024 && !confirm(`Large file (${(file.size/1024/1024).toFixed(2)}MB). Continue?`))) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        let content = e.target.result;
-                        if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1); // Handle BOM
-                        const lines = content.split('\n').filter(l => l.trim());
-                        if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return;
-                        this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l)));
-                        this.saveToLocalStorage(true);
-                        this.render();
-                        this.showNotification(`✅ Imported ${lines.length} tasks`);
-                    } catch (readError) {
-                        console.error("Error processing imported file:", readError);
-                        alert("Error processing file. Please check the format.");
-                    }
-                };
-                 reader.onerror = (e) => {
-                     console.error("Error reading file:", e);
-                     alert("Error reading file.");
-                 };
-                reader.readAsText(file);
-            },
-
-            exportToFile() {
-                if (this.tasks.length === 0) { alert('No tasks to export'); return; }
-                try {
-                    const content = this.tasks.map(t => t.raw).join('\n');
-                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = `todo-${new Date().toISOString().slice(0, 10)}.txt`;
-                    document.body.appendChild(a); // Required for Firefox
-                    a.click();
-                    document.body.removeChild(a); // Clean up
-                    URL.revokeObjectURL(url);
-                 } catch (exportError) {
-                     console.error("Error exporting file:", exportError);
-                     alert("Error exporting file.");
-                 }
-            },
-
-            archiveCompleted() {
-                const completed = this.tasks.filter(t => t.completed);
-                if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return;
-                try {
-                    this.saveUndoState();
-                    const content = completed.map(t => t.raw).join('\n');
-                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = `done-${new Date().toISOString().slice(0, 10)}.txt`;
-                    document.body.appendChild(a); // Required for Firefox
-                    a.click();
-                    document.body.removeChild(a); // Clean up
-                    URL.revokeObjectURL(url);
-
-                    this.tasks = this.tasks.filter(t => !t.completed);
-                    if (this.selectedTask && completed.some(ct => ct.id === this.selectedTask)) this.selectedTask = null;
-                    this.bulkSelected.clear();
-                    this.saveToLocalStorage(); this.render(); this.updateBulkBar();
-                    this.showNotification(`✅ Archived ${completed.length} tasks`);
-                } catch (archiveError) {
-                    console.error("Error archiving tasks:", archiveError);
-                    alert("Error archiving tasks.");
-                }
-            },
-
-            saveUndoState() {
-                try {
-                    this.undoStack.push(JSON.parse(JSON.stringify(this.tasks)));
-                    if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift();
-                    this.updateUndoButton();
-                } catch (e) {
-                    console.error("Failed to save undo state:", e);
-                    // Reset undo stack potentially?
-                }
-            },
-            updateUndoButton() {
-                const undoBtn = document.getElementById('undoBtn');
-                if (undoBtn) undoBtn.disabled = this.undoStack.length === 0;
-            },
-            undo() {
-                if (this.undoStack.length === 0) return;
-                try {
-                    this.tasks = this.undoStack.pop();
-                    this.saveToLocalStorage(); this.render(); this.updateUndoButton();
-                } catch (e) {
-                    console.error("Failed to restore undo state:", e);
-                    // Reset undo stack potentially?
-                }
-            },
-
-            showHelp() { alert(`KEYBOARD SHORTCUTS:\n\n/ - Focus search/add\n↑ ↓ - Navigate tasks\n← → - Change priority\ne - Edit selected\nx - Toggle done\np then A-Z - Set priority\n(Ctrl|Cmd)+Z - Undo\nDelete - Delete selected\nEsc - Clear search/filters\n\nSEARCH SYNTAX:\n\nprio:A\n+project\n@context\nis:open / is:done\nis:no-due`); },
-
-            showNotification(message) {
-                 try {
-                    const el = document.createElement('div');
-                    // Basic styling + animation keyframes
-                    const styleId = 'notification-styles';
-                    if (!document.getElementById(styleId)) {
-                        const styleSheet = document.createElement("style");
-                        styleSheet.id = styleId;
-                        styleSheet.innerText = `
-                            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-                            @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-                        `;
-                        document.head.appendChild(styleSheet);
-                    }
-                    el.style.cssText = `position:fixed;top:70px;right:20px;background:var(--success);color:white;padding:12px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;animation:slideIn 0.3s ease-out;`;
-                    el.textContent = message;
-                    document.body.appendChild(el);
-                    setTimeout(() => {
-                        el.style.animation = 'slideOut 0.3s ease-in forwards';
-                        // Remove after animation finishes
-                        el.addEventListener('animationend', () => el.remove(), { once: true });
-                    }, 2500);
-                } catch (e) {
-                    console.error("Failed to show notification:", e);
-                    // Fallback to simple alert?
-                    // alert(message);
-                }
-            },
-
-            toggleMenu() {
-                const menu = document.getElementById('headerActions');
-                const burgerBtn = document.getElementById('burgerBtn');
-                if (!menu || !burgerBtn) return; // Guard clause
-                const isOpen = menu.classList.toggle('menu-open');
-                burgerBtn.setAttribute('aria-expanded', isOpen);
-            },
-
-            // Google Drive Sync Funktionen
-            async initGapiClient() {
-                if (typeof gapi === 'undefined' || !gapi.load) {
-                    console.error('GAPI script ist nicht geladen.');
-                     alert('Fehler: Google API Script fehlt.');
-                    return;
-                }
-                console.log('Lade GAPI Client-Bibliothek...');
-                try {
-                    await new Promise((resolve, reject) => {
-                        gapi.load('client', {
-                            callback: resolve,
-                            onerror: reject,
-                            timeout: 5000,
-                            ontimeout: reject
-                        });
-                    });
-                    console.log('GAPI Client-Bibliothek geladen. Lade Drive API-Definitionen...');
-                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-                    this.gapiClient = gapi.client;
-                    console.log('GAPI Client (Drive) initialisiert.');
-                } catch (error) {
-                    console.error('Fehler beim GAPI Init:', error);
-                    alert('Fehler: Google Drive API konnte nicht geladen werden.');
-                    this.gapiClient = null; // Ensure client is null on error
-                }
-            },
-            initGisTokenClient(callback) {
-                if (this.gisTokenClient) {
-                    if(callback) callback();
-                    return;
-                }
-                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                    console.error('GIS script ist nicht geladen.');
-                    alert('Fehler: Google Login-Service konnte nicht geladen werden.');
-                    return;
-                }
-                console.log('Initialisiere GIS Token Client...');
-                try {
-                    this.gisTokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: this.CLIENT_ID,
-                        scope: this.DRIVE_SCOPE,
-                        callback: (tokenResponse) => {
-                            if (tokenResponse.error) {
-                                console.error('GIS Error:', tokenResponse.error, tokenResponse);
-                                // Handle specific errors like 'popup_closed_by_user' silently
-                                if (tokenResponse.error !== 'popup_closed_by_user' && tokenResponse.error !== 'access_denied') {
-                                     alert(`Login-Fehler: ${tokenResponse.error}`);
-                                }
-                                this.updateSyncUI(false); // Ensure UI reflects logged-out state
-                                return;
-                            }
-                            if (!this.gapiClient) {
-                                console.error('GAPI Client nicht bereit, Token kann nicht gesetzt werden.');
-                                alert('Fehler: Drive-Client nicht bereit.');
-                                // Potentially revoke token? google.accounts.oauth2.revoke(tokenResponse.access_token, () => {});
-                                this.updateSyncUI(false);
-                                return;
-                            }
-                            this.gapiClient.setToken(tokenResponse);
-                            console.log('GIS Token an GAPI übergeben.');
-                            console.log('GIS Login erfolgreich, Token erhalten.');
-                            this.updateSyncUI(true);
-                            this.findOrCreateDriveFile();
-                        },
-                        error_callback: (error) => { // Added error_callback for more robust error handling
-                             console.error("GIS Init Error Callback:", error);
-                             alert(`Fehler beim Initialisieren des Google Logins: ${error.type}`);
-                        }
-                    });
-                    console.log('GIS Token Client initialisiert.');
-                    if(callback) callback();
-                } catch (error) {
-                    console.error('Fehler beim GIS Init (try-catch):', error);
-                    alert('Fehler beim Initialisieren des Google Logins.');
-                    this.gisTokenClient = null; // Ensure client is null on error
-                }
-            },
-             async handleAuthClick() {
-                if (typeof gapi === 'undefined' || typeof google === 'undefined') {
-                    alert('Google-API-Skripte sind noch nicht geladen. Bitte Moment warten und erneut klicken.');
-                    return;
-                }
-                if (!this.gapiClient) {
-                    console.log('User-Klick: Initialisiere GAPI (Drive) Client...');
-                    await this.initGapiClient();
-                    if (!this.gapiClient) {
-                        console.error('GAPI Client-Initialisierung fehlgeschlagen. Breche ab.');
-                        return;
-                    }
-                }
-                if (!this.gisTokenClient) {
-                    console.log('GAPI ist bereit. Initialisiere GIS (Login) Client...');
-                    // Ensure init completes before requesting token
-                    this.initGisTokenClient(() => {
-                         if (this.gisTokenClient) { // Check if init was successful
-                            console.log('GIS ist bereit. Fordere Token an...');
-                            this.gisTokenClient.requestAccessToken({prompt: ''}); // prompt:'' potentially avoids unnecessary popups if already logged in
-                         } else {
-                            console.error("GIS Client konnte nicht initialisiert werden.");
-                         }
-                    });
-                } else {
-                    console.log('GAPI und GIS sind bereit. Fordere Token an...');
-                    this.gisTokenClient.requestAccessToken({prompt: ''});
-                }
-            },
-            updateSyncUI(isLoggedIn) {
-                // Add checks to ensure elements exist
-                const loginBtn = document.getElementById('gdriveLoginBtn');
-                const pushBtn = document.getElementById('gdrivePushBtn');
-                const pullBtn = document.getElementById('gdrivePullBtn');
-                if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : 'block';
-                if (pushBtn) pushBtn.style.display = isLoggedIn ? 'block' : 'none';
-                if (pullBtn) pullBtn.style.display = isLoggedIn ? 'block' : 'none';
-            },
-            async findOrCreateDriveFile() {
-                if (!this.gapiClient) { console.warn('GAPI nicht bereit für Dateisuche.'); return; }
-                if (!gapi?.client?.drive?.files) { console.error("Drive API 'files' resource not loaded."); return; } // Check specific API part
-                console.log('Suche nach todo.txt in appDataFolder...');
-                try {
-                    const response = await this.gapiClient.drive.files.list({
-                        spaces: 'appDataFolder',
-                        fields: 'files(id, name)',
-                        q: "name='todo.txt'"
-                    });
-                    const files = response?.result?.files; // Safe navigation
-                    if (files && files.length > 0) {
-                        this.DRIVE_FILE_ID = files[0].id;
-                        console.log(`Datei gefunden mit ID: ${this.DRIVE_FILE_ID}`);
-                    } else {
-                        console.log('Keine todo.txt gefunden. Erstelle neue Datei...');
-                        const createResponse = await this.gapiClient.drive.files.create({
-                            resource: { name: 'todo.txt', parents: ['appDataFolder'] },
-                            fields: 'id'
-                        });
-                        this.DRIVE_FILE_ID = createResponse?.result?.id; // Safe navigation
-                        if (this.DRIVE_FILE_ID) {
-                            console.log(`Neue Datei erstellt mit ID: ${this.DRIVE_FILE_ID}`);
-                        } else {
-                             console.error("Datei konnte nicht erstellt werden, keine ID erhalten.");
-                             alert("Fehler: Konnte keine Datei in Google Drive erstellen.");
-                        }
-                    }
-                } catch (error) {
-                    console.error('Fehler beim Suchen/Erstellen der Drive-Datei:', error);
-                    // Handle potential 401/403 errors -> maybe token expired?
-                    if (error.status === 401 || error.status === 403) {
-                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
-                         // Consider attempting to refresh token or forcing re-login
-                         this.updateSyncUI(false); // Show login button again
-                         this.gisTokenClient = null; // Force re-init on next click
-                         this.gapiClient?.setToken(null); // Clear token from gapi
-                    } else {
-                         alert("Fehler bei der Kommunikation mit Google Drive.");
-                    }
-                    this.DRIVE_FILE_ID = null; // Reset file ID on error
-                }
-            },
-             async pushToDrive() {
-                if (!this.DRIVE_FILE_ID) { alert('Fehler: Keine Datei-ID. Bitte neu verbinden.'); return; }
-                if (!this.gapiClient) { alert('Fehler: GAPI Client nicht bereit.'); return; }
-                if (!confirm('Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)')) return;
-                console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`);
-                try {
-                    const content = this.tasks.map(t => t.raw).join('\n');
-                    // Use media upload for potentially large files
-                    const response = await gapi.client.request({
-                        path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`,
-                        method: 'PATCH',
-                        params: { uploadType: 'media' },
-                        headers: { 'Content-Type': 'text/plain' }, // Explicitly set content type
-                        body: content
-                    });
-                     // Check response status for success (optional but good practice)
-                    if (response?.status >= 200 && response?.status < 300) {
-                        this.showNotification('✅ In Google Drive gespeichert');
-                    } else {
-                         console.error('Fehler beim PUSH, unerwartete Antwort:', response);
-                         alert("Fehler beim Speichern in Google Drive.");
-                    }
-                } catch (e) {
-                    console.error('Fehler beim PUSH (try-catch):', e);
-                     if (e.status === 401 || e.status === 403) {
-                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
-                         this.updateSyncUI(false); this.gisTokenClient = null; this.gapiClient?.setToken(null);
-                    } else {
-                         alert("Fehler beim Speichern in Google Drive.");
-                    }
-                }
-            },
-            async pullFromDrive() {
-                if (!this.DRIVE_FILE_ID) { alert('Fehler: Keine Datei-ID. Bitte neu verbinden.'); return; }
-                 if (!this.gapiClient) { alert('Fehler: GAPI Client nicht bereit.'); return; }
-                // Avoid confirmation if local tasks are empty
-                if (this.tasks.length > 0 && !confirm('Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)')) return;
-                console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`);
-                try {
-                    const response = await this.gapiClient.drive.files.get({
-                        fileId: this.DRIVE_FILE_ID,
-                        alt: 'media'
-                    });
-                    const content = response.body;
-                    this.saveUndoState();
-                    if (typeof content === 'string') { // Check if content is a string
-                        this.tasks = content.split('\n')
-                                            .filter(l => l.trim())
-                                            .map(l => this.parseTodoLine(l));
-                    } else {
-                         console.warn("Pull von GDrive: Inhalt ist keine Zeichenkette oder leer.");
-                        this.tasks = []; // Leere Datei oder Fehler
-                    }
-                    this.saveToLocalStorage(true);
-                    this.render();
-                    this.showNotification('✅ Von Google Drive geladen');
-                } catch (e) {
-                    console.error('Fehler beim PULL (try-catch):', e);
-                    if (e.status === 401 || e.status === 403) {
-                         alert("Google Drive Zugriff verweigert. Bitte erneut verbinden.");
-                         this.updateSyncUI(false); this.gisTokenClient = null; this.gapiClient?.setToken(null);
-                    } else if (e.status === 404) {
-                         alert("Fehler: Die Datei wurde in Google Drive nicht gefunden. Möglicherweise wurde sie gelöscht?");
-                         this.DRIVE_FILE_ID = null; // Reset file ID
-                         this.updateSyncUI(false); // Force re-login/re-find
-                    } else {
-                        alert("Fehler beim Laden von Google Drive.");
-                    }
-                }
-            },
+            async initGapiClient() { if (typeof gapi === "undefined") { console.error("GAPI script ist nicht geladen."); return; } console.log("Lade GAPI Client-Bibliothek..."); try { await new Promise((resolve, reject) => { gapi.load("client", { callback: resolve, onerror: reject, timeout: 5e3, ontimeout: reject }); }); console.log("GAPI Client-Bibliothek geladen. Lade Drive API-Definitionen..."); await gapi.client.load("https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"); this.gapiClient = gapi.client; console.log("GAPI Client (Drive) initialisiert."); } catch (error) { console.error("Fehler beim GAPI Init:", error); alert("Fehler: Google Drive API konnte nicht geladen werden."); } },
+            initGisTokenClient(callback) { if (this.gisTokenClient) { callback && callback(); return; } if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) { console.error("GIS script ist nicht geladen."); alert("Fehler: Google Login-Service konnte nicht geladen werden."); return; } console.log("Initialisiere GIS Token Client..."); try { this.gisTokenClient = google.accounts.oauth2.initTokenClient({ client_id: this.CLIENT_ID, scope: this.DRIVE_SCOPE, callback: tokenResponse => { if (tokenResponse.error) { console.error("GIS Error:", tokenResponse.error); alert(`Login-Fehler: ${tokenResponse.error}`); return; } if (this.gapiClient) { this.gapiClient.setToken(tokenResponse); console.log("GIS Token an GAPI übergeben."); } else { console.error("GAPI Client nicht bereit, Token kann nicht gesetzt werden."); alert("Fehler: Drive-Client nicht bereit."); return; } console.log("GIS Login erfolgreich, Token erhalten."); this.updateSyncUI(true); this.findOrCreateDriveFile(); } }); console.log("GIS Token Client initialisiert."); callback && callback(); } catch (error) { console.error("Fehler beim GIS Init:", error); alert("Fehler beim Initialisieren des Google Logins."); } },
+            async handleAuthClick() { if (typeof gapi === "undefined" || typeof google === "undefined") { alert("Google-API-Skripte sind noch nicht geladen. Bitte Moment warten und erneut klicken."); return; } if (!this.gapiClient) { console.log("User-Klick: Initialisiere GAPI (Drive) Client..."); await this.initGapiClient(); if (!this.gapiClient) { console.error("GAPI Client-Initialisierung fehlgeschlagen. Breche ab."); return; } } if (!this.gisTokenClient) { console.log("GAPI ist bereit. Initialisiere GIS (Login) Client..."); this.initGisTokenClient(() => { console.log("GIS ist bereit. Fordere Token an..."); this.gisTokenClient.requestAccessToken(); }); } else { console.log("GAPI und GIS sind bereit. Fordere Token an..."); this.gisTokenClient.requestAccessToken(); } },
+            updateSyncUI(isLoggedIn) { const displayStyle = isLoggedIn ? 'none' : 'inline-block'; const loggedInDisplayStyle = isLoggedIn ? 'inline-block' : 'none'; ['gdriveLoginBtn', 'gdrivePushBtn', 'gdrivePullBtn'].forEach(idBase => { const desktopEl = document.getElementById(idBase + 'Desktop'); const mobileEl = document.getElementById(idBase + 'Mobile'); const style = idBase === 'gdriveLoginBtn' ? displayStyle : loggedInDisplayStyle; if (desktopEl) desktopEl.style.display = style; if (mobileEl) mobileEl.style.display = style; }); },
+            async findOrCreateDriveFile() { if (!this.gapiClient) { console.warn("GAPI nicht bereit für Dateisuche."); return; } console.log("Suche nach todo.txt in appDataFolder..."); try { const response = await this.gapiClient.drive.files.list({ spaces: "appDataFolder", fields: "files(id, name)", q: "name='todo.txt'" }); const files = response.result.files; if (files && files.length > 0) { this.DRIVE_FILE_ID = files[0].id; console.log(`Datei gefunden mit ID: ${this.DRIVE_FILE_ID}`); } else { console.log("Keine todo.txt gefunden. Erstelle neue Datei..."); const createResponse = await this.gapiClient.drive.files.create({ resource: { name: "todo.txt", parents: ["appDataFolder"] }, fields: "id" }); this.DRIVE_FILE_ID = createResponse.result.id; console.log(`Neue Datei erstellt mit ID: ${this.DRIVE_FILE_ID}`); } } catch (error) { console.error("Fehler beim Suchen/Erstellen der Drive-Datei:", error); } },
+            async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const content = this.tasks.map(t => t.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: content }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
+            async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const response = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const content = response.body; this.saveUndoState(); if (content) { this.tasks = content.split("\n").filter(l => l.trim()).map(l => this.parseTodoLine(l)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (e) { console.error("Fehler beim PULL:", e); } },
 
             autocomplete: {
-                init(mainApp) {
-                    this.app = mainApp;
-                    this.el = document.getElementById('autocomplete-suggestions');
-                    if (!this.el) { console.error("Autocomplete init failed: Element not found."); return; }
-                    this.el.addEventListener('click', (e) => {
-                        if (e.target.matches('div')) {
-                            this.selectedIndex = Array.from(this.el.children).indexOf(e.target);
-                            this.confirmSelection();
-                        }
-                    });
-                    document.addEventListener('click', (e) => {
-                        const searchInput = document.getElementById('searchAddInput'); // Get reference to input
-                        if (this.active && !this.el.contains(e.target) && e.target !== searchInput) {
-                            this.hide();
-                        }
-                    });
-                },
-                active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
-                handleInput(e) {
-                    const input = e.target;
-                    const value = input.value;
-                    const cursorPos = input.selectionStart;
-                    const match = value.substring(0, cursorPos).match(/([+@])([\w.-]*)$/);
-                    if (match) {
-                        this.triggerInfo = { trigger: match[1], query: match[2], start: cursorPos - match[2].length };
-                        this.targetInput = input; // Set targetInput here
-                        this.show();
-                    } else {
-                        this.hide();
-                    }
-                 },
-                handleKeydown(e) {
-                     if (!this.active) return false;
-                    switch (e.key) {
-                        case 'ArrowDown': this.selectedIndex = Math.min(this.selectedIndex + 1, this.items.length - 1); this.updateSelectionUI(); break;
-                        case 'ArrowUp': this.selectedIndex = Math.max(this.selectedIndex - 1, 0); this.updateSelectionUI(); break;
-                        case 'Enter': case 'Tab':
-                            if (this.selectedIndex !== -1) this.confirmSelection();
-                            else this.hide();
-                            break; // Prevent default for Enter/Tab if selection made
-                        case 'Escape': this.hide(); break;
-                        default: return false; // Let other keys pass through
-                    }
-                    e.preventDefault(); // Prevent default action ONLY if we handled the key
-                    return true;
-                },
-                show() {
-                    if (!this.triggerInfo || !this.app) return; // Add guard clause
-                    const { trigger, query } = this.triggerInfo;
-                    const source = trigger === '+' ? this.app.tasks.flatMap(t => t?.projects || []) : this.app.tasks.flatMap(t => t?.contexts || []);
-                    this.items = [...new Set(source)].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).sort();
-                    if (this.items.length > 0 && this.el) {
-                        this.el.innerHTML = this.items.map(item => `<div>${this.app.escapeHtml(item)}</div>`).join('');
-                        this.el.style.display = 'block';
-                        this.positionEl();
-                        this.selectedIndex = 0;
-                        this.updateSelectionUI();
-                        this.active = true;
-                    } else {
-                        this.hide();
-                    }
-                },
-                hide() { if (!this.active || !this.el) return; this.active = false; this.el.style.display = 'none'; },
-                confirmSelection() {
-                    if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length || !this.targetInput) { this.hide(); return; }
-                    const input = this.targetInput;
-                    const selectedItem = this.items[this.selectedIndex];
-                    const { start, query } = this.triggerInfo;
-                    const value = input.value;
-                    const newValue = value.substring(0, start) + selectedItem + ' ' + value.substring(start + query.length);
-                    input.value = newValue;
-                    this.hide();
-                    input.focus();
-                    const newCursorPos = start + selectedItem.length + 1;
-                    // Ensure cursor position is set after potential browser interference
-                    requestAnimationFrame(() => {
-                        input.setSelectionRange(newCursorPos, newCursorPos);
-                    });
-                     // Trigger input event manually if needed for framework bindings
-                     // input.dispatchEvent(new Event('input', { bubbles: true }));
-                    // Update app state if this was the main search input
-                    if (input.id === 'searchAddInput' && this.app) {
-                         this.app.searchQuery = newValue;
-                         this.app.render(); // Re-render after autocomplete selection
-                    }
-                },
-                updateSelectionUI() {
-                     if (!this.el) return;
-                    Array.from(this.el.children).forEach((child, index) => {
-                        child.classList.toggle('selected', index === this.selectedIndex);
-                         // Scroll into view if needed
-                         if (index === this.selectedIndex) {
-                             child.scrollIntoView({ block: 'nearest' });
-                         }
-                    });
-                },
-                positionEl() {
-                    // Use the potentially moved input field
-                    this.targetInput = document.getElementById('searchAddInput');
-                    if (!this.targetInput || !this.el) return;
-                    const inputRect = this.targetInput.getBoundingClientRect();
-                    const suggestionsEl = this.el;
-                    suggestionsEl.style.width = `${inputRect.width}px`;
-                    suggestionsEl.style.left = `${inputRect.left}px`;
-                    const isMobileView = window.innerWidth <= 768;
-                    if (isMobileView) {
-                        suggestionsEl.style.bottom = `${window.innerHeight - inputRect.top + 2}px`;
-                        suggestionsEl.style.top = 'auto';
-                        const maxHeight = Math.max(0, inputRect.top - 20);
-                        suggestionsEl.style.maxHeight = `${maxHeight}px`;
-                    } else {
-                        suggestionsEl.style.top = `${inputRect.bottom + 2}px`;
-                        suggestionsEl.style.bottom = 'auto';
-                        suggestionsEl.style.maxHeight = '200px';
-                    }
-                }
+                init(mainApp) { this.app = mainApp; this.el = document.getElementById("autocomplete-suggestions"); this.el.addEventListener("click", e => { if (e.target.matches("div")) { this.selectedIndex = Array.from(this.el.children).indexOf(e.target); this.confirmSelection(); } }); document.addEventListener("click", e => { if (this.active && !this.el.contains(e.target) && e.target !== this.targetInput) { this.hide(); } }); }, active: false, items: [], selectedIndex: -1, targetInput: null, triggerInfo: null,
+                handleInput(e) { const input = e.target; const value = input.value; const cursorPos = input.selectionStart; const match = value.substring(0, cursorPos).match(/([+@])([\w.-]*)$/); if (match) { this.triggerInfo = { trigger: match[1], query: match[2], start: cursorPos - match[2].length }; this.targetInput = input; this.show(); } else { this.hide(); } },
+                handleKeydown(e) { if (!this.active) return false; switch (e.key) { case "ArrowDown": this.selectedIndex = Math.min(this.selectedIndex + 1, this.items.length - 1); this.updateSelectionUI(); break; case "ArrowUp": this.selectedIndex = Math.max(this.selectedIndex - 1, 0); this.updateSelectionUI(); break; case "Enter": case "Tab": if (this.selectedIndex !== -1) this.confirmSelection(); else this.hide(); break; case "Escape": this.hide(); break; default: return false; } return true; },
+                show() { const { trigger, query } = this.triggerInfo; const source = trigger === "+" ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts); this.items = [...new Set(source)].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).sort(); if (this.items.length > 0) { this.el.innerHTML = this.items.map(item => `<div>${this.app.escapeHtml(item)}</div>`).join(""); this.el.style.display = "block"; this.positionEl(); this.selectedIndex = 0; this.updateSelectionUI(); this.active = true; } else { this.hide(); } },
+                hide() { if (!this.active) return; this.active = false; this.el.style.display = "none"; },
+                confirmSelection() { if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length) { this.hide(); return; } const input = this.targetInput; const selectedItem = this.items[this.selectedIndex]; const { start, query } = this.triggerInfo; const value = input.value; input.value = `${value.substring(0, start)}${selectedItem} ${value.substring(start + query.length)}`; this.hide(); input.focus(); const newCursorPos = start + selectedItem.length + 1; input.setSelectionRange(newCursorPos, newCursorPos); if (input.id === "searchAddInput") { this.app.searchQuery = input.value; this.app.render(); } },
+                updateSelectionUI() { Array.from(this.el.children).forEach((child, index) => { child.classList.toggle("selected", index === this.selectedIndex); }); },
+                positionEl() { this.targetInput = document.getElementById("searchAddInput"); if (!this.targetInput) return; const inputRect = this.targetInput.getBoundingClientRect(); const suggestionsEl = this.el; suggestionsEl.style.width = `${inputRect.width}px`; suggestionsEl.style.left = `${inputRect.left}px`; suggestionsEl.style.top = `${inputRect.bottom + 2}px`; suggestionsEl.style.bottom = "auto"; suggestionsEl.style.maxHeight = "200px"; }
             }
         };
 
-        // DOMContentLoaded Listener
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
