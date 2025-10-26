@@ -70,25 +70,43 @@
             height: var(--header-height);
         }
         #topBar .search-add-box {
-            flex-grow: 1; min-width: 150px; position: relative;
-            display: flex; /* Für X-Button Positionierung */
+            flex-grow: 1;
+            min-width: 150px;
+            position: relative; /* WICHTIG für absolute Positionierung des Kindes */
+            display: flex;
             align-items: center;
         }
         .search-add-box input {
-             width: 100%; padding: 10px; border: 2px solid var(--border);
-             background: var(--bg-primary); color: var(--text-primary);
-             border-radius: 4px; font-size: 14px;
-             /* NEU: Platz für X-Button */
-             padding-right: 35px;
+             width: 100%;
+             padding: 10px;
+             border: 2px solid var(--border);
+             background: var(--bg-primary);
+             color: var(--text-primary);
+             border-radius: 4px;
+             font-size: 14px;
+             padding-right: 35px; /* Platz für X */
         }
-        .search-add-box input:focus { outline: none; border-color: var(--accent); }
-
-        /* NEU: Styling für Clear-Button */
         .clear-search-btn {
-            position: absolute; right: 10px; top: 50%;
-            transform: translateY(-50%); background: none; border: none;
-            font-size: 18px; color: var(--text-secondary); cursor: pointer;
-            padding: 0 5px; display: none; /* Initial versteckt */
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0 5px;
+            display: none; /* Initial versteckt, JS steuert Sichtbarkeit */
+            z-index: 5; /* Sicherstellen, dass er über dem Input liegt, falls es Probleme gibt */
+        }
+        .clear-search-btn:hover {
+            color: var(--text-primary);
+        }
+        .clear-search-btn:focus-visible {
+             outline: 2px solid var(--accent);
+             outline-offset: 1px;
+             border-radius: 50%;
         }
         .clear-search-btn:hover { color: var(--text-primary); }
         .clear-search-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 50%; }
