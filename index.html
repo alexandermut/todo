@@ -115,9 +115,6 @@
         .btn:active, .task-item:active, .filter-item:active { transform: scale(0.98); }
         .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
         .btn-primary:hover { background: var(--accent-hover); }
-        /* NEU: Danger Button */
-        .btn-danger { background-color: var(--danger); color: white; border-color: var(--danger); }
-        .btn-danger:hover { background-color: #c82333; border-color: #bd2130; }
 
         .sidebar { grid-row: 2; background: var(--bg-secondary); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; }
         .sidebar-section { margin-bottom: 24px; }
@@ -196,7 +193,7 @@
                  <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
                  <label for="fileInput" class="btn">import</label>
                  <button class="btn" id="exportBtnDesktop">export</button>
-                 <button class="btn btn-danger" id="clearLocalBtnDesktop">🗑️ Clear Local</button>
+                 <button class="btn" id="clearLocalBtnDesktop">clear local data</button>
                  <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
@@ -213,7 +210,7 @@
             <button class="btn" id="archiveCompletedBtnMobile">archive</button>
             <label for="fileInput" class="btn">import</label>
             <button class="btn" id="exportBtnMobile">export</button>
-            <button class="btn btn-danger" id="clearLocalBtnMobile">🗑️ Clear Local</button>
+            <button class="btn" id="clearLocalBtnMobile">clear local data</button> 
             <button class="btn" id="gdriveLoginBtnMobile">connect to G-Drive</button>
             <button class="btn" id="gdrivePushBtnMobile" style="display: none;">save to G-Drive</button>
             <button class="btn" id="gdrivePullBtnMobile" style="display: none;">load from G-Drive</button>
