@@ -1,14 +1,19 @@
 # Todo App - Development Roadmap
 
 ## Features
-- Aufgaben zu Projekten hinzufügen 
+- Aufgaben zu Projekten / Kontext hinzufügen wenn Projekt oder Konzept als Filter aktiv
+- Burgermenü mit untermenüpunkten
+- Suchleiste fixiert
+- Suchleiste mit einem Button leeren
+
 
 
 ## Keyboard Shortcuts
-  - `Ctrl/Cmd + Enter`: Add new task
-  - `Ctrl/Cmd + D`: Delete selected task
-  - `Ctrl/Cmd + F`: Focus search
-  - `Ctrl/Cmd + M`: Quick actions menu
+- aus der Suche mit Tab zu der ersten Aufgabe kommen
+- `Ctrl/Cmd + Enter`: Add new task
+- `Ctrl/Cmd + D`: Delete selected task
+- `Ctrl/Cmd + F`: Focus search
+- `Ctrl/Cmd + M`: Quick actions menu
 
 
 # AI generated backlog
