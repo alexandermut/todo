@@ -5,6 +5,7 @@
 - Burgermenü mit untermenüpunkten
 - Suchleiste fixiert
 - Suchleiste mit einem Button leeren
+- cache leeren
 
 
 
