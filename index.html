@@ -787,7 +787,7 @@
                     this.lastUserInput = value;
                 },
 
-            handleKeydown(e) {
+                handleKeydown(e) {
                 const input = e.target;
                 const selectionStart = input.selectionStart;
                 const selectionEnd = input.selectionEnd;
@@ -817,53 +817,60 @@
                 // PFEIL LINKS: Vorheriger Vorschlag (Loop)
                 if (e.key === 'ArrowLeft' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
                      // Nur blättern, wenn Cursor am Beginn der Suggestion oder innerhalb steht
-                    const userInputValueLength = this.lastUserInput.length; // Länge des vom User getippten Teils
-                    if (selectionStart >= userInputValueLength && selectionEnd > userInputValueLength) { // Cursor ist im Vorschlagsteil
+                    const userInputValueLength = this.lastUserInput ? this.lastUserInput.length : 0; // Sicherstellen, dass lastUserInput existiert
+                    // Prüfen ob Cursor *im* Vorschlagsteil ist (oder genau davor beginnt)
+                    if (selectionStart >= userInputValueLength && selectionEnd > userInputValueLength) { 
                         e.preventDefault();
                         this.suggestionIndex = (this.suggestionIndex - 1 + this.allSuggestions.length) % this.allSuggestions.length;
                         this.showSuggestion(input);
                         return true;
                     }
-                     // Wenn Cursor weiter links im User-Input -> normales Verhalten (return false)
                 }
 
-                // BACKSPACE: Korrigierte Logik
+                // BACKSPACE: Überarbeitete Logik
                 if (e.key === 'Backspace') {
-                     if (isSuggestionSelected) {
-                         // Nur der Vorschlagsteil (Selektion) soll entfernt werden.
-                         e.preventDefault(); // Standard-Backspace verhindern
-                         // Setze Input auf den Stand VOR dem Vorschlag zurück
-                         input.value = this.lastUserInput;
-                         // Setze Cursor ans Ende dieser Eingabe
-                         input.setSelectionRange(input.value.length, input.value.length);
-                         this.app.searchQuery = input.value; // App-Status aktualisieren
-                         this.clearSuggestionState(); // Internen Vorschlagsstatus löschen
-                         // Löse manuell ein 'input'-Event aus, damit handleInput erneut prüft
-                         input.dispatchEvent(new Event('input', { bubbles: true }));
-                         return true; // Backspace wurde behandelt
-                     } else {
-                         // Normales Backspace, wenn keine Suggestion aktiv ist.
-                         // Einfach den internen Status zurücksetzen, falls noch was "hängt"
-                         this.clearSuggestionState();
-                         // Kein preventDefault -> normales Backspace erlauben (return false)
-                     }
+                    // Fall 1: Ein Vorschlag ist aktiv selektiert
+                    if (isSuggestionSelected) {
+                        e.preventDefault(); // Standard-Backspace verhindern
+                        const valueBeforeSuggestion = this.lastUserInput; // Gespeicherten User-Input holen
+                        
+                        this.clearSuggestionState(); // Internen Status ZUERST löschen!
+
+                        input.value = valueBeforeSuggestion; // Input-Feld zurücksetzen
+                        input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
+
+                        // App-Status aktualisieren NACHDEM der Wert gesetzt wurde
+                        this.app.searchQuery = input.value; 
+
+                        // Input-Event manuell auslösen, um neue Vorschläge zu suchen (falls vorhanden)
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        return true; // Backspace wurde behandelt
+                    } 
+                    // Fall 2: Kein Vorschlag selektiert (normales Backspace)
+                    else {
+                        // Wenn intern noch ein Vorschlag aktiv war (z.B. Selektion verloren),
+                        // diesen Status löschen, bevor das normale Backspace wirkt.
+                        if (this.activeSuggestion) {
+                            this.clearSuggestionState();
+                        }
+                        // Kein preventDefault(), normales Backspace erlauben (return false)
+                    }
                 }
 
                 // Andere Pfeiltasten (Hoch/Runter) oder Navigation -> Vorschlag abbrechen
                 if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) && this.activeSuggestion) {
                     // Setze Input zurück auf User-Eingabe, bevor die Navigation passiert
-                    input.value = this.lastUserInput;
-                    input.setSelectionRange(input.value.length, input.value.length);
+                    const valueBeforeSuggestion = this.lastUserInput;
+                    this.clearSuggestionState(); // Internen Status löschen
+                    input.value = valueBeforeSuggestion; // Wert zurücksetzen
+                    input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
                     this.app.searchQuery = input.value;
-                    this.clearSuggestionState();
-                    // Lasse die normale Tastenfunktion durch (kein preventDefault, return false)
+                    // Lasse die normale Tastenfunktion durch (return false)
                 }
 
                 // Normales Tippen überschreibt Vorschlag
                  if (isSuggestionSelected && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-                     // Wenn ein Zeichen getippt wird, während Vorschlag selektiert ist,
-                     // löscht der Browser die Selektion automatisch. Wir müssen nur den internen Status resetten.
-                     this.clearSuggestionState();
+                     this.clearSuggestionState(); // Nur internen Status resetten
                      // Lasse normales Tippen zu (return false)
                  }
 
