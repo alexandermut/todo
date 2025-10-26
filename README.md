@@ -10,8 +10,6 @@ A minimalist, offline-first web app for managing tasks in the `todo.txt` format,
 
 Try the app live: **[https://alexandermut.github.io/todo/](https://alexandermut.github.io/todo/)**
 
-*(Note: Google Drive Sync currently requires the user account `mutalex@gmail.com` to be added as a test user in the Google Cloud Console setup.)*
-
 ---
 
 ## Screenshots
