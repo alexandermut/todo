@@ -70,23 +70,49 @@
             height: var(--header-height);
         }
         #topBar .search-add-box {
-            flex-grow: 1; min-width: 150px; position: relative;
-            display: flex; align-items: center;
+            flex-grow: 1; /* Nimmt verfügbaren Platz */
+            min-width: 150px;
+            position: relative; /* !!! WICHTIG: Bezugspunkt für absolutes Positionieren */
+            /* display: flex; align-items: center; <- Nicht unbedingt nötig hier */
         }
         .search-add-box input {
-             width: 100%; padding: 10px; border: 2px solid var(--border);
-             background: var(--bg-primary); color: var(--text-primary);
-             border-radius: 4px; font-size: 14px;
-             padding-right: 35px; /* Platz für X */
+             width: 100%;
+             padding: 10px;
+             padding-right: 40px; /* ETWAS MEHR PLATZ für den X-Button */
+             border: 2px solid var(--border);
+             background: var(--bg-primary);
+             color: var(--text-primary);
+             border-radius: 4px;
+             font-size: 14px;
+             /* Verhindert Überlappung mit Button */
+             box-sizing: border-box; 
         }
-        .search-add-box input:focus { outline: none; border-color: var(--accent); }
-
         .clear-search-btn {
-            position: absolute; right: 10px; top: 50%;
-            transform: translateY(-50%); background: none; border: none;
-            font-size: 18px; color: var(--text-secondary); cursor: pointer;
-            padding: 0 5px; display: none; z-index: 5;
+            position: absolute;
+            /* Positionierung von rechts und vertikal zentriert */
+            right: 8px; /* Abstand vom rechten Rand */
+            top: 50%;
+            transform: translateY(-50%);
+            /* Aussehen */
+            background: none;
+            border: none;
+            font-size: 18px; /* Größe des 'X' */
+            line-height: 1; /* Verhindert extra Höhe */
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px; /* Klickbereich vergrößern */
+            display: none; /* Initial versteckt */
+            z-index: 5; /* Über dem Input */
         }
+        .clear-search-btn:hover {
+            color: var(--text-primary);
+        }
+        .clear-search-btn:focus-visible {
+             outline: 2px solid var(--accent);
+             outline-offset: 1px;
+             border-radius: 50%;
+        }
+        
         .clear-search-btn:hover { color: var(--text-primary); }
         .clear-search-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 50%; }
 
@@ -199,8 +225,10 @@
                  <button class="btn" id="helpBtnDesktop">?</button>
                  <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
                  <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
-                 <label for="fileInput" class="btn">import</label> <button class="btn" id="exportBtnDesktop">export</button>
-                 <button class="btn" id="clearLocalBtnDesktop">clear</button> <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
+                 <label for="fileInput" class="btn">import</label>
+                 <button class="btn" id="exportBtnDesktop">export</button>
+                 <button class="btn" id="clearLocalBtnDesktop">clear</button>
+                 <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
                  <a href="impressum.html" target="_blank" class="btn">Impressum</a>
@@ -208,7 +236,7 @@
             </div>
             <button class="btn burger-btn" id="burgerBtn" aria-label="Menü öffnen" aria-expanded="false">☰</button>
         </div>
-
+        
         <div id="menuPanel">
             <h1>todo</h1>
             <button class="btn" id="helpBtnMobile">?</button>
