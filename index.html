@@ -409,7 +409,40 @@
                 document.getElementById('burgerBtn').addEventListener('click', () => this.toggleMenu());
                 document.getElementById('closeMenuBtn').addEventListener('click', () => this.toggleMenu());
 
-                document.addEventListener('keydown', (e) => { if (!!document.querySelector('.edit-input') || this.autocomplete.active) return; const isTyping = e.target.matches('input, textarea'); if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) { e.preventDefault(); document.getElementById('searchAddInput').focus(); } if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); } if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping && document.activeElement !== searchAddInput) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); } if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); } if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); } if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); } if (e.key === 'e' && this.selectedTask && !isTyping) { e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if (taskElement) this.enterEditMode(taskElement); } if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; } });
+                // --- NEU: Listener zum Schließen des Menüs bei Klick außerhalb ---
+                document.addEventListener('click', (e) => {
+                    const menu = document.getElementById('menuPanel');
+                    const burgerBtn = document.getElementById('burgerBtn');
+
+                    // Prüfen, ob Menü existiert und offen ist
+                    if (menu && menu.classList.contains('menu-open')) {
+                        // Prüfen, ob der Klick außerhalb des Menüs UND außerhalb des Burger-Buttons war
+                        // .closest() prüft, ob das geklickte Element (e.target) selbst das Menü ist oder ein Kind davon.
+                        if (!e.target.closest('#menuPanel') && e.target !== burgerBtn) {
+                            this.toggleMenu(); // Menü schließen
+                        }
+                    }
+                });
+
+                // Global Keydown Listener
+                document.addEventListener('keydown', (e) => {
+                    if (!!document.querySelector('.edit-input') || this.autocomplete.active) return;
+                    const isTyping = e.target.matches('input, textarea');
+                    if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) {
+                        e.preventDefault(); document.getElementById('searchAddInput').focus();
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); }
+                    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping && document.activeElement !== searchAddInput) {
+                         e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1);
+                    }
+                    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); }
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); }
+                    if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); }
+                    if (e.key === 'e' && this.selectedTask && !isTyping) {
+                        e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement);
+                    }
+                    if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
+                });
             },
 
             handleSortChange(newSortValue) { this.sortField = newSortValue; this.saveUIPreferences(); this.updateSortSelects(); this.render(); },
