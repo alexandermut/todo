@@ -59,8 +59,7 @@
         .app-container {
             display: grid;
             grid-template-columns: 280px 1fr;
-            /* Reihen: TopBar, SuggestionBar (optional), Main Content (scrollt) */
-            grid-template-rows: auto auto 1fr;
+            grid-template-rows: auto auto 1fr; /* TopBar, SuggestionBar, Main */
             height: 100%; position: relative; overflow: hidden;
         }
 
@@ -79,8 +78,7 @@
              width: 100%; padding: 10px; border: 2px solid var(--border);
              background: var(--bg-primary); color: var(--text-primary);
              border-radius: 4px; font-size: 14px;
-             padding-right: 40px; /* Platz für X Button */
-             box-sizing: border-box;
+             padding-right: 40px; box-sizing: border-box;
         }
         .search-add-box input:focus { outline: none; border-color: var(--accent); }
 
@@ -97,11 +95,16 @@
         .burger-btn { display: none; font-size: 24px; padding: 4px 12px; margin-left: auto; }
 
         #suggestionBar {
-            grid-column: 1 / -1; grid-row: 2; display: flex;
-            background: var(--bg-secondary); border-bottom: 1px solid var(--border);
-            padding: 5px 16px; height: var(--suggestionbar-height);
-            overflow: hidden; position: sticky;
-            top: var(--topbar-height); z-index: 199;
+            grid-column: 1 / -1; grid-row: 2;
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 5px 16px;
+            height: var(--suggestionbar-height);
+            overflow: hidden;
+            position: sticky;
+            top: var(--topbar-height);
+            z-index: 199;
         }
         .suggestion-column { flex: 1; overflow-x: auto; white-space: nowrap; padding: 0 10px; }
         .suggestion-column::-webkit-scrollbar { display: none; }
@@ -109,15 +112,12 @@
         .suggestion-column h4 { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; font-weight: 600; white-space: normal; }
         .suggestion-column .suggestions { display: flex; gap: 6px; }
         .suggestion-item {
-            display: inline-block; padding: 3px 8px; background: var(--bg-primary); /* Angepasst von bg-hover */
+            display: inline-block; padding: 3px 8px; background: var(--bg-primary);
             border: 1px solid var(--border); border-radius: 4px; font-size: 13px;
-            cursor: pointer; transition: background 0.2s; color: var(--text-primary); /* Textfarbe hinzugefügt */
-            /* Stil wie Button */
-             /* border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); */
+            cursor: pointer; transition: background 0.2s; color: var(--text-primary);
         }
         .suggestion-item:hover { background: var(--bg-selected); border-color: var(--accent); }
-        .suggestion-column:not(.has-suggestions) { display: none; } /* Leere Spalte ganz ausblenden */
-
+        .suggestion-column:not(.has-suggestions) { display: none; }
 
         #menuPanel {
             display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 280px;
@@ -188,17 +188,15 @@
 
         @media (max-width: 768px) {
              .app-container { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
-             .sidebar { display: none; grid-row: auto; } /* Grid Row anpassen, falls nötig */
+             .sidebar { display: none; grid-row: auto; }
              #topBar { padding: 8px 10px; }
              #topBar .desktop-actions { display: none; }
              .burger-btn { display: block; }
-             #suggestionBar { padding: 5px 10px; top: var(--topbar-height); grid-column: 1 / -1; grid-row: 2;} /* Sicherstellen, dass es unter TopBar bleibt */
+             #suggestionBar { padding: 5px 10px; top: var(--topbar-height); grid-column: 1 / -1; grid-row: 2;}
              .suggestion-column h4 { font-size: 10px; }
              .suggestion-item { font-size: 12px; padding: 2px 6px; }
-
              .main-content { grid-row: 3; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
              .task-list-container { padding: 16px; }
-
              .bulk-actions-bar { left: 0; right: 0; bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         }
     </style>
@@ -327,10 +325,35 @@
                 document.getElementById('sortSelect').value = this.sortField;
             },
 
-            loadFromLocalStorage() { try { const d=localStorage.getItem("todoTxtTasks"); if(d){ const e=JSON.parse(d); Array.isArray(e)&&(this.tasks=e) } } catch(d){ console.error("❌ Failed to load tasks:",d) } },
-            loadUIPreferences() { try { this.sortField=localStorage.getItem("sortField")||"default" } catch(d){ console.error("⚠️ Failed to load UI preferences:",d) } },
-            saveToLocalStorage(d=!1) { clearTimeout(this.saveDebounceTimer); const e=()=>{ try { localStorage.setItem("todoTxtTasks",JSON.stringify(this.tasks)) } catch(f){ console.error("❌ Failed to save tasks:",f) } }; d?e():this.saveDebounceTimer=setTimeout(e,300) },
-            saveUIPreferences() { try { localStorage.setItem("sortField",this.sortField) } catch(d){ console.error("⚠️ Failed to save UI preferences:",d) } },
+            loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('todoTxtTasks');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) this.tasks = parsed;
+                    }
+                } catch (e) { console.error('❌ Failed to load tasks:', e); }
+            },
+
+            loadUIPreferences() {
+                try { this.sortField = localStorage.getItem('sortField') || 'default'; }
+                catch (e) { console.error('⚠️ Failed to load UI preferences:', e); }
+            },
+
+            saveToLocalStorage(immediate = false) {
+                clearTimeout(this.saveDebounceTimer);
+                const save = () => {
+                    try { localStorage.setItem('todoTxtTasks', JSON.stringify(this.tasks)); }
+                    catch (e) { console.error('❌ Failed to save tasks:', e); }
+                };
+                if (immediate) { save(); }
+                else { this.saveDebounceTimer = setTimeout(save, 300); }
+            },
+
+            saveUIPreferences() {
+                try { localStorage.setItem('sortField', this.sortField); }
+                catch (e) { console.error('⚠️ Failed to save UI preferences:', e); }
+            },
 
             attachEventListeners() {
                 const searchAddInput = document.getElementById('searchAddInput');
@@ -375,7 +398,22 @@
 
                 document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
 
-                const addActionListener = (idBase, eventType = 'click', fn) => { const desktopEl = document.getElementById(idBase + 'Desktop'); const mobileEl = document.getElementById(idBase + 'Mobile'); if (typeof fn !== 'function') { console.error(`Error attaching listener: fn for ${idBase} is not a function.`); return; } const boundFn = fn.bind(this); if (desktopEl) desktopEl.addEventListener(eventType, boundFn); if (mobileEl) mobileEl.addEventListener(eventType, boundFn); if (idBase === 'fileInput' && eventType === 'change') { const fileInput = document.getElementById('fileInput'); if (fileInput && !fileInput.dataset.listenerAttached) { fileInput.addEventListener(eventType, boundFn); fileInput.dataset.listenerAttached = 'true'; } } };
+                const addActionListener = (idBase, eventType = 'click', fn) => {
+                    const desktopEl = document.getElementById(idBase + 'Desktop');
+                    const mobileEl = document.getElementById(idBase + 'Mobile');
+                    if (typeof fn !== 'function') { console.error(`Error attaching listener: fn for ${idBase} is not a function.`); return; }
+                    const boundFn = fn.bind(this);
+                    if (desktopEl) desktopEl.addEventListener(eventType, boundFn);
+                    if (mobileEl) mobileEl.addEventListener(eventType, boundFn);
+                    if (idBase === 'fileInput' && eventType === 'change') {
+                        const fileInput = document.getElementById('fileInput');
+                        if (fileInput && !fileInput.dataset.listenerAttached) {
+                            fileInput.addEventListener(eventType, boundFn);
+                            fileInput.dataset.listenerAttached = 'true';
+                        }
+                    }
+                };
+                
                 addActionListener('helpBtn', 'click', this.showHelp);
                 addActionListener('undoBtn', 'click', this.undo);
                 addActionListener('archiveCompletedBtn', 'click', this.archiveCompleted);
@@ -395,63 +433,263 @@
                 document.getElementById('closeMenuBtn').addEventListener('click', () => this.toggleMenu());
                 document.addEventListener('click', (e) => { const menu = document.getElementById('menuPanel'); const burgerBtn = document.getElementById('burgerBtn'); if (menu && menu.classList.contains('menu-open')) { if (!e.target.closest('#menuPanel') && e.target !== burgerBtn) { this.toggleMenu(); } } });
 
-                document.addEventListener('keydown', (e) => { if (!!document.querySelector('.edit-input') || this.autocomplete.active) return; const isTyping = e.target.matches('input, textarea'); if (e.key === '/' && !isTyping && document.getElementById('searchAddInput').offsetParent !== null) { e.preventDefault(); document.getElementById('searchAddInput').focus(); } if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); } if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping && document.activeElement !== searchAddInput) { e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1); } if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); } if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); } if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); } if (e.key === 'e' && this.selectedTask && !isTyping) { e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement); } if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; } });
+                document.addEventListener('keydown', (e) => {
+                    const searchAddInput = document.getElementById('searchAddInput'); // Referenz holen
+                    if (!!document.querySelector('.edit-input') || this.autocomplete.active) return;
+                    const isTyping = e.target.matches('input, textarea');
+                    if (e.key === '/' && !isTyping && searchAddInput.offsetParent !== null) {
+                        e.preventDefault(); searchAddInput.focus();
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !isTyping) { e.preventDefault(); this.undo(); }
+                    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isTyping && document.activeElement !== searchAddInput) {
+                        e.preventDefault(); this.navigateTasks(e.key === 'ArrowDown' ? 1 : -1);
+                    }
+                    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !isTyping && this.selectedTask) { e.preventDefault(); this.changePriority(e.key === 'ArrowRight' ? 1 : -1); }
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTask && !isTyping) { e.preventDefault(); this.deleteTask(this.selectedTask); }
+                    if (e.key === 'x' && this.selectedTask && !isTyping) { e.preventDefault(); this.toggleTask(this.selectedTask); }
+                    if (e.key === 'e' && this.selectedTask && !isTyping) {
+                        e.preventDefault(); const taskElement = document.querySelector(`[data-task-id="${this.selectedTask}"]`); if(taskElement) this.enterEditMode(taskElement);
+                    }
+                    if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
+                });
             },
 
             handleSortChange(newSortValue) { this.sortField = newSortValue; this.saveUIPreferences(); this.updateSortSelects(); this.render(); },
-            attachEventDelegation() { const d=document.getElementById("taskList"); d.addEventListener("click",e=>{ if(!!document.querySelector(".edit-input"))return; if(e.target.matches(".project")){ e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return } if(e.target.matches(".context")){ e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return } const f=e.target.closest(".task-item"); if(!f)return; const g=f.dataset.taskId; if(!g)return; e.target.matches(".task-checkbox")?(e.preventDefault(),this.toggleTask(g)):e.target.closest(".task-content")&&(e.ctrlKey||e.metaKey?this.toggleBulkSelect(g):this.enterEditMode(f)) }); const dE=document.querySelector(".sidebar"); if(dE) dE.addEventListener("click",e=>{ const f=e.target.closest("[data-view-filter]"); f&&this.toggleFilter(`is:${f.dataset.viewFilter}`,!0); const g=e.target.closest("[data-special-filter]"); g&&this.toggleFilter(`is:${g.dataset.specialFilter}`); const h=e.target.closest(".filter-item"); h&&(h.dataset.priority&&this.toggleFilter(`prio:${h.dataset.priority}`),h.dataset.project&&this.toggleFilter(`+${h.dataset.project}`),h.dataset.context&&this.toggleFilter(`@${h.dataset.context}`)) }) },
-            toggleFilter(d,e=!1) { const f=new Set(this.searchQuery.split(" ").filter(Boolean)),g=d.toLowerCase(); let h=!1; f.forEach(j=>{ j.toLowerCase()===g&&(f.delete(j),h=!0) }); h||((e||d.startsWith("is:"))&&f.forEach(j=>{ j.startsWith("is:")&&f.delete(j) }),d.toLowerCase()!=="is:all"&&f.add(d)); this.searchQuery=Array.from(f).join(" "); document.getElementById("searchAddInput").value=this.searchQuery; this.render() },
-            addTask(d) { const e=this.parseTodoLine(d); if(!e||!e.text||!e.text.trim())return; this.saveUndoState(); this.tasks.push(e); this.saveToLocalStorage() },
-            enterEditMode(d) { const e=d.dataset.taskId,f=this.tasks.find(k=>k.id===e); if(!f)return; this.selectedTask=e; d.parentElement.querySelectorAll(".selected").forEach(k=>k.classList.remove("selected")); d.classList.add("selected"); const g=d.querySelector(".task-inner-content"); g.classList.add("hidden"); const h=document.createElement("input"); h.type="text"; h.className="edit-input"; h.value=f.raw; g.parentElement.appendChild(h); h.focus(); h.select(); h.addEventListener("input",k=>this.autocomplete.handleInput(k)); h.addEventListener("keydown",k=>{ if(this.autocomplete.handleKeydown(k)){ k.preventDefault(); return } k.key==="Enter"?h.blur():k.key==="Escape"&&(h.removeEventListener("blur",j),this.render()) }); const j=()=>{ this.autocomplete.hide(); const k=h.value.trim(); k&&k!==f.raw&&(this.saveUndoState(),(()=>{ const l=this.parseTodoLine(k); l.id=f.id; f.creationDate&&!l.creationDate&&(l.creationDate=f.creationDate); const m=this.tasks.findIndex(n=>n.id===e); m!==-1&&(this.tasks[m]=l); this.saveToLocalStorage() })()); this.render() }; h.addEventListener("blur",j,{ once:!0 }) },
-            setPriority(d) { const e=this.tasks.find(g=>g.id===this.selectedTask); if(!e)return; this.saveUndoState(); let f=e.raw.replace(/^\([A-Z]\)\s/,""); d&&(f=`(${d}) ${f}`); const h=this.parseTodoLine(f); h.id=e.id; const i=this.tasks.findIndex(j=>j.id===e.id); i!==-1&&(this.tasks[i]=h); this.saveToLocalStorage(); this.render() },
-            changePriority(d) { const e=this.tasks.find(i=>i.id===this.selectedTask); if(!e)return; const f="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),g=[null,...f],h=g.indexOf(e.priority); let j; d>0?j=(h+1)%g.length:j=(h-1+g.length)%g.length; const k=g[j]; k!==e.priority&&this.setPriority(k) },
-            generateUniqueId:()=> `${Date.now().toString(36)}-${Math.random().toString(36).substr(2,9)}`,
-            parseTodoLine(d) { const e={ id:this.generateUniqueId(),raw:d.trim(),completed:!1,priority:null,completionDate:null,creationDate:null,text:"",projects:[],contexts:[],metadata:{} }; let f=d.trim(); if(!f)return e; if(f.startsWith("x ")) { e.completed=!0; f=f.substring(2); const i=f.match(/^\d{4}-\d{2}-\d{2}\s/); i&&this.isValidDate(i[0].trim())&&(e.completionDate=i[0].trim(),f=f.substring(i[0].length)) } const g=f.match(/^\(([A-Za-z])\)\s/); g&&(e.priority=g[1].toUpperCase(),f=f.substring(g[0].length)); const h=f.match(/^\d{4}-\d{2}-\d{2}\s/); h&&this.isValidDate(h[0].trim())&&(e.creationDate=h[0].trim(),f=f.substring(h[0].length)); const j=f.match(/\+[\w.-]+/g); j&&(e.projects=[...new Set(j.map(l=>l.substring(1)))]); const k=f.match(/@[\w.-]+/g); k&&(e.contexts=[...new Set(k.map(l=>l.substring(1)))]); const m=f.match(/(\w+):([^\s]+)/g); m&&m.forEach(l=>{ const[n,...o]=l.split(":"); n&&o.length&&(e.metadata[n]=o.join(":")) }); e.text=f; return e },
-            isValidDate:(d)=> /^\d{4}-\d{2}-\d{2}$/.test(d)&&(new Date(d)).toISOString().startsWith(d),
-            toggleTask(d) { const e=this.tasks.find(f=>f.id===d); if(!e)return; this.saveUndoState(); e.completed=!e.completed; const g=(new Date).toISOString().split("T")[0]; e.raw=e.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/,"").trim(); e.completed?(e.completionDate=g,e.raw=`x ${g} ${e.raw}`,this.showNotification("✅ Aufgabe erledigt!")):e.completionDate=null; this.saveToLocalStorage(); this.render() },
-            deleteTask(d) { if(!confirm("Delete task?"))return; this.saveUndoState(); this.tasks=this.tasks.filter(e=>e.id!==d); this.selectedTask===d&&(this.selectedTask=null); this.saveToLocalStorage(); this.render() },
-            selectTask(d) { this.selectedTask=d; this.render() },
-            getFilteredTasks() { let d=[...this.tasks]; const e=this.searchQuery.toLowerCase().split(" ").filter(Boolean); let f="all"; e.includes("is:open")?f="open":e.includes("is:done")&&(f="done"); f==="open"?d=d.filter(h=>!h.completed):f==="done"&&(d=d.filter(h=>h.completed)); let g=d; e.length>0&&(g=d.filter(h=>{ const i=h.raw.toLowerCase(); return e.every(j=>{ if(j.startsWith("prio:"))return h.priority===j.split(":")[1].toUpperCase(); if(j.startsWith("+"))return h.projects.some(k=>k.toLowerCase()===j.substring(1)); if(j.startsWith("@"))return h.contexts.some(k=>k.toLowerCase()===j.substring(1)); if(j==="is:no-due")return!h.metadata.due; if(j==="is:no-project")return h.projects.length===0; if(j==="is:no-context")return h.contexts.length===0; if(j==="is:no-prio")return!h.priority; if(j.startsWith("is:"))return!0; return i.includes(j) }) })); this.selectedTask&&!g.some(h=>h.id===this.selectedTask)&&(this.selectedTask=null); return this.sortTasks(g) },
-            sortTasks(d) { const e=[...d]; switch(this.sortField){ case"priority":e.sort((f,g)=>(f.priority||"Z").localeCompare(g.priority||"Z")); break; case"project":e.sort((f,g)=>(f.projects[0]||"\uffff").localeCompare(g.projects[0]||"\uffff")); break; case"context":e.sort((f,g)=>(f.contexts[0]||"\uffff").localeCompare(g.contexts[0]||"\uffff")); break; case"due":e.sort((f,g)=>(f.metadata.due||"9999").localeCompare(g.metadata.due||"9999")); break } return e },
-            getGroupValue: (d)=> ({priority:d.priority?`Priority ${d.priority}`:"No Priority",project:d.projects[0]||"No Project",context:d.contexts[0]||"No Context",due:d.metadata.due||"No Due Date"})[this.sortField]||"",
-            escapeHtml: (d="")=> d.replace(/[&<>"']/g,e=> ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" })[e]),
-            render() { const d=document.getElementById("taskList"),e=document.getElementById("emptyState"),f=this.getFilteredTasks(); if(f.length===0)d.innerHTML="",e.style.display="block"; else { e.style.display="none"; let g=null; const h=i=>i.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),j=f.map(i=>{ const k=this.getGroupValue(i),l=this.sortField!=="default"&&g!==k; l&&(g=k); let m=this.escapeHtml(i.text); i.projects.forEach(p=>m=m.replace(new RegExp(`\\+${h(this.escapeHtml(p))}\\b`,"gi"),`<span class="project">+${this.escapeHtml(p)}</span>`)); i.contexts.forEach(p=>m=m.replace(new RegExp(`@${h(this.escapeHtml(p))}\\b`,"gi"),`<span class="context">@${this.escapeHtml(p)}</span>`)); const n=[i.creationDate,i.metadata.due,i.completionDate].filter(Boolean).join(" • "),o=l?`<h4 class="task-group-header">${this.escapeHtml(k)}</h4>`:""; return`
-                            ${o}
-                            <div class="task-item ${this.selectedTask===i.id?"selected":""} ${this.bulkSelected.has(i.id)?"bulk-selected":""}" data-task-id="${i.id}" tabindex="-1"> {/* tabindex hinzugefügt */}
-                                <input type="checkbox" class="task-checkbox" ${i.completed?"checked":""} aria-label="Toggle task: ${this.escapeHtml(i.text)}">
+
+            attachEventDelegation() {
+                const taskList = document.getElementById("taskList");
+                taskList.addEventListener("click", e => {
+                    if (!!document.querySelector(".edit-input")) return;
+                    if (e.target.matches(".project")) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return }
+                    if (e.target.matches(".context")) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return }
+                    const taskItem = e.target.closest(".task-item");
+                    if (!taskItem) return;
+                    const taskId = taskItem.dataset.taskId;
+                    if (!taskId) return;
+                    if (e.target.matches(".task-checkbox")) { e.preventDefault(); this.toggleTask(taskId); }
+                    else if (e.target.closest(".task-content")) { if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId); else this.enterEditMode(taskItem); }
+                });
+                const sidebar = document.querySelector(".sidebar");
+                if (sidebar) sidebar.addEventListener("click", e => {
+                    const viewFilterBtn = e.target.closest("[data-view-filter]"); if (viewFilterBtn) this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true);
+                    const specialFilterBtn = e.target.closest("[data-special-filter]"); if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`);
+                    const filterItem = e.target.closest(".filter-item"); if (filterItem) { if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`); if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`); if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`); }
+                })
+            },
+
+            toggleFilter(filterPart, isViewFilter = false) {
+                const parts = new Set(this.searchQuery.split(" ").filter(Boolean));
+                const lowerCaseFilterPart = filterPart.toLowerCase();
+                let found = false;
+                parts.forEach(p => { if (p.toLowerCase() === lowerCaseFilterPart) { parts.delete(p); found = true; } });
+                if (!found) {
+                    if (isViewFilter || filterPart.startsWith("is:")) { parts.forEach(p => { if (p.startsWith("is:")) parts.delete(p); }); }
+                    if (filterPart.toLowerCase() !== "is:all") { parts.add(filterPart); }
+                }
+                this.searchQuery = Array.from(parts).join(" ");
+                document.getElementById("searchAddInput").value = this.searchQuery;
+                this.render();
+            },
+
+            addTask(text) {
+                const task = this.parseTodoLine(text);
+                if (!task || !task.text || !task.text.trim()) { return; }
+                this.saveUndoState();
+                this.tasks.push(task);
+                this.saveToLocalStorage();
+            },
+
+            enterEditMode(taskElement) {
+                const taskId = taskElement.dataset.taskId;
+                const task = this.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                this.selectedTask = taskId;
+                taskElement.parentElement.querySelectorAll(".selected").forEach(el => el.classList.remove("selected"));
+                taskElement.classList.add("selected");
+                const content = taskElement.querySelector(".task-inner-content");
+                content.classList.add("hidden");
+                const input = document.createElement("input");
+                input.type = "text"; input.className = "edit-input"; input.value = task.raw;
+                content.parentElement.appendChild(input);
+                input.focus(); input.select();
+                input.addEventListener("input", e => this.autocomplete.handleInput(e));
+                input.addEventListener("keydown", e => {
+                    if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; }
+                    if (e.key === "Enter") input.blur();
+                    else if (e.key === "Escape") {
+                        input.removeEventListener("blur", saveCallback);
+                        this.render();
+                    }
+                });
+                const saveCallback = () => {
+                    // autocomplete.hide() entfernt
+                    const newValue = input.value.trim();
+                    if (newValue && newValue !== task.raw) {
+                        this.saveUndoState();
+                        const updatedTask = this.parseTodoLine(newValue);
+                        updatedTask.id = task.id;
+                        if (task.creationDate && !updatedTask.creationDate) updatedTask.creationDate = task.creationDate;
+                        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                        if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
+                        this.saveToLocalStorage();
+                    }
+                    this.render();
+                };
+                input.addEventListener("blur", saveCallback, { once: true });
+            },
+
+            setPriority(newPriority) {
+                const task = this.tasks.find(t => t.id === this.selectedTask);
+                if (!task) return;
+                this.saveUndoState();
+                let newRaw = task.raw.replace(/^\([A-Z]\)\s/, "");
+                if (newPriority) newRaw = `(${newPriority}) ${newRaw}`;
+                const updatedTask = this.parseTodoLine(newRaw);
+                updatedTask.id = task.id;
+                const taskIndex = this.tasks.findIndex(t => t.id === task.id);
+                if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
+                this.saveToLocalStorage();
+                this.render();
+            },
+
+            changePriority(direction) {
+                const task = this.tasks.find(t => t.id === this.selectedTask);
+                if (!task) return;
+                const priorities = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+                const cycle = [null, ...priorities];
+                const currentCycleIndex = cycle.indexOf(task.priority);
+                let newIndex;
+                if (direction > 0) { newIndex = (currentCycleIndex + 1) % cycle.length; }
+                else { newIndex = (currentCycleIndex - 1 + cycle.length) % cycle.length; }
+                const newPriority = cycle[newIndex];
+                if (newPriority !== task.priority) { this.setPriority(newPriority); }
+            },
+
+            generateUniqueId: () => `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`,
+
+            parseTodoLine(line) {
+                const task = { id: this.generateUniqueId(), raw: line.trim(), completed: false, priority: null, completionDate: null, creationDate: null, text: "", projects: [], contexts: [], metadata: {} };
+                let r = line.trim(); if (!r) return task;
+                if (r.startsWith("x ")) { task.completed = true; r = r.substring(2); const d = r.match(/^\d{4}-\d{2}-\d{2}\s/); if (d && this.isValidDate(d[0].trim())) { task.completionDate = d[0].trim(); r = r.substring(d[0].length); } }
+                const p = r.match(/^\(([A-Za-z])\)\s/); if (p) { task.priority = p[1].toUpperCase(); r = r.substring(p[0].length); }
+                const c = r.match(/^\d{4}-\d{2}-\d{2}\s/); if (c && this.isValidDate(c[0].trim())) { task.creationDate = c[0].trim(); r = r.substring(c[0].length); }
+                const proj = r.match(/\+[\w.-]+/g); if (proj) task.projects = [...new Set(proj.map(pr => pr.substring(1)))];
+                const ctx = r.match(/@[\w.-]+/g); if (ctx) task.contexts = [...new Set(ctx.map(ct => ct.substring(1)))];
+                const meta = r.match(/(\w+):([^\s]+)/g); if (meta) meta.forEach(pair => { const [key, ...val] = pair.split(":"); if (key && val.length) task.metadata[key] = val.join(":"); });
+                task.text = r; return task;
+            },
+
+            isValidDate: (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && (new Date(d)).toISOString().startsWith(d),
+
+            toggleTask(taskId) {
+                const task = this.tasks.find(t => t.id === taskId); if (!task) return;
+                this.saveUndoState(); task.completed = !task.completed;
+                const today = (new Date).toISOString().split("T")[0];
+                task.raw = task.raw.replace(/^x\s\d{4}-\d{2}-\d{2}\s/, "").trim();
+                if (task.completed) { task.completionDate = today; task.raw = `x ${today} ${task.raw}`; this.showNotification("✅ Aufgabe erledigt!"); }
+                else { task.completionDate = null; }
+                this.saveToLocalStorage(); this.render();
+            },
+
+            deleteTask(taskId) {
+                if (!confirm("Delete task?")) return;
+                this.saveUndoState(); this.tasks = this.tasks.filter(t => t.id !== taskId);
+                if (this.selectedTask === taskId) this.selectedTask = null;
+                this.saveToLocalStorage(); this.render();
+            },
+
+            selectTask(taskId) { this.selectedTask = taskId; this.render(); },
+
+            getFilteredTasks() {
+                let baseTasks = [...this.tasks];
+                const searchParts = this.searchQuery.toLowerCase().split(" ").filter(Boolean);
+                let viewFilter = "all"; if (searchParts.includes("is:open")) viewFilter = "open"; else if (searchParts.includes("is:done")) viewFilter = "done";
+                if (viewFilter === "open") baseTasks = baseTasks.filter(t => !t.completed); else if (viewFilter === "done") baseTasks = baseTasks.filter(t => t.completed);
+                let filtered = baseTasks; if (searchParts.length > 0) { filtered = baseTasks.filter(task => { const taskText = task.raw.toLowerCase(); return searchParts.every(part => { if (part.startsWith("prio:")) return task.priority === part.split(":")[1].toUpperCase(); if (part.startsWith("+")) return task.projects.some(p => p.toLowerCase() === part.substring(1)); if (part.startsWith("@")) return task.contexts.some(c => c.toLowerCase() === part.substring(1)); if (part === "is:no-due") return !task.metadata.due; if (part === "is:no-project") return task.projects.length === 0; if (part === "is:no-context") return task.contexts.length === 0; if (part === "is:no-prio") return !task.priority; if (part.startsWith("is:")) return true; return taskText.includes(part); }); }); }
+                if (this.selectedTask && !filtered.some(t => t.id === this.selectedTask)) this.selectedTask = null;
+                return this.sortTasks(filtered);
+            },
+
+            sortTasks(tasks) {
+                const sorted = [...tasks];
+                switch (this.sortField) {
+                    case "priority": sorted.sort((a, b) => (a.priority || "Z").localeCompare(b.priority || "Z")); break;
+                    case "project": sorted.sort((a, b) => (a.projects[0] || "\uffff").localeCompare(b.projects[0] || "\uffff")); break;
+                    case "context": sorted.sort((a, b) => (a.contexts[0] || "\uffff").localeCompare(b.contexts[0] || "\uffff")); break;
+                    case "due": sorted.sort((a, b) => (a.metadata.due || "9999").localeCompare(b.metadata.due || "9999")); break;
+                } return sorted;
+            },
+
+            getGroupValue: (t) => ({ priority: t.priority ? `Priority ${t.priority}` : "No Priority", project: t.projects[0] || "No Project", context: t.contexts[0] || "No Context", due: t.metadata.due || "No Due Date" })[this.sortField] || "",
+            escapeHtml: (text = '') => text.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]),
+
+            render() {
+                const taskListEl = document.getElementById("taskList");
+                const emptyStateEl = document.getElementById("emptyState");
+                const filteredTasks = this.getFilteredTasks();
+                if (filteredTasks.length === 0) { taskListEl.innerHTML = ""; emptyStateEl.style.display = "block"; }
+                else {
+                    emptyStateEl.style.display = "none"; let prevGroup = null;
+                    const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    const html = filteredTasks.map(task => {
+                        const currentGroup = this.getGroupValue(task);
+                        const isNewGroup = this.sortField !== "default" && prevGroup !== currentGroup;
+                        if (isNewGroup) prevGroup = currentGroup;
+                        let displayText = this.escapeHtml(task.text);
+                        task.projects.forEach(p => displayText = displayText.replace(new RegExp(`\\+${regexEscape(this.escapeHtml(p))}\\b`, "gi"), `<span class="project">+${this.escapeHtml(p)}</span>`));
+                        task.contexts.forEach(c => displayText = displayText.replace(new RegExp(`@${regexEscape(this.escapeHtml(c))}\\b`, "gi"), `<span class="context">@${this.escapeHtml(c)}</span>`));
+                        const meta = [task.creationDate, task.metadata.due, task.completionDate].filter(Boolean).join(" • ");
+                        const groupHeader = isNewGroup ? `<h4 class="task-group-header">${this.escapeHtml(currentGroup)}</h4>` : "";
+                        return `
+                            ${groupHeader}
+                            <div class="task-item ${this.selectedTask === task.id ? "selected" : ""} ${this.bulkSelected.has(task.id) ? "bulk-selected" : ""}" data-task-id="${task.id}" tabindex="-1">
+                                <input type="checkbox" class="task-checkbox" ${task.completed ? "checked" : ""} aria-label="Toggle task: ${this.escapeHtml(task.text)}">
                                 <div class="task-content">
                                     <div class="task-inner-content">
-                                        <div class="task-text ${i.completed?"completed":""}">${i.priority?`<span class="priority priority-${i.priority}">(${i.priority})</span> `:""}${m}</div>
-                                        ${n?`<div class="task-meta">${n}</div>`:""}
+                                        <div class="task-text ${task.completed ? "completed" : ""}">${task.priority ? `<span class="priority priority-${task.priority}">(${task.priority})</span> ` : ""}${displayText}</div>
+                                        ${meta ? `<div class="task-meta">${meta}</div>` : ""}
                                     </div>
                                 </div>
-                            </div>` }).join(""); d.innerHTML=j } this.renderSidebar() },
-            renderSidebar() { const d=i=>i.reduce((j,k)=>{ j[k]=(j[k]||0)+1; return j }, {}); const e=d(this.tasks.map(i=>i.priority).filter(Boolean)); const prioList = document.getElementById("prioritiesList"); if(prioList) prioList.innerHTML = Object.entries(e).sort().map(([i,j])=> `<div class="filter-item" data-priority="${i}"><span>(${i})</span><span class="filter-count">${j}</span></div>`).join(""); const f=d(this.tasks.flatMap(i=>i.projects)); const projList = document.getElementById("projectsList"); if(projList) projList.innerHTML = Object.entries(f).sort().map(([i,j])=> `<div class="filter-item" data-project="${this.escapeHtml(i)}"><span>+${this.escapeHtml(i)}</span><span class="filter-count">${j}</span></div>`).join(""); const g=d(this.tasks.flatMap(i=>i.contexts)); const ctxList = document.getElementById("contextsList"); if(ctxList) ctxList.innerHTML = Object.entries(g).sort().map(([i,j])=> `<div class="filter-item" data-context="${this.escapeHtml(i)}"><span>@${this.escapeHtml(i)}</span><span class="filter-count">${j}</span></div>`).join(""); const h=new Set(this.searchQuery.toLowerCase().split(" ").filter(Boolean)); document.querySelectorAll(".sidebar .filter-btn").forEach(i=>{ const{ viewFilter:j,specialFilter:k }=i.dataset; let l=!1; j?(m=h.has("is:open"),n=h.has("is:done"),j==="all"?l=!m&&!n:j==="open"?l=m:j==="done"&&(l=n)):k&&(l=h.has(`is:${k}`)); i.classList.toggle("active",l) }); document.querySelectorAll(".sidebar .filter-item").forEach(i=>{ const{ priority:j,project:k,context:l }=i.dataset; let m=!1; j?m=h.has(`prio:${j.toLowerCase()}`):k?m=h.has(`+${k.toLowerCase()}`):l&&(m=h.has(`@${l.toLowerCase()}`)); i.classList.toggle("active",m) }) },
-            toggleBulkSelect(d) { this.bulkSelected.has(d)?this.bulkSelected.delete(d):this.bulkSelected.add(d); this.render(); this.updateBulkBar() },
-            bulkSelectAll() { this.getFilteredTasks().forEach(d=>this.bulkSelected.add(d.id)); this.render(); this.updateBulkBar() },
-            bulkDeselectAll() { this.bulkSelected.clear(); this.render(); this.updateBulkBar() },
+                            </div>`;
+                    }).join(""); taskListEl.innerHTML = html;
+                } this.renderSidebar();
+            },
+
+            renderSidebar() {
+                const countMap = (items) => items.reduce((acc, item) => { acc[item] = (acc[item] || 0) + 1; return acc; }, {});
+                const priorities = countMap(this.tasks.map(t => t.priority).filter(Boolean)); const prioList = document.getElementById("prioritiesList"); if (prioList) prioList.innerHTML = Object.entries(priorities).sort().map(([p, c]) => `<div class="filter-item" data-priority="${p}"><span>(${p})</span><span class="filter-count">${c}</span></div>`).join("");
+                const projects = countMap(this.tasks.flatMap(t => t.projects)); const projList = document.getElementById("projectsList"); if (projList) projList.innerHTML = Object.entries(projects).sort().map(([p, c]) => `<div class="filter-item" data-project="${this.escapeHtml(p)}"><span>+${this.escapeHtml(p)}</span><span class="filter-count">${c}</span></div>`).join("");
+                const contexts = countMap(this.tasks.flatMap(t => t.contexts)); const ctxList = document.getElementById("contextsList"); if (ctxList) ctxList.innerHTML = Object.entries(contexts).sort().map(([c, count]) => `<div class="filter-item" data-context="${this.escapeHtml(c)}"><span>@${this.escapeHtml(c)}</span><span class="filter-count">${count}</span></div>`).join("");
+                const currentFilters = new Set(this.searchQuery.toLowerCase().split(" ").filter(Boolean));
+                document.querySelectorAll(".sidebar .filter-btn").forEach(el => { const { viewFilter, specialFilter } = el.dataset; let isActive = false; if (viewFilter) { const hasOpen = currentFilters.has("is:open"); const hasDone = currentFilters.has("is:done"); if (viewFilter === "all") isActive = !hasOpen && !hasDone; else if (viewFilter === "open") isActive = hasOpen; else if (viewFilter === "done") isActive = hasDone; } else if (specialFilter) isActive = currentFilters.has(`is:${specialFilter}`); el.classList.toggle("active", isActive); });
+                document.querySelectorAll(".sidebar .filter-item").forEach(el => { const { priority, project, context } = el.dataset; let isActive = false; if (priority) isActive = currentFilters.has(`prio:${priority.toLowerCase()}`); else if (project) isActive = currentFilters.has(`+${project.toLowerCase()}`); else if (context) isActive = currentFilters.has(`@${context.toLowerCase()}`); el.classList.toggle("active", isActive); });
+            },
+
+            toggleBulkSelect(taskId) { this.bulkSelected.has(taskId) ? this.bulkSelected.delete(taskId) : this.bulkSelected.add(taskId); this.render(); this.updateBulkBar(); },
+            bulkSelectAll() { this.getFilteredTasks().forEach(t => this.bulkSelected.add(t.id)); this.render(); this.updateBulkBar(); },
+            bulkDeselectAll() { this.bulkSelected.clear(); this.render(); this.updateBulkBar(); },
             bulkComplete() { if (this.bulkSelected.size === 0) return; this.saveUndoState(); this.tasks.forEach(t => { if (this.bulkSelected.has(t.id)) this.toggleTask(t.id); }); const count = this.bulkSelected.size; this.bulkSelected.clear(); this.updateBulkBar(); this.showNotification(`✅ ${count} Aufgaben umgeschaltet`); },
             bulkDelete() { if (this.bulkSelected.size === 0 || !confirm(`Delete ${this.bulkSelected.size} task(s)?`)) return; this.saveUndoState(); const count = this.bulkSelected.size; this.tasks = this.tasks.filter(t => !this.bulkSelected.has(t.id)); if (this.selectedTask && this.bulkSelected.has(this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`🗑️ ${count} Aufgaben gelöscht`); },
-            navigateTasks(d) { const e=this.getFilteredTasks(); if(e.length===0)return; const f=this.selectedTask?e.findIndex(h=>h.id===this.selectedTask):-1,g=(f+d+e.length)%e.length; const h=e[g]; this.selectTask(h.id); setTimeout(()=>{ const i=document.querySelector(`[data-task-id="${h.id}"]`); i&&i.focus() },50) },
-            updateBulkBar() { const d=document.getElementById("bulkBar"),e=this.bulkSelected.size; e>0?(d.classList.add("active"),document.getElementById("bulkCount").textContent=`${e} selected`):d.classList.remove("active") },
-            importFile(d) { if (!d || d.size > 1048576 && !confirm(`Large file (${(d.size / 1024 / 1024).toFixed(2)}MB). Continue?`)) return; const e = new FileReader; e.onload = f => { let g = f.target.result; if (g.charCodeAt(0) === 65279) g = g.slice(1); const h = g.split("\n").filter(i => i.trim()); if (this.tasks.length > 0 && !confirm(`Import ${h.length} tasks? (Will append)`)) return; this.saveUndoState(); this.tasks.push(...h.map(i => this.parseTodoLine(i))); this.saveToLocalStorage(true); this.render(); this.showNotification(`✅ Imported ${h.length} tasks`); }; e.readAsText(d); },
-            exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const d = this.tasks.map(g => g.raw).join("\n"), e = new Blob([d], { type: "text/plain;charset=utf-8" }), f = URL.createObjectURL(e), h = document.createElement("a"); h.href = f; h.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; h.click(); URL.revokeObjectURL(f); },
-            archiveCompleted() { const d = this.tasks.filter(g => g.completed); if (d.length === 0 || !confirm(`Archive ${d.length} completed task(s)?`)) return; this.saveUndoState(); const e = d.map(g => g.raw).join("\n"), f = new Blob([e], { type: "text/plain;charset=utf-8" }), i = URL.createObjectURL(f), j = document.createElement("a"); j.href = i; j.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; j.click(); URL.revokeObjectURL(i); this.tasks = this.tasks.filter(g => !g.completed); if (this.selectedTask && !this.tasks.some(g => g.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${d.length} tasks`); },
+            navigateTasks(direction) { const filtered = this.getFilteredTasks(); if (filtered.length === 0) return; const currentIndex = this.selectedTask ? filtered.findIndex(t => t.id === this.selectedTask) : -1; const newIndex = (currentIndex + direction + filtered.length) % filtered.length; const newTaskToSelect = filtered[newIndex]; this.selectTask(newTaskToSelect.id); setTimeout(() => { const taskElement = document.querySelector(`[data-task-id="${newTaskToSelect.id}"]`); if (taskElement) taskElement.focus(); }, 50); },
+            updateBulkBar() { const bulkBar = document.getElementById("bulkBar"); const count = this.bulkSelected.size; if (count > 0) { bulkBar.classList.add("active"); document.getElementById("bulkCount").textContent = `${count} selected`; } else { bulkBar.classList.remove("active"); } },
+            importFile(file) { if (!file || file.size > 1048576 && !confirm(`Large file (${(file.size / 1024 / 1024).toFixed(2)}MB). Continue?`)) return; const reader = new FileReader; reader.onload = e => { let content = e.target.result; if (content.charCodeAt(0) === 65279) content = content.slice(1); const lines = content.split("\n").filter(l => l.trim()); if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return; this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l))); this.saveToLocalStorage(true); this.render(); this.showNotification(`✅ Imported ${lines.length} tasks`); }; reader.readAsText(file); },
+            exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const content = this.tasks.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); },
+            archiveCompleted() { const completed = this.tasks.filter(t => t.completed); if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return; this.saveUndoState(); const content = completed.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); this.tasks = this.tasks.filter(t => !t.completed); if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${completed.length} tasks`); },
             clearLocalStorage() { if (confirm('Clear all local tasks?\n\nThis cannot be undone and will NOT affect your Google Drive file.')) { this.tasks = []; this.selectedTask = null; this.bulkSelected.clear(); this.undoStack = []; try { localStorage.removeItem('todoTxtTasks'); } catch (e) { console.error('Failed to remove tasks from localStorage:', e); } this.updateUndoButton(); this.render(); this.showNotification('🗑️ Local tasks cleared.'); } },
             saveUndoState() { this.undoStack.push(JSON.parse(JSON.stringify(this.tasks))); if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift(); this.updateUndoButton(); },
-            updateUndoButton() { const d=this.undoStack.length===0,e=document.getElementById("undoBtnDesktop"),f=document.getElementById("undoBtnMobile"); e&&(e.disabled=d); f&&(f.disabled=d) },
+            updateUndoButton() { const disabled = this.undoStack.length === 0; const undoBtnDesktop = document.getElementById("undoBtnDesktop"); const undoBtnMobile = document.getElementById("undoBtnMobile"); if (undoBtnDesktop) undoBtnDesktop.disabled = disabled; if (undoBtnMobile) undoBtnMobile.disabled = disabled; },
             undo() { if (this.undoStack.length === 0) return; this.tasks = this.undoStack.pop(); this.saveToLocalStorage(); this.render(); this.updateUndoButton(); },
             showHelp() { alert("KEYBOARD SHORTCUTS:\n\n/ - Focus search/add\n↑ ↓ - Navigate tasks\n← → - Change priority\ne - Edit selected\nx - Toggle done\np then A-Z - Set priority\n(Ctrl|Cmd)+Z - Undo\nDelete - Delete selected\nEsc - Clear search/filters\n\nSEARCH SYNTAX:\n\nprio:A\n+project\n@context\nis:open / is:done\nis:no-due"); },
-            showNotification(d) { const e = document.createElement("div"); e.style.cssText = "position:fixed;top:70px;right:20px;background:var(--success);color:white;padding:12px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;animation:slideIn 0.3s ease-out;"; e.textContent = d; document.body.appendChild(e); setTimeout(() => { e.style.animation = "slideOut 0.3s ease-in forwards"; setTimeout(() => e.remove(), 300); }, 2500); },
-            toggleMenu() { const d = document.getElementById("menuPanel"), e = document.getElementById("burgerBtn"), f = d.classList.toggle("menu-open"); e.setAttribute("aria-expanded", f); },
+            showNotification(message) { const el = document.createElement("div"); el.style.cssText = "position:fixed;top:70px;right:20px;background:var(--success);color:white;padding:12px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;animation:slideIn 0.3s ease-out;"; el.textContent = message; document.body.appendChild(el); setTimeout(() => { el.style.animation = "slideOut 0.3s ease-in forwards"; setTimeout(() => el.remove(), 300); }, 2500); },
+            toggleMenu() { const menu = document.getElementById("menuPanel"); const burgerBtn = document.getElementById("burgerBtn"); const isOpen = menu.classList.toggle("menu-open"); burgerBtn.setAttribute("aria-expanded", isOpen); },
 
-            async initGapiClient() { if (typeof gapi === "undefined") { console.error("GAPI script ist nicht geladen."); return; } console.log("Lade GAPI Client-Bibliothek..."); try { await new Promise((d, e) => { gapi.load("client", { callback: d, onerror: e, timeout: 5e3, ontimeout: e }); }); console.log("GAPI Client-Bibliothek geladen. Lade Drive API-Definitionen..."); await gapi.client.load("https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"); this.gapiClient = gapi.client; console.log("GAPI Client (Drive) initialisiert."); } catch (d) { console.error("Fehler beim GAPI Init:", d); alert("Fehler: Google Drive API konnte nicht geladen werden."); } },
-            initGisTokenClient(d) { if (this.gisTokenClient) { d && d(); return; } if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) { console.error("GIS script ist nicht geladen."); alert("Fehler: Google Login-Service konnte nicht geladen werden."); return; } console.log("Initialisiere GIS Token Client..."); try { this.gisTokenClient = google.accounts.oauth2.initTokenClient({ client_id: this.CLIENT_ID, scope: this.DRIVE_SCOPE, callback: e => { if (e.error) { console.error("GIS Error:", e.error); alert(`Login-Fehler: ${e.error}`); return; } if (this.gapiClient) { this.gapiClient.setToken(e); console.log("GIS Token an GAPI übergeben."); } else { console.error("GAPI Client nicht bereit, Token kann nicht gesetzt werden."); alert("Fehler: Drive-Client nicht bereit."); return; } console.log("GIS Login erfolgreich, Token erhalten."); this.updateSyncUI(true); this.findOrCreateDriveFile(); } }); console.log("GIS Token Client initialisiert."); d && d(); } catch (e) { console.error("Fehler beim GIS Init:", e); alert("Fehler beim Initialisieren des Google Logins."); } },
+            async initGapiClient() { if (typeof gapi === "undefined") { console.error("GAPI script ist nicht geladen."); return; } console.log("Lade GAPI Client-Bibliothek..."); try { await new Promise((resolve, reject) => { gapi.load("client", { callback: resolve, onerror: reject, timeout: 5e3, ontimeout: reject }); }); console.log("GAPI Client-Bibliothek geladen. Lade Drive API-Definitionen..."); await gapi.client.load("https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"); this.gapiClient = gapi.client; console.log("GAPI Client (Drive) initialisiert."); } catch (error) { console.error("Fehler beim GAPI Init:", error); alert("Fehler: Google Drive API konnte nicht geladen werden."); } },
+            initGisTokenClient(callback) { if (this.gisTokenClient) { callback && callback(); return; } if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) { console.error("GIS script ist nicht geladen."); alert("Fehler: Google Login-Service konnte nicht geladen werden."); return; } console.log("Initialisiere GIS Token Client..."); try { this.gisTokenClient = google.accounts.oauth2.initTokenClient({ client_id: this.CLIENT_ID, scope: this.DRIVE_SCOPE, callback: tokenResponse => { if (tokenResponse.error) { console.error("GIS Error:", tokenResponse.error); alert(`Login-Fehler: ${tokenResponse.error}`); return; } if (this.gapiClient) { this.gapiClient.setToken(tokenResponse); console.log("GIS Token an GAPI übergeben."); } else { console.error("GAPI Client nicht bereit, Token kann nicht gesetzt werden."); alert("Fehler: Drive-Client nicht bereit."); return; } console.log("GIS Login erfolgreich, Token erhalten."); this.updateSyncUI(true); this.findOrCreateDriveFile(); } }); console.log("GIS Token Client initialisiert."); callback && callback(); } catch (error) { console.error("Fehler beim GIS Init:", error); alert("Fehler beim Initialisieren des Google Logins."); } },
             async handleAuthClick() { if (typeof gapi === "undefined" || typeof google === "undefined") { alert("Google-API-Skripte sind noch nicht geladen. Bitte Moment warten und erneut klicken."); return; } if (!this.gapiClient) { console.log("User-Klick: Initialisiere GAPI (Drive) Client..."); await this.initGapiClient(); if (!this.gapiClient) { console.error("GAPI Client-Initialisierung fehlgeschlagen. Breche ab."); return; } } if (!this.gisTokenClient) { console.log("GAPI ist bereit. Initialisiere GIS (Login) Client..."); this.initGisTokenClient(() => { console.log("GIS ist bereit. Fordere Token an..."); this.gisTokenClient.requestAccessToken(); }); } else { console.log("GAPI und GIS sind bereit. Fordere Token an..."); this.gisTokenClient.requestAccessToken(); } },
-            updateSyncUI(d) { const e = d ? "none" : "inline-block", f = d ? "inline-block" : "none"; ["gdriveLoginBtn", "gdrivePushBtn", "gdrivePullBtn"].forEach(g => { const h = document.getElementById(g + "Desktop"), i = document.getElementById(g + "Mobile"), j = g === "gdriveLoginBtn" ? e : f; h && (h.style.display = j); i && (i.style.display = j); }); },
-            async findOrCreateDriveFile() { if (!this.gapiClient) { console.warn("GAPI nicht bereit für Dateisuche."); return; } console.log("Suche nach todo.txt in appDataFolder..."); try { const d = await this.gapiClient.drive.files.list({ spaces: "appDataFolder", fields: "files(id, name)", q: "name='todo.txt'" }); const e = d.result.files; if (e && e.length > 0) { this.DRIVE_FILE_ID = e[0].id; console.log(`Datei gefunden mit ID: ${this.DRIVE_FILE_ID}`); } else { console.log("Keine todo.txt gefunden. Erstelle neue Datei..."); const f = await this.gapiClient.drive.files.create({ resource: { name: "todo.txt", parents: ["appDataFolder"] }, fields: "id" }); this.DRIVE_FILE_ID = f.result.id; console.log(`Neue Datei erstellt mit ID: ${this.DRIVE_FILE_ID}`); } } catch (d) { console.error("Fehler beim Suchen/Erstellen der Drive-Datei:", d); } },
-            async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const d = this.tasks.map(f => f.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: d }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
-            async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const d = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const e = d.body; this.saveUndoState(); if (e) { this.tasks = e.split("\n").filter(f => f.trim()).map(f => this.parseTodoLine(f)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (d) { console.error("Fehler beim PULL:", d); } },
+            updateSyncUI(isLoggedIn) { const displayStyle = isLoggedIn ? 'none' : 'inline-block'; const loggedInDisplayStyle = isLoggedIn ? 'inline-block' : 'none'; ['gdriveLoginBtn', 'gdrivePushBtn', 'gdrivePullBtn'].forEach(idBase => { const desktopEl = document.getElementById(idBase + 'Desktop'); const mobileEl = document.getElementById(idBase + 'Mobile'); const style = idBase === 'gdriveLoginBtn' ? displayStyle : loggedInDisplayStyle; if (desktopEl) desktopEl.style.display = style; if (mobileEl) mobileEl.style.display = style; }); },
+            async findOrCreateDriveFile() { if (!this.gapiClient) { console.warn("GAPI nicht bereit für Dateisuche."); return; } console.log("Suche nach todo.txt in appDataFolder..."); try { const response = await this.gapiClient.drive.files.list({ spaces: "appDataFolder", fields: "files(id, name)", q: "name='todo.txt'" }); const files = response.result.files; if (files && files.length > 0) { this.DRIVE_FILE_ID = files[0].id; console.log(`Datei gefunden mit ID: ${this.DRIVE_FILE_ID}`); } else { console.log("Keine todo.txt gefunden. Erstelle neue Datei..."); const createResponse = await this.gapiClient.drive.files.create({ resource: { name: "todo.txt", parents: ["appDataFolder"] }, fields: "id" }); this.DRIVE_FILE_ID = createResponse.result.id; console.log(`Neue Datei erstellt mit ID: ${this.DRIVE_FILE_ID}`); } } catch (error) { console.error("Fehler beim Suchen/Erstellen der Drive-Datei:", error); } },
+            async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const content = this.tasks.map(t => t.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: content }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
+            async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const response = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const content = response.body; this.saveUndoState(); if (content) { this.tasks = content.split("\n").filter(l => l.trim()).map(l => this.parseTodoLine(l)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (e) { console.error("Fehler beim PULL:", e); } },
 
             // --- autocomplete OBJEKT (v6 - Suggestion Bar) ---
             autocomplete: {
@@ -470,12 +708,16 @@
                     this.contextSuggestionsEl = document.getElementById('contextSuggestions');
                     this.targetInput = document.getElementById('searchAddInput');
 
+                    // Event Delegation für Klicks auf Vorschläge
                     this.suggestionBar.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('suggestion-item')) {
-                            this.confirmSelection(e.target.dataset.value);
+                        const target = e.target.closest('.suggestion-item'); // Klick auf Button oder dessen Inhalt
+                        if (target) {
+                            e.preventDefault(); // Verhindert ggf. Fokusverlust
+                            this.confirmSelection(target.dataset.value);
                         }
                     });
 
+                    // Schließen bei Klick außerhalb
                     document.addEventListener('click', (e) => {
                          if (this.active && this.suggestionBar && !this.suggestionBar.contains(e.target) && e.target !== this.targetInput) {
                               const clickedInSearchBox = e.target.closest('.search-add-box');
@@ -483,14 +725,17 @@
                          }
                     });
 
+                     // Schließen, wenn das Input-Feld den Fokus verliert
                      this.targetInput.addEventListener('blur', (e) => {
                           setTimeout(() => {
+                               // Prüfen, ob das neue Fokus-Element *innerhalb* der SuggestionBar ist
                                const relatedTargetIsInBar = document.activeElement && this.suggestionBar && this.suggestionBar.contains(document.activeElement);
                                if (!relatedTargetIsInBar) { this.hide(); }
-                          }, 150);
+                          }, 150); // Verzögerung, damit Klick auf Suggestion verarbeitet werden kann
                      });
 
-                      this.targetInput.addEventListener('focus', (e) => {
+                      // Zeige Bar wieder an, wenn man ins Feld klickt/tippt
+                     this.targetInput.addEventListener('focus', (e) => {
                          this.handleInput({ target: this.targetInput });
                      });
                 },
@@ -501,7 +746,8 @@
                     const value = input.value;
                     const cursorPos = input.selectionStart;
 
-                    if (cursorPos !== value.length) { this.hide(); return; } // Nur am Ende prüfen
+                    // Nur prüfen, wenn Cursor am Ende des Textes ist
+                    if (cursorPos !== value.length) { this.hide(); return; }
 
                     const valueBeforeCursor = value.substring(0, cursorPos);
                     const match = valueBeforeCursor.match(/([+@])([\w.-]*)$/);
@@ -509,7 +755,7 @@
                     if (match) {
                         const trigger = match[1];
                         const query = match[2] || "";
-                        const baseValue = valueBeforeCursor.substring(0, valueBeforeCursor.length - query.length);
+                        const baseValue = valueBeforeCursor.substring(0, valueBeforeCursor.length - (trigger.length + query.length)); // Korrigierte Basis
                         this.triggerInfo = { trigger, query, baseValue };
 
                         const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
@@ -525,7 +771,8 @@
                 },
 
                 handleKeydown(e) {
-                    // Keine Tastatursteuerung der Vorschläge mehr nötig
+                    // Keine Tastatursteuerung der Vorschläge (Pfeiltasten etc.)
+                    // Diese werden jetzt vom globalen Handler oder Input-Handler (Enter, Esc) behandelt
                     return false;
                 },
 
@@ -533,14 +780,15 @@
                     if (!this.projectSuggestionsEl || !this.contextSuggestionsEl || !this.suggestionBar) return;
                     const projectCol = this.suggestionBar.querySelector('.suggestion-column.projects');
                     const contextCol = this.suggestionBar.querySelector('.suggestion-column.contexts');
+                    // Wichtig: Muss ein Button sein für Fokus/Klick-Events auf Mobilgeräten
                     const createSuggestionHTML = (item) => `<button class="suggestion-item" data-value="${this.app.escapeHtml(item)}">${this.app.escapeHtml(item)}</button>`;
 
                     if (trigger === '+') {
                         this.projectSuggestionsEl.innerHTML = suggestions.map(createSuggestionHTML).join('');
                         this.contextSuggestionsEl.innerHTML = '';
-                        projectCol.style.display = 'block'; // Sicherstellen, dass sichtbar
-                        contextCol.style.display = 'none'; // Andere ausblenden
-                        projectCol.classList.add('has-suggestions'); // Für eventuelles Styling
+                        projectCol.style.display = 'block';
+                        contextCol.style.display = 'none';
+                        projectCol.classList.add('has-suggestions');
                         contextCol.classList.remove('has-suggestions');
                     } else { // trigger === '@'
                         this.contextSuggestionsEl.innerHTML = suggestions.map(createSuggestionHTML).join('');
@@ -563,13 +811,21 @@
 
                 confirmSelection(selectedValue) {
                     if (!this.targetInput || !this.triggerInfo) return;
-                    const { baseValue, query } = this.triggerInfo;
-                    const newValue = baseValue + selectedValue + ' ';
-                    this.targetInput.value = newValue;
+                    const { baseValue, trigger, query } = this.triggerInfo;
+                    
+                    // Finde den Start des zu ersetzenden Teils
+                    const replaceStart = this.targetInput.value.substring(0, this.targetInput.selectionStart).lastIndexOf(trigger + query);
+                    const baseText = this.targetInput.value.substring(0, replaceStart);
+                    const textAfter = this.targetInput.value.substring(this.targetInput.selectionStart); // Text nach dem Cursor (sollte leer sein, aber sicherheitshalber)
+
+                    const newValue = baseText + trigger + selectedValue + ' ' + textAfter; // Ersetze +Query durch +SelectedItem
+
+                    this.targetInput.value = newValue.trim() + ' '; // Extra Leerzeichen am Ende
                     this.hide();
                     this.targetInput.focus();
-                    const newCursorPos = newValue.length;
+                    const newCursorPos = this.targetInput.value.length;
                     this.targetInput.setSelectionRange(newCursorPos, newCursorPos);
+
                     this.app.searchQuery = this.targetInput.value;
                     this.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                 },
