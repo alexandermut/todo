@@ -787,18 +787,15 @@
                     this.lastUserInput = value;
                 },
 
-                // --- ERSETZE DIESE GESAMTE FUNKTION (MIT DEBUG LOGS) ---
-            handleKeydown(e) {
+                handleKeydown(e) {
                 const input = e.target;
-                const selectionStart = input.selectionStart;
-                const selectionEnd = input.selectionEnd;
-                const isSuggestionSelected = selectionStart !== selectionEnd && this.activeSuggestion;
+                console.log(`--- Keydown DETECTED in search input: Key='${e.key}' ---`); // Log JEDE Taste
 
-                console.log(`[Keydown Debug] Key: ${e.key}, isSuggestionSelected: ${isSuggestionSelected}, activeSuggestion:`, this.activeSuggestion, `Selection: ${selectionStart}-${selectionEnd}`); // Log bei jedem Keydown
-
-                // TAB: Akzeptiert den AKTUELL ANGEZEIGTEN Vorschlag
+                // Hier kommt die eigentliche Logik (vorerst auskommentiert/vereinfacht)
+                
+                // Beispiel: Nur Tab abfangen zum Testen
                 if (e.key === 'Tab' && this.activeSuggestion) {
-                    console.log('[Keydown Debug] Tab detected with active suggestion.');
+                    console.log('--- Tab detected ---');
                     e.preventDefault();
                     input.setSelectionRange(input.value.length, input.value.length);
                     this.app.searchQuery = input.value;
@@ -806,86 +803,7 @@
                     return true;
                 }
 
-                // PFEIL RECHTS: Nächster Vorschlag (Loop)
-                if (e.key === 'ArrowRight' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
-                    if (selectionEnd === input.value.length || isSuggestionSelected) {
-                        console.log('[Keydown Debug] ArrowRight detected, cycling suggestion forward.');
-                        e.preventDefault();
-                        this.suggestionIndex = (this.suggestionIndex + 1) % this.allSuggestions.length;
-                        this.showSuggestion(input);
-                        return true;
-                    } else {
-                         console.log('[Keydown Debug] ArrowRight detected, but not at end or selecting, allowing default.');
-                    }
-                }
-
-                // PFEIL LINKS: Vorheriger Vorschlag (Loop)
-                if (e.key === 'ArrowLeft' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
-                     const userInputValueLength = this.lastUserInput ? this.lastUserInput.length : 0;
-                    if (selectionStart >= userInputValueLength && selectionEnd > userInputValueLength) {
-                        console.log('[Keydown Debug] ArrowLeft detected, cycling suggestion backward.');
-                        e.preventDefault();
-                        this.suggestionIndex = (this.suggestionIndex - 1 + this.allSuggestions.length) % this.allSuggestions.length;
-                        this.showSuggestion(input);
-                        return true;
-                    } else {
-                         console.log('[Keydown Debug] ArrowLeft detected, but cursor in user input, allowing default.');
-                    }
-                }
-
-                // BACKSPACE: Debugging
-                if (e.key === 'Backspace') {
-                    console.log('[Keydown Debug] Backspace detected.');
-                    if (isSuggestionSelected) {
-                        console.log('[Keydown Debug] Backspace handling: Suggestion is selected.');
-                        e.preventDefault();
-                        const valueBeforeSuggestion = this.lastUserInput;
-                        console.log(`[Keydown Debug] Backspace handling: Resetting value to lastUserInput: '${valueBeforeSuggestion}'`);
-
-                        this.clearSuggestionState(); // Internen Status ZUERST löschen!
-                        console.log('[Keydown Debug] Backspace handling: Suggestion state cleared.');
-
-                        input.value = valueBeforeSuggestion;
-                        input.setSelectionRange(input.value.length, input.value.length);
-                        console.log(`[Keydown Debug] Backspace handling: Input value set to '${input.value}', cursor at ${input.selectionEnd}`);
-
-                        this.app.searchQuery = input.value;
-                        console.log(`[Keydown Debug] Backspace handling: App query updated to '${this.app.searchQuery}'`);
-
-                        console.log('[Keydown Debug] Backspace handling: Dispatching input event...');
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        console.log('[Keydown Debug] Backspace handling: Input event dispatched.');
-                        return true; // Backspace wurde behandelt
-                    } else {
-                        console.log('[Keydown Debug] Backspace handling: No suggestion selected, allowing default.');
-                        if (this.activeSuggestion) {
-                            console.log('[Keydown Debug] Backspace handling: Clearing lingering suggestion state.');
-                            this.clearSuggestionState();
-                        }
-                        // Kein preventDefault -> normales Backspace erlauben (return false)
-                    }
-                }
-
-                // Andere Pfeiltasten (Hoch/Runter) oder Navigation -> Vorschlag abbrechen
-                if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) && this.activeSuggestion) {
-                    console.log(`[Keydown Debug] Navigation key (${e.key}) detected with active suggestion. Resetting input.`);
-                    const valueBeforeSuggestion = this.lastUserInput;
-                    this.clearSuggestionState();
-                    input.value = valueBeforeSuggestion;
-                    input.setSelectionRange(input.value.length, input.value.length);
-                    this.app.searchQuery = input.value;
-                    // Lasse die normale Tastenfunktion durch (return false)
-                }
-
-                // Normales Tippen überschreibt Vorschlag
-                 if (isSuggestionSelected && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-                     console.log(`[Keydown Debug] Typing key (${e.key}) detected while suggestion selected. Clearing suggestion state.`);
-                     this.clearSuggestionState();
-                     // Lasse normales Tippen zu (return false)
-                 }
-
-                console.log('[Keydown Debug] Keydown not handled by autocomplete logic.');
-                return false; // Keydown wurde nicht speziell behandelt
+                return false; // Lässt alle anderen Tasten durch
             },
             // --- ENDE handleKeydown ---
 
