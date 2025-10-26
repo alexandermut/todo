@@ -787,85 +787,89 @@
                     this.lastUserInput = value;
                 },
 
-                handleKeydown(e) {
-                    const input = e.target;
-                    const selectionStart = input.selectionStart;
-                    const selectionEnd = input.selectionEnd;
-                    const isSuggestionSelected = selectionStart !== selectionEnd && this.activeSuggestion;
+            handleKeydown(e) {
+                const input = e.target;
+                const selectionStart = input.selectionStart;
+                const selectionEnd = input.selectionEnd;
+                // Prüft, ob Text selektiert ist UND ob intern ein Vorschlag aktiv ist
+                const isSuggestionSelected = selectionStart !== selectionEnd && this.activeSuggestion;
 
-                    // TAB: Akzeptiert den AKTUELL ANGEZEIGTEN Vorschlag
-                    if (e.key === 'Tab' && this.activeSuggestion) {
+                // TAB: Akzeptiert den AKTUELL ANGEZEIGTEN Vorschlag
+                if (e.key === 'Tab' && this.activeSuggestion) {
+                    e.preventDefault();
+                    input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
+                    this.app.searchQuery = input.value;
+                    this.clearSuggestionState(); // Reset nach Akzeptieren
+                    return true;
+                }
+
+                // PFEIL RECHTS: Nächster Vorschlag (Loop)
+                if (e.key === 'ArrowRight' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
+                    // Nur blättern, wenn Cursor am Ende der Eingabe ODER Vorschlag selektiert ist
+                    if (selectionEnd === input.value.length || isSuggestionSelected) {
                         e.preventDefault();
-                        input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
-                        this.app.searchQuery = input.value;
-                        this.clearSuggestionState(); // Reset nach Akzeptieren
+                        this.suggestionIndex = (this.suggestionIndex + 1) % this.allSuggestions.length;
+                        this.showSuggestion(input);
                         return true;
                     }
+                }
 
-                    // PFEIL RECHTS: Nächster Vorschlag (Loop)
-                    if (e.key === 'ArrowRight' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
-                        // Nur blättern, wenn Cursor am Ende der Eingabe ODER Vorschlag selektiert ist
-                        if (selectionStart === input.value.length || isSuggestionSelected) {
-                            e.preventDefault();
-                            this.suggestionIndex = (this.suggestionIndex + 1) % this.allSuggestions.length; // Nächster Index (Loop)
-                            this.showSuggestion(input); // Zeigt neuen Vorschlag an
-                            return true;
-                        }
-                        // Wenn Cursor mitten im Text -> normales Verhalten (return false)
+                // PFEIL LINKS: Vorheriger Vorschlag (Loop)
+                if (e.key === 'ArrowLeft' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
+                     // Nur blättern, wenn Cursor am Beginn der Suggestion oder innerhalb steht
+                    const userInputValueLength = this.lastUserInput.length; // Länge des vom User getippten Teils
+                    if (selectionStart >= userInputValueLength && selectionEnd > userInputValueLength) { // Cursor ist im Vorschlagsteil
+                        e.preventDefault();
+                        this.suggestionIndex = (this.suggestionIndex - 1 + this.allSuggestions.length) % this.allSuggestions.length;
+                        this.showSuggestion(input);
+                        return true;
                     }
+                     // Wenn Cursor weiter links im User-Input -> normales Verhalten (return false)
+                }
 
-                    // PFEIL LINKS: Vorheriger Vorschlag (Loop)
-                    if (e.key === 'ArrowLeft' && this.allSuggestions.length > 0 && this.currentQueryInfo) {
-                         // Nur blättern, wenn Cursor am Ende der *User*-Eingabe steht ODER Vorschlag selektiert
-                         // Verhindert Blättern, wenn man im User-Input navigiert
-                        const userInputValueLength = this.currentQueryInfo.baseInput.length + this.currentQueryInfo.query.length;
-                        if (selectionStart === userInputValueLength || isSuggestionSelected) {
-                            e.preventDefault();
-                            this.suggestionIndex = (this.suggestionIndex - 1 + this.allSuggestions.length) % this.allSuggestions.length; // Vorheriger Index (Loop)
-                            this.showSuggestion(input); // Zeigt neuen Vorschlag an
-                            return true;
-                        }
-                         // Wenn Cursor weiter links -> normales Verhalten (return false)
-                    }
-
-
-                    // BACKSPACE: Löscht nur Vorschlag oder letztes User-Zeichen
-                    if (e.key === 'Backspace') {
-                         if (isSuggestionSelected) { // Nur Vorschlag löschen
-                             e.preventDefault();
-                             input.value = this.lastUserInput; // Zurück zum User-Input
-                             input.setSelectionRange(input.value.length, input.value.length);
-                             this.app.searchQuery = input.value;
-                             this.clearSuggestionState(); // Reset
-                             // Trigger 'input' event manually to potentially find new suggestions
-                             input.dispatchEvent(new Event('input', { bubbles: true }));
-                             return true;
-                         } else {
-                             // Normales Backspace -> löscht letztes Zeichen, Input-Event wird ausgelöst
-                             this.clearSuggestionState(); // Sicherstellen, dass kein alter Vorschlag aktiv bleibt
-                             // return false -> normales Backspace erlauben
-                         }
-                    }
-
-                    // Andere Pfeiltasten (Hoch/Runter) oder Navigationstasten -> Vorschlag abbrechen
-                    if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) && this.activeSuggestion) {
-                        input.value = this.lastUserInput; // Reset auf User-Eingabe
-                        input.setSelectionRange(input.value.length, input.value.length); // Cursor ans Ende
-                        this.app.searchQuery = input.value;
-                        this.clearSuggestionState();
-                        // KEIN preventDefault, lasse normale Navigation zu, aber ohne Vorschlag
-                        // Manually trigger input event? Probably not needed.
-                    }
-
-                    // Normales Tippen überschreibt Vorschlag
-                     if (isSuggestionSelected && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                // BACKSPACE: Korrigierte Logik
+                if (e.key === 'Backspace') {
+                     if (isSuggestionSelected) {
+                         // Nur der Vorschlagsteil (Selektion) soll entfernt werden.
+                         e.preventDefault(); // Standard-Backspace verhindern
+                         // Setze Input auf den Stand VOR dem Vorschlag zurück
+                         input.value = this.lastUserInput;
+                         // Setze Cursor ans Ende dieser Eingabe
+                         input.setSelectionRange(input.value.length, input.value.length);
+                         this.app.searchQuery = input.value; // App-Status aktualisieren
+                         this.clearSuggestionState(); // Internen Vorschlagsstatus löschen
+                         // Löse manuell ein 'input'-Event aus, damit handleInput erneut prüft
+                         input.dispatchEvent(new Event('input', { bubbles: true }));
+                         return true; // Backspace wurde behandelt
+                     } else {
+                         // Normales Backspace, wenn keine Suggestion aktiv ist.
+                         // Einfach den internen Status zurücksetzen, falls noch was "hängt"
                          this.clearSuggestionState();
-                         // lasse normales Tippen zu (return false)
+                         // Kein preventDefault -> normales Backspace erlauben (return false)
                      }
+                }
 
+                // Andere Pfeiltasten (Hoch/Runter) oder Navigation -> Vorschlag abbrechen
+                if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) && this.activeSuggestion) {
+                    // Setze Input zurück auf User-Eingabe, bevor die Navigation passiert
+                    input.value = this.lastUserInput;
+                    input.setSelectionRange(input.value.length, input.value.length);
+                    this.app.searchQuery = input.value;
+                    this.clearSuggestionState();
+                    // Lasse die normale Tastenfunktion durch (kein preventDefault, return false)
+                }
 
-                    return false; // Keydown wurde nicht speziell behandelt
-                },
+                // Normales Tippen überschreibt Vorschlag
+                 if (isSuggestionSelected && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                     // Wenn ein Zeichen getippt wird, während Vorschlag selektiert ist,
+                     // löscht der Browser die Selektion automatisch. Wir müssen nur den internen Status resetten.
+                     this.clearSuggestionState();
+                     // Lasse normales Tippen zu (return false)
+                 }
+
+                return false; // Keydown wurde nicht speziell behandelt
+            },
+            // --- ENDE handleKeydown ---
 
                 // Zeigt den Vorschlag basierend auf dem aktuellen suggestionIndex an
                 showSuggestion(input) {
