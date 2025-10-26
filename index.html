@@ -497,14 +497,23 @@
                 input.type = "text"; input.className = "edit-input"; input.value = task.raw;
                 content.parentElement.appendChild(input);
                 input.focus(); input.select();
-                input.addEventListener("input", e => this.autocomplete.handleInput(e));
+                input.addEventListener("input", e => this.autocomplete.handleInput(e)); // Still allow autocomplete while editing
                 input.addEventListener("keydown", e => {
-                    if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; }
-                    if (e.key === "Enter") input.blur();
-                    else if (e.key === "Escape") { input.removeEventListener("blur", saveCallback); this.render(); }
+                    // Allow autocomplete key handling (Tab, ArrowRight, Backspace for suggestion)
+                    if (this.autocomplete.handleKeydown(e)) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.key === "Enter") input.blur(); // Finish editing on Enter
+                    else if (e.key === "Escape") {
+                        input.removeEventListener("blur", saveCallback); // Cancel edit
+                        this.render(); // Re-render to show original task
+                    }
                 });
                 const saveCallback = () => {
-                    this.autocomplete.hide();
+                    // --- REMOVED OBSOLETE LINE ---
+                    // this.autocomplete.hide(); // <-- This line was removed
+                    // --- END REMOVAL ---
                     const newValue = input.value.trim();
                     if (newValue && newValue !== task.raw) {
                         this.saveUndoState();
@@ -515,7 +524,7 @@
                         if (taskIndex !== -1) this.tasks[taskIndex] = updatedTask;
                         this.saveToLocalStorage();
                     }
-                    this.render();
+                    this.render(); // Re-render after saving (or if no change)
                 };
                 input.addEventListener("blur", saveCallback, { once: true });
             },
