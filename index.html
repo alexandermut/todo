@@ -216,15 +216,16 @@
                  <button class="btn" id="helpBtnDesktop">?</button>
                  <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
                  <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
-                 <label for="fileInput" class="btn">import</label> <button class="btn" id="exportBtnDesktop">export</button>
+                 <label for="fileInput" class="btn">import</label>
+                 <button class="btn" id="exportBtnDesktop">export</button>
+                 {/* NEUER BUTTON HIER */}
+                 <button class="btn btn-danger" id="clearLocalBtnDesktop">🗑️ Clear Local</button> 
                  <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
                  <a href="impressum.html" target="_blank" class="btn">Impressum</a>
                  <a href="datenschutz.html" target="_blank" class="btn">Datenschutz</a>
             </div>
-            <button class="btn burger-btn" id="burgerBtn" aria-label="Menü öffnen" aria-expanded="false">☰</button>
-        </div>
 
         <div id="menuPanel">
             <h1>todo</h1>
@@ -233,6 +234,8 @@
             <button class="btn" id="archiveCompletedBtnMobile">archive</button>
             <label for="fileInput" class="btn">import</label>
             <button class="btn" id="exportBtnMobile">export</button>
+            {/* NEUER BUTTON HIER */}
+            <button class="btn btn-danger" id="clearLocalBtnMobile">🗑️ Clear Local</button> 
             <button class="btn" id="gdriveLoginBtnMobile">connect to G-Drive</button>
             <button class="btn" id="gdrivePushBtnMobile" style="display: none;">save to G-Drive</button>
             <button class="btn" id="gdrivePullBtnMobile" style="display: none;">load from G-Drive</button>
@@ -418,6 +421,11 @@
                 const addActionListener = (idBase, eventType = 'click', fn) => {
                     const desktopEl = document.getElementById(idBase + 'Desktop');
                     const mobileEl = document.getElementById(idBase + 'Mobile');
+                    // Prüfe, ob fn wirklich eine Funktion ist, bevor bind aufgerufen wird
+                    if (typeof fn !== 'function') {
+                         console.error(`Error attaching listener: fn for ${idBase} is not a function.`);
+                         return; 
+                    }
                     const boundFn = fn.bind(this);
 
                     if (desktopEl) desktopEl.addEventListener(eventType, boundFn);
@@ -445,6 +453,9 @@
                 addActionListener('gdriveLoginBtn', 'click', this.handleAuthClick);
                 addActionListener('gdrivePushBtn', 'click', this.pushToDrive);
                 addActionListener('gdrivePullBtn', 'click', this.pullFromDrive);
+                // *** HIER WIRD DER LISTENER FÜR DEN NEUEN BUTTON HINZUGEFÜGT ***
+                addActionListener('clearLocalBtn', 'click', this.clearLocalStorage); 
+
 
                 // Bulk Actions Listener
                 document.getElementById('bulkSelectAllBtn').addEventListener('click', () => this.bulkSelectAll());
@@ -476,7 +487,7 @@
                     if (e.key === 'p' && this.selectedTask && !isTyping) { e.preventDefault(); this.isWaitingForPriority = true; }
                 });
             },
-            // --- ENDE attachEventListeners ---
+            // --- END attachEventListeners ---
 
             handleSortChange(newSortValue) { this.sortField = newSortValue; this.saveUIPreferences(); this.updateSortSelects(); this.render(); },
             attachEventDelegation() { const taskList = document.getElementById("taskList"); taskList.addEventListener("click", e => { if (!!document.querySelector(".edit-input")) return; if (e.target.matches(".project")) { e.stopPropagation(); this.toggleFilter(`+${e.target.textContent.substring(1)}`); return } if (e.target.matches(".context")) { e.stopPropagation(); this.toggleFilter(`@${e.target.textContent.substring(1)}`); return } const taskItem = e.target.closest(".task-item"); if (!taskItem) return; const taskId = taskItem.dataset.taskId; if (!taskId) return; if (e.target.matches(".task-checkbox")) { e.preventDefault(); this.toggleTask(taskId); } else if (e.target.closest(".task-content")) { if (e.ctrlKey || e.metaKey) this.toggleBulkSelect(taskId); else this.enterEditMode(taskItem); } }); const sidebar = document.querySelector(".sidebar"); if (sidebar) sidebar.addEventListener("click", e => { const viewFilterBtn = e.target.closest("[data-view-filter]"); if (viewFilterBtn) this.toggleFilter(`is:${viewFilterBtn.dataset.viewFilter}`, true); const specialFilterBtn = e.target.closest("[data-special-filter]"); if (specialFilterBtn) this.toggleFilter(`is:${specialFilterBtn.dataset.specialFilter}`); const filterItem = e.target.closest(".filter-item"); if (filterItem) { if (filterItem.dataset.priority) this.toggleFilter(`prio:${filterItem.dataset.priority}`); if (filterItem.dataset.project) this.toggleFilter(`+${filterItem.dataset.project}`); if (filterItem.dataset.context) this.toggleFilter(`@${filterItem.dataset.context}`); } }) },
@@ -517,6 +528,22 @@
             importFile(file) { if (!file || file.size > 1048576 && !confirm(`Large file (${(file.size / 1024 / 1024).toFixed(2)}MB). Continue?`)) return; const reader = new FileReader; reader.onload = e => { let content = e.target.result; if (content.charCodeAt(0) === 65279) content = content.slice(1); const lines = content.split("\n").filter(l => l.trim()); if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return; this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l))); this.saveToLocalStorage(true); this.render(); this.showNotification(`✅ Imported ${lines.length} tasks`); }; reader.readAsText(file); },
             exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const content = this.tasks.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); },
             archiveCompleted() { const completed = this.tasks.filter(t => t.completed); if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return; this.saveUndoState(); const content = completed.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); this.tasks = this.tasks.filter(t => !t.completed); if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${completed.length} tasks`); },
+            clearLocalStorage() {
+                if (confirm('Clear all local tasks?\n\nThis cannot be undone and will NOT affect your Google Drive file.')) {
+                    this.tasks = []; // Leert das Array im Speicher
+                    this.selectedTask = null;
+                    this.bulkSelected.clear();
+                    this.undoStack = []; // Leert auch den Undo-Verlauf
+                    try {
+                        localStorage.removeItem('todoTxtTasks'); // Entfernt den Eintrag aus localStorage
+                    } catch (e) {
+                        console.error('Failed to remove tasks from localStorage:', e);
+                    }
+                    this.updateUndoButton(); // Aktualisiert den Undo-Button-Status
+                    this.render(); // Zeichnet die (jetzt leere) Liste neu
+                    this.showNotification('🗑️ Local tasks cleared.');
+                }
+            },
             saveUndoState() { this.undoStack.push(JSON.parse(JSON.stringify(this.tasks))); if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift(); this.updateUndoButton(); },
             updateUndoButton() { const disabled = this.undoStack.length === 0; const undoBtnDesktop = document.getElementById("undoBtnDesktop"); const undoBtnMobile = document.getElementById("undoBtnMobile"); if (undoBtnDesktop) undoBtnDesktop.disabled = disabled; if (undoBtnMobile) undoBtnMobile.disabled = disabled; },
             undo() { if (this.undoStack.length === 0) return; this.tasks = this.undoStack.pop(); this.saveToLocalStorage(); this.render(); this.updateUndoButton(); },
