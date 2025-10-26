@@ -193,15 +193,14 @@
             <div class="search-add-box">
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
                 <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search" style="display: none;">✕</button>
+                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
             <div class="desktop-actions">
                  <button class="btn" id="helpBtnDesktop">?</button>
                  <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
                  <button class="btn" id="archiveCompletedBtnDesktop">archive</button>
-                 <label for="fileInput" class="btn">import</label>
-                 <button class="btn" id="exportBtnDesktop">export</button>
-                 <button class="btn" id="clearLocalBtnDesktop">clear</button>
-                 <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
+                 <label for="fileInput" class="btn">import</label> <button class="btn" id="exportBtnDesktop">export</button>
+                 <button class="btn" id="clearLocalBtnDesktop">clear</button> <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
                  <a href="impressum.html" target="_blank" class="btn">Impressum</a>
@@ -709,281 +708,205 @@
             async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const content = this.tasks.map(t => t.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: content }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
             async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const response = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const content = response.body; this.saveUndoState(); if (content) { this.tasks = content.split("\n").filter(l => l.trim()).map(l => this.parseTodoLine(l)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (e) { console.error("Fehler beim PULL:", e); } },
 
-            // --- autocomplete OBJEKT (v4.1 - Mobile Backspace Fix) ---
+            // --- ERSETZE DAS GESAMTE autocomplete OBJEKT (v5 - Filtered Dropdown) ---
             autocomplete: {
-                app: null,              // Referenz zur Haupt-App
-                currentUserInputBase: '', // Der Teil vor dem Trigger + Query (z.B. "Task text ")
-                currentUserQuery: '', // Der Teil nach dem Trigger (z.B. "con")
-                currentTrigger: null, // '+' oder '@'
-                activeSuggestionFull: null, // Der komplette vorgeschlagene String (z.B. "context2")
-                activeSuggestionSuffix: null, // Nur der Suffix (z.B. "xt2")
-                allSuggestions: [],     // Alle passenden Vorschläge
-                suggestionIndex: -1,    // Index des aktuellen Vorschlags
-                isCycling: false, // Flag, um Tippen von Blättern zu unterscheiden
+                app: null,
+                el: null, // Das Dropdown-Element
+                active: false,
+                items: [], // Die aktuell angezeigten Vorschläge
+                selectedIndex: -1,
+                targetInput: null, // Das Input-Feld (<input id="searchAddInput">)
+                triggerInfo: null, // Info über den Trigger { trigger: '+', query: 'pro', start: ... }
 
                 init(mainApp) {
                     this.app = mainApp;
+                    this.el = document.getElementById('autocomplete-suggestions');
+
+                    // Klick auf einen Vorschlag im Dropdown
+                    this.el.addEventListener('click', (e) => {
+                        if (e.target.matches('div')) {
+                            // Finde den Index des geklickten Elements
+                            const clickedIndex = Array.from(this.el.children).indexOf(e.target);
+                            if (clickedIndex !== -1) {
+                                this.selectedIndex = clickedIndex;
+                                this.confirmSelection();
+                            }
+                        }
+                    });
+
+                    // Schließen bei Klick außerhalb (Standardverhalten)
+                    document.addEventListener('click', (e) => {
+                        // Prüfen, ob das Element noch existiert bevor darauf zugegriffen wird
+                        if (this.active && this.el && !this.el.contains(e.target) && e.target !== this.targetInput) {
+                            this.hide();
+                        }
+                    });
                 },
 
+                // Wird bei jedem 'input'-Event aufgerufen
                 handleInput(e) {
-                    const input = e.target;
+                    this.targetInput = e.target; // Wichtig: Immer das aktuelle Input merken
+                    const input = this.targetInput;
                     const value = input.value;
                     const cursorPos = input.selectionStart;
 
-                    // Wenn wir gerade geblättert haben, ignoriere das Input-Event, das dadurch ausgelöst wurde
-                    if (this.isCycling) {
-                        this.isCycling = false; // Reset flag
-                        return;
-                    }
-
-                    // Reset state only if user input actually changed substantially,
-                    // not just cursor movement without text change before cursor.
+                    // Finde potenziellen Trigger (+ oder @) und Query direkt vor dem Cursor
                     const valueBeforeCursor = value.substring(0, cursorPos);
-                     // Check if value before cursor fundamentally changed or trigger lost
-                     const potentialMatch = valueBeforeCursor.match(/([+@])([\w.-]*)$/);
-                     let resetNeeded = true;
-                     if(potentialMatch && this.activeTriggerInfo) {
-                          const trigger = potentialMatch[1];
-                          const query = potentialMatch[2] || "";
-                          const inputBase = valueBeforeCursor.substring(0, valueBeforeCursor.length - query.length);
-                          if(trigger === this.activeTriggerInfo.trigger && inputBase === this.activeTriggerInfo.inputBase) {
-                              resetNeeded = false; // Still within the same potential tag context
-                              this.currentUserQuery = query; // Update query
-                              this.activeTriggerInfo.queryBase = query;
-                          }
-                     }
-
-                     if (resetNeeded) {
-                         this.clearSuggestionState(input, false); // Clear internal state, maybe not input visually yet
-                         this.activeTriggerInfo = null; // Full reset of trigger info
-                         this.currentUserInputBase = '';
-                         this.currentUserQuery = '';
-                     }
-
-
-                    // Re-evaluate trigger based on current state
                     const match = valueBeforeCursor.match(/([+@])([\w.-]*)$/);
 
-                    if (match && cursorPos === valueBeforeCursor.length) { // Cursor am Ende des potenziellen Tags
+                    if (match) {
                         const trigger = match[1];
                         const query = match[2] || "";
-                        const inputBase = valueBeforeCursor.substring(0, valueBeforeCursor.length - query.length);
+                        // Startposition des Query im Input-String
+                        const queryStartPos = cursorPos - query.length;
+                        this.triggerInfo = { trigger, query, start: queryStartPos };
 
-                        // Update state if not already set or changed
-                         if (!this.activeTriggerInfo || this.activeTriggerInfo.trigger !== trigger || this.activeTriggerInfo.inputBase !== inputBase) {
-                            this.activeTriggerInfo = { trigger, queryBase: query, inputBase };
-                            this.currentUserInputBase = inputBase;
-                            this.currentUserQuery = query;
-                            this.suggestionIndex = -1; // Force restart suggestion cycle
-                         } else {
-                             // Update query if it changed
-                             this.currentUserQuery = query;
-                             this.activeTriggerInfo.queryBase = query;
-                         }
+                        // Suche passende Vorschläge
+                        const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
+                        // Filter suggestions: must start with query AND be longer than query if query exists
+                        this.items = [...new Set(source)]
+                            .filter(item => item.toLowerCase().startsWith(query.toLowerCase()) && (query.length === 0 || item.length > query.length))
+                            .sort();
 
-                        // Vorschläge suchen (nur wenn Query nicht leer)
-                        if (query.length > 0) {
-                            const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
-                            const suggestions = [...new Set(source)]
-                                .filter(item => item.toLowerCase().startsWith(query.toLowerCase()) && item.length > query.length)
-                                .sort();
 
-                            if (suggestions.length > 0) {
-                                this.allSuggestions = suggestions;
-                                if (this.suggestionIndex < 0 || this.suggestionIndex >= suggestions.length) {
-                                    this.suggestionIndex = 0;
-                                }
-                                this.displaySuggestion(input);
-                                return; // Vorschlag angezeigt
-                            } else {
-                                 // Query exists, but no suggestions found
-                                 this.clearSuggestion(false); // Clear only suggestion part, keep user input
-                                 this.allSuggestions = [];
-                                 this.suggestionIndex = -1;
-                            }
+                        if (this.items.length > 0) { // Zeige auch an, wenn query leer ist (z.B. nur @)
+                            this.show(); // Zeigt das Dropdown an
                         } else {
-                             // Query is empty (e.g., just "@")
-                             this.clearSuggestion(false);
-                             this.allSuggestions = [];
-                             this.suggestionIndex = -1;
+                            this.hide(); // Keine Treffer -> verstecken
                         }
                     } else {
-                         // Kein gültiger Trigger/Query am Cursor-Ende
-                         if (this.activeSuggestionFull) { // If a suggestion was active, clear it properly
-                              this.clearSuggestionState(input);
-                         } else { // Otherwise just ensure state is clean
-                              this.clearSuggestionState(null, false);
-                         }
+                        // Kein Trigger gefunden -> verstecken
+                        this.triggerInfo = null;
+                        this.hide();
                     }
-                }, // Ende handleInput
+                },
 
-                displaySuggestion(input) {
-                    if (this.suggestionIndex < 0 || this.suggestionIndex >= this.allSuggestions.length || !this.activeTriggerInfo) {
-                        this.clearSuggestion(false); // Nur Suffix löschen, falls was schiefgeht
+                // Behandelt spezielle Tasten im Input
+                handleKeydown(e) {
+                    if (!this.active) return false; // Nur wenn Dropdown sichtbar ist
+
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            this.selectedIndex = Math.min(this.selectedIndex + 1, this.items.length - 1);
+                            this.updateSelectionUI();
+                            break;
+                        case 'ArrowUp':
+                             // Gehe zum Input zurück, wenn am Anfang
+                            if (this.selectedIndex <= 0) {
+                                this.selectedIndex = -1; // Kein Element mehr ausgewählt
+                                this.updateSelectionUI();
+                                // Verhindere nicht das Standardverhalten (Cursor geht nach oben im Input)
+                                return false; // Nicht von uns behandelt
+                            }
+                            this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+                            this.updateSelectionUI();
+                            break;
+                        case 'Enter':
+                        case 'Tab':
+                            if (this.selectedIndex !== -1) {
+                                this.confirmSelection();
+                            } else {
+                                // Wenn nichts ausgewählt ist, lasse Enter/Tab normal durch (z.B. zum Task hinzufügen)
+                                this.hide(); // Verstecke Dropdown aber
+                                return false; // Nicht von uns behandelt
+                            }
+                            break;
+                        case 'Escape':
+                            this.hide();
+                            break;
+                        default:
+                            // Bei anderen Tasten (Buchstaben, Backspace etc.)
+                            // nicht eingreifen, das 'input'-Event regelt das Filtern.
+                            // Setze aber den Index zurück, da die Liste sich ändert.
+                            this.selectedIndex = -1;
+                            // Manuelles Update der UI hier, um Markierung zu entfernen
+                            this.updateSelectionUI();
+                            return false; // Nicht von uns behandelt
+                    }
+                    e.preventDefault(); // Verhindert Standardverhalten der Tasten (Scrollen etc.)
+                    return true; // Taste wurde von uns behandelt
+                },
+
+                // Zeigt das gefilterte Dropdown an
+                show() {
+                    if (!this.el) return; // Element muss existieren
+                    if (this.items.length === 0) {
+                        this.hide();
+                        return;
+                    }
+                    // Dropdown mit gefilterten Items füllen
+                    this.el.innerHTML = this.items.map(item => `<div>${this.app.escapeHtml(item)}</div>`).join('');
+                    // Index zurücksetzen und UI aktualisieren
+                    // Starte ohne Vorauswahl (-1), Auswahl erst mit Pfeiltaste
+                    this.selectedIndex = -1;
+                    this.updateSelectionUI();
+                    // Positionieren (passiert durch CSS : position:absolute, top:100%)
+                    this.el.style.display = 'block';
+                    this.active = true;
+                },
+
+                // Versteckt das Dropdown
+                hide() {
+                    if (!this.active) return;
+                    this.active = false;
+                    if(this.el) this.el.style.display = 'none';
+                    this.items = [];
+                    this.selectedIndex = -1;
+                    this.triggerInfo = null;
+                },
+
+                // Fügt den ausgewählten Vorschlag in das Input ein
+                confirmSelection() {
+                    if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length || !this.targetInput || !this.triggerInfo) {
+                        this.hide();
                         return;
                     }
 
-                    this.activeSuggestionFull = this.allSuggestions[this.suggestionIndex];
-                    // Recalculate suffix based on potentially updated currentUserQuery
-                    this.activeSuggestionSuffix = this.activeSuggestionFull.substring(this.currentUserQuery.length);
+                    const selectedItem = this.items[this.selectedIndex];
+                    const { start, query } = this.triggerInfo;
+                    const currentValue = this.targetInput.value;
 
-                    const userTextBeforeSuggestion = this.currentUserInputBase + this.currentUserQuery;
+                    // Baue den neuen Wert zusammen
+                    // Ersetze nur den Query-Teil durch das ausgewählte Item
+                    const newValue = currentValue.substring(0, start) + selectedItem + ' ' + currentValue.substring(start + query.length);
 
-                    input.value = userTextBeforeSuggestion + this.activeSuggestionSuffix;
-                    input.setSelectionRange(userTextBeforeSuggestion.length, input.value.length);
+
+                    this.targetInput.value = newValue;
+                    this.hide(); // Dropdown schließen
+                    this.targetInput.focus(); // Fokus zurück ins Input
+
+                    // Cursor ans Ende des eingefügten Wortes + Leerzeichen setzen
+                    const newCursorPos = start + selectedItem.length + 1;
+                    // Stelle sicher, dass Cursor nicht außerhalb des Values landet
+                    const finalCursorPos = Math.min(newCursorPos, this.targetInput.value.length);
+                    this.targetInput.setSelectionRange(finalCursorPos, finalCursorPos);
+
+
+                    // Wichtig: App-Status und Rendering nach Änderung triggern
+                    this.app.searchQuery = this.targetInput.value;
+                    // Render ist wahrscheinlich nicht nötig, da Input-Event ausgelöst wird
+                    // this.app.render();
+                    // Manuell 'input' Event auslösen, um z.B. 'X' Button zu aktualisieren
+                    this.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                 },
 
-                handleKeydown(e) {
-                    const input = e.target;
-                    const selectionStart = input.selectionStart;
-                    const selectionEnd = input.selectionEnd;
-                    const isSuggestionSelected = selectionStart !== selectionEnd && this.activeSuggestionSuffix;
-
-                    // TAB: Akzeptieren
-                    if (e.key === 'Tab' && this.activeSuggestionFull) {
-                        e.preventDefault();
-                        input.value = this.currentUserInputBase + this.activeSuggestionFull;
-                        input.setSelectionRange(input.value.length, input.value.length);
-                        this.app.searchQuery = input.value;
-                        this.clearSuggestionState(null, false);
-                        return true;
-                    }
-
-                    // PFEIL RECHTS: Blättern oder Akzeptieren
-                    if (e.key === 'ArrowRight') {
-                        if (this.allSuggestions.length > 1 && selectionEnd === input.value.length) { // Cursor am Ende -> Blättern
-                            e.preventDefault();
-                            this.suggestionIndex = (this.suggestionIndex + 1) % this.allSuggestions.length;
-                            this.isCycling = true;
-                            this.displaySuggestion(input);
-                            return true;
-                        } else if (isSuggestionSelected) { // Cursor am Anfang/Mitte des Suffix -> Akzeptieren
-                            e.preventDefault();
-                            input.setSelectionRange(input.value.length, input.value.length);
-                            this.app.searchQuery = input.value; // Wert hat sich nicht geändert, aber state aktualisieren
-                            this.clearSuggestion(false); // Nur internen Suffix-Status löschen
-                            return true;
+                // Aktualisiert das Styling des ausgewählten Items im Dropdown
+                updateSelectionUI() {
+                    if(!this.el) return;
+                    Array.from(this.el.children).forEach((child, index) => {
+                        const isSelected = index === this.selectedIndex;
+                        child.classList.toggle('selected', isSelected);
+                        // Optional: Zum ausgewählten Element scrollen
+                        if (isSelected) {
+                            // Prüfen ob scrollIntoView verfügbar ist (verhindert Fehler in manchen Umgebungen)
+                            if (child.scrollIntoView) {
+                                child.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
                         }
-                    }
-
-                    // PFEIL LINKS: Blättern
-                    if (e.key === 'ArrowLeft') {
-                         // Nur blättern, wenn Cursor am Anfang des Suffix steht UND Suffix selektiert ist
-                        if (this.allSuggestions.length > 1 && isSuggestionSelected && selectionStart === (this.currentUserInputBase.length + this.currentUserQuery.length) ) {
-                             e.preventDefault();
-                             this.suggestionIndex = (this.suggestionIndex - 1 + this.allSuggestions.length) % this.allSuggestions.length;
-                             this.isCycling = true;
-                             this.displaySuggestion(input);
-                             return true;
-                        }
-                         // Wenn Cursor woanders -> Vorschlag abbrechen (passiert unten bei Navigation)
-                    }
-
-                    // BACKSPACE: Überarbeitete Logik für Mobile
-                    if (e.key === 'Backspace') {
-                        if (isSuggestionSelected) {
-                            // Suffix ist selektiert -> Nur Suffix löschen
-                            e.preventDefault();
-                            const valueWithoutSuffix = this.currentUserInputBase + this.currentUserQuery;
-
-                            // Wichtig: State zuerst löschen, bevor Input-Event getriggert wird
-                            this.clearSuggestionState(null, false); // Nur internen State löschen
-
-                            // Input-Wert und Cursor setzen
-                            input.value = valueWithoutSuffix;
-                            input.setSelectionRange(input.value.length, input.value.length);
-
-                            // App-Status aktualisieren
-                            this.app.searchQuery = input.value;
-
-                            // handleInput direkt aufrufen, statt Event zu dispatchen
-                            this.handleInput({ target: input }); // Re-evaluate suggestions
-
-                            return true; // Backspace wurde behandelt
-                        } else {
-                            // Kein Suffix selektiert -> normales Backspace
-                            // Nur State löschen, falls nötig (z.B. User löscht Trigger-Zeichen)
-                             if (this.activeSuggestionFull || this.activeTriggerInfo) {
-                                // Kurze Verzögerung, damit Browser erst löscht, dann 'input' Event prüfen kann
-                                setTimeout(() => {
-                                    // Prüfen ob Trigger weg ist
-                                    const value = input.value;
-                                    const cursorPos = input.selectionStart;
-                                    const valueBeforeCursor = value.substring(0, cursorPos);
-                                    const match = valueBeforeCursor.match(/([+@])([\w.-]*)$/);
-                                    if(!match) {
-                                         this.clearSuggestionState(null, false);
-                                    } else {
-                                         // Trigger noch da, state sollte durch input event aktualisiert werden
-                                         // Ggf. nur Suggestion löschen, falls Query jetzt leer ist
-                                         if (match[2] === "") {
-                                             this.clearSuggestion(false);
-                                         }
-                                    }
-                                }, 0);
-                             }
-                            // Kein preventDefault -> normales Backspace wirkt
-                        }
-                    }
-
-                    // ESCAPE: Vorschlag abbrechen
-                    if (e.key === 'Escape') {
-                        if (this.activeSuggestionSuffix) {
-                            e.preventDefault();
-                            this.clearSuggestionState(input); // State + Input korrigieren
-                            return true;
-                        }
-                        // Ansonsten normales Escape (wird im globalen Listener behandelt)
-                    }
-
-                    // Andere Navigationstasten -> Vorschlag abbrechen
-                    if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) && this.activeSuggestionSuffix) {
-                        this.clearSuggestionState(input); // State + Input korrigieren
-                        // Lasse Taste durch (return false)
-                    }
-
-                    // Normales Tippen überschreibt Vorschlag
-                    if (isSuggestionSelected && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-                        this.clearSuggestionState(null, false); // Nur State löschen
-                        // Lasse Taste durch (return false)
-                    }
-
-                    return false; // Keydown wurde nicht speziell behandelt
+                    });
                 },
 
-                // clearSuggestion: Entfernt nur Suffix visuell und intern
-                clearSuggestion(resetInputValue = true) {
-                    const input = document.getElementById('searchAddInput');
-                    if (resetInputValue && this.activeSuggestionSuffix && input) {
-                        const userTypedValue = this.currentUserInputBase + this.currentUserQuery;
-                        // Nur zurücksetzen, wenn der aktuelle Wert länger ist
-                        if(input.value.length > userTypedValue.length) {
-                            input.value = userTypedValue;
-                            input.setSelectionRange(input.value.length, input.value.length);
-                            this.app.searchQuery = input.value;
-                        }
-                    }
-                    this.activeSuggestionFull = null;
-                    this.activeSuggestionSuffix = null;
-                    // Index und allSuggestions nicht löschen, könnten beim Blättern noch relevant sein
-                },
-
-                // clearSuggestionState: Macht einen kompletten Reset
-                clearSuggestionState(input = null, resetInputValue = true) {
-                    this.clearSuggestion(resetInputValue); // Erstmal aktuellen Vorschlag entfernen
-                    this.allSuggestions = [];
-                    this.suggestionIndex = -1;
-                    this.currentTriggerInfo = null;
-                    this.currentUserInputBase = '';
-                    this.currentUserQuery = '';
-                    this.isCycling = false;
-                     // Ggf. Selektion aufheben, falls noch vorhanden
-                     if(input && input.selectionStart !== input.selectionEnd) {
-                          input.setSelectionRange(input.value.length, input.value.length);
-                     }
-                },
-
-                // positionEl: Nicht mehr benötigt für Inline-Autocomplete
+                // Positionierungsfunktion ist jetzt leer/nicht mehr nötig wegen CSS
                 positionEl() { }
 
             }, // --- ENDE autocomplete OBJEKT ---
