@@ -11,6 +11,7 @@
 - Notizen
 - count projects, tasks with priority, projects, context, due date
 - individuelle filter abspreichern z.B. wenn Filter in der Suchleiste Speichern ermöglichen
+- Thanks to Absatz in Readme.md
 
 ### doing
 - Dubletten suchen und löschen wobei ein Original zurückbleibt
