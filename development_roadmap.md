@@ -9,6 +9,8 @@
 - Einstellungen in eine config-datei abspeichern
 - Urls anklickbar
 - Notizen
+- count projects, tasks with priority, projects, context, due date
+- individuelle filter abspreichern z.B. wenn Filter in der Suchleiste Speichern ermöglichen
 
 ### doing
 - Dubletten suchen und löschen wobei ein Original zurückbleibt
