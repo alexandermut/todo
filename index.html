@@ -638,44 +638,39 @@
             exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const content = this.tasks.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); },
             archiveCompleted() { const completed = this.tasks.filter(t => t.completed); if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return; this.saveUndoState(); const content = completed.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); this.tasks = this.tasks.filter(t => !t.completed); if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${completed.length} tasks`); },
             
-            // --- NEUE FUNKTION HINZUGEFÜGT ---
             findAndSelectDuplicates() {
-                const seenTasks = new Map(); // Speichert: rawText -> task.id (nur die erste Instanz)
-                const duplicateIds = new Set(); // Speichert IDs aller Duplikate
+                const seenTasks = new Set(); // Speichert: rawText von Tasks, die wir schon 1x gesehen haben
+                const duplicateIdsToSelect = new Set(); // Speichert IDs von Duplikaten, die gelöscht werden sollen
 
                 for (const task of this.tasks) {
                     const rawText = task.raw.trim();
                     if (rawText === "") continue; // Leere Zeilen ignorieren
 
                     if (seenTasks.has(rawText)) {
-                        // Diese Zeile ist ein Duplikat
-                        duplicateIds.add(task.id); // Füge die ID dieses Duplikats hinzu
-                        
-                        const firstInstanceId = seenTasks.get(rawText);
-                        if (firstInstanceId) { // Nur hinzufügen, wenn es nicht schon auf null gesetzt wurde
-                            duplicateIds.add(firstInstanceId);
-                            seenTasks.set(rawText, null); // Markieren, dass "Original" hinzugefügt wurde
-                        }
+                        // Diese Zeile ist ein Duplikat (wir haben sie schon mal gesehen).
+                        // Wähle sie zur Löschung aus.
+                        duplicateIdsToSelect.add(task.id);
                     } else {
-                        // Diese Zeile zum ersten Mal gesehen
-                        seenTasks.set(rawText, task.id);
+                        // Diese Zeile zum ersten Mal gesehen.
+                        // Markiere sie als "gesehen" (unser "Original") und wähle sie NICHT aus.
+                        seenTasks.add(rawText);
                     }
                 }
 
-                if (duplicateIds.size === 0) {
+                if (duplicateIdsToSelect.size === 0) {
                     this.showNotification('👍 No duplicates found.');
                     return;
                 }
 
-                // Lösche zuerst die aktuelle Auswahl
-                this.bulkDeselectAll(); // (Stellt sicher, dass wir nur Duplikate auswählen)
+                // Lösche zuerst die aktuelle Auswahl, falls vorhanden
+                this.bulkDeselectAll();
 
-                // Füge alle Duplikat-IDs zur Bulk-Auswahl hinzu
-                duplicateIds.forEach(id => {
+                // Füge alle Duplikat-IDs (nur die Kopien) zur Bulk-Auswahl hinzu
+                duplicateIdsToSelect.forEach(id => {
                     this.bulkSelected.add(id);
                 });
 
-                this.showNotification(`🔎 ${duplicateIds.size} duplicate tasks selected.`);
+                this.showNotification(`🔎 ${duplicateIdsToSelect.size} duplicates selected (originals kept).`);
                 this.render(); // rendert die Auswahl
                 this.updateBulkBar(); // Zeigt die Bulk Bar
             },
