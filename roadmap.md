@@ -2,11 +2,6 @@
 
 ## Features
 
-## Legende
--  idea
-- [ ] = doing
-- [x] = done
-
 - use createdate as an unique id
 - Syntax higlighting of metadata tags (key:value1)
 - date calender picker with formatting for past, present and future dates due:YYYY-MM-DD
@@ -16,6 +11,7 @@
 - count projects, tasks with priority, projects, context, due date
 - individuelle filter abspreichern z.B. wenn Filter in der Suchleiste Speichern ermöglichen
 - Thanks to Absatz in Readme.md
+- stared or favorite feature for projects and contexts like @waiting @call @buy
 
 - [ ] Dubletten suchen und löschen wobei ein Original zurückbleibt
 - [ ] Aufgaben zu Projekten / Kontext hinzufügen wenn Projekt oder Konzept als Filter aktiv
