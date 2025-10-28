@@ -58,7 +58,7 @@
         .app-container {
             display: grid;
             grid-template-columns: 280px 1fr;
-            grid-template-rows: auto 1fr; /* Zurück zu TopBar, Main Content */
+            grid-template-rows: auto 1fr; /* TopBar, Main Content */
             height: 100%; position: relative; overflow: hidden;
         }
 
@@ -115,7 +115,7 @@
         .btn:active, .task-item:active, .filter-item:active { transform: scale(0.98); }
         .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
         .btn-primary:hover { background: var(--accent-hover); }
-        .btn-danger { background-color: var(--danger); color: white; border-color: var(--danger); } /* Behalte ich mal drin, falls du es für "Clear" wieder willst */
+        .btn-danger { background-color: var(--danger); color: white; border-color: var(--danger); }
         .btn-danger:hover { background-color: #c82333; border-color: #bd2130; }
 
         .sidebar { grid-row: 2; background: var(--bg-secondary); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; }
@@ -128,13 +128,13 @@
         .filter-item.active .filter-count { background: rgba(255,255,255,0.2); color: white; }
 
         .main-content {
-            grid-row: 2; /* Zurück auf Reihe 2 */
+            grid-row: 2;
             overflow-y: auto;
-            padding: 16px 24px; /* Padding wieder hier */
+            padding: 16px 24px;
             overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         }
 
-        .task-list-container { padding: 0; } /* Wrapper nicht mehr nötig */
+        .task-list-container { padding: 0; }
         .task-list { display: flex; flex-direction: column; }
         .task-item { display: flex; align-items: flex-start; padding: 12px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 2px; cursor: default; transition: background 0.2s; }
         .task-item:hover { background: var(--bg-hover); }
@@ -161,17 +161,14 @@
 
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
         input[type="file"] { display: none; }
-        
-        /* Autocomplete CSS entfernt */
 
         @media (max-width: 768px) {
-             .app-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } /* Zurück zu 2 Reihen */
+             .app-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
              .sidebar { display: none; grid-row: 2; }
              #topBar { padding: 8px 10px; }
              #topBar .desktop-actions { display: none; }
              .burger-btn { display: block; }
-             /* SuggestionBar entfernt */
-             .main-content { grid-row: 2; padding: 16px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); } /* Padding wiederhergestellt, 80px für Bulk Bar */
+             .main-content { grid-row: 2; padding: 16px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
              .task-list-container { padding: 0; }
              .bulk-actions-bar { left: 0; right: 0; bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         }
@@ -183,7 +180,7 @@
             <div class="search-add-box">
                 <input type="text" id="searchAddInput" class="search-add-input" placeholder="Search, filter, or add a new task...">
                 <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search" style="display: none;">✕</button>
-                </div>
+            </div>
             <div class="desktop-actions">
                  <button class="btn" id="helpBtnDesktop">?</button>
                  <button class="btn" id="undoBtnDesktop" disabled>↶ undo</button>
@@ -191,6 +188,7 @@
                  <label for="fileInput" class="btn">import</label>
                  <button class="btn" id="exportBtnDesktop">export</button>
                  <button class="btn" id="clearLocalBtnDesktop">clear</button>
+                 <button class="btn" id="findDuplicatesBtnDesktop">Find Duplicates</button>
                  <button class="btn" id="gdriveLoginBtnDesktop">connect to G-Drive</button>
                  <button class="btn" id="gdrivePushBtnDesktop" style="display: none;">save to G-Drive</button>
                  <button class="btn" id="gdrivePullBtnDesktop" style="display: none;">load from G-Drive</button>
@@ -208,6 +206,7 @@
             <label for="fileInput" class="btn">import</label>
             <button class="btn" id="exportBtnMobile">export</button>
             <button class="btn" id="clearLocalBtnMobile">clear</button>
+            <button class="btn" id="findDuplicatesBtnMobile">Find Duplicates</button>
             <button class="btn" id="gdriveLoginBtnMobile">connect to G-Drive</button>
             <button class="btn" id="gdrivePushBtnMobile" style="display: none;">save to G-Drive</button>
             <button class="btn" id="gdrivePullBtnMobile" style="display: none;">load from G-Drive</button>
@@ -276,12 +275,12 @@
             DRIVE_FILE_ID: null, gapiClient: null, gisTokenClient: null,
 
             init() {
-                console.log('🚀 Initializing App v2.6.0 (No Autocomplete)'); // Version angepasst
+                console.log('🚀 Initializing App v2.7.0 (Find Duplicates)'); // Version angepasst
                 this.loadFromLocalStorage();
                 this.loadUIPreferences();
                 this.attachEventListeners();
                 this.attachEventDelegation();
-                // this.autocomplete.init(this); // Entfernt
+                // autocomplete.init entfernt
                 this.render();
                 this.updateSortSelects();
             },
@@ -290,10 +289,35 @@
                 document.getElementById('sortSelect').value = this.sortField;
             },
 
-            loadFromLocalStorage() { try { const d=localStorage.getItem("todoTxtTasks"); if(d){ const e=JSON.parse(d); Array.isArray(e)&&(this.tasks=e) } } catch(d){ console.error("❌ Failed to load tasks:",d) } },
-            loadUIPreferences() { try { this.sortField=localStorage.getItem("sortField")||"default" } catch(d){ console.error("⚠️ Failed to load UI preferences:",d) } },
-            saveToLocalStorage(d=!1) { clearTimeout(this.saveDebounceTimer); const e=()=>{ try { localStorage.setItem("todoTxtTasks",JSON.stringify(this.tasks)) } catch(f){ console.error("❌ Failed to save tasks:",f) } }; d?e():this.saveDebounceTimer=setTimeout(e,300) },
-            saveUIPreferences() { try { localStorage.setItem("sortField",this.sortField) } catch(d){ console.error("⚠️ Failed to save UI preferences:",d) } },
+            loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem('todoTxtTasks');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) this.tasks = parsed;
+                    }
+                } catch (e) { console.error('❌ Failed to load tasks:', e); }
+            },
+
+            loadUIPreferences() {
+                try { this.sortField = localStorage.getItem('sortField') || 'default'; }
+                catch (e) { console.error('⚠️ Failed to load UI preferences:', e); }
+            },
+
+            saveToLocalStorage(immediate = false) {
+                clearTimeout(this.saveDebounceTimer);
+                const save = () => {
+                    try { localStorage.setItem('todoTxtTasks', JSON.stringify(this.tasks)); }
+                    catch (e) { console.error('❌ Failed to save tasks:', e); }
+                };
+                if (immediate) { save(); }
+                else { this.saveDebounceTimer = setTimeout(save, 300); }
+            },
+
+            saveUIPreferences() {
+                try { localStorage.setItem('sortField', this.sortField); }
+                catch (e) { console.error('⚠️ Failed to save UI preferences:', e); }
+            },
 
             attachEventListeners() {
                 const searchAddInput = document.getElementById('searchAddInput');
@@ -302,12 +326,12 @@
                 searchAddInput.addEventListener('input', (e) => {
                     this.searchQuery = e.target.value;
                     if (clearSearchBtn) { clearSearchBtn.style.display = e.target.value ? 'block' : 'none'; }
-                    // this.autocomplete.handleInput(e); // Entfernt
+                    // autocomplete.handleInput entfernt
                     this.render();
                 });
 
                 searchAddInput.addEventListener('keydown', (e) => {
-                    // if (this.autocomplete.handleKeydown(e)) { e.preventDefault(); return; } // Entfernt
+                    // autocomplete.handleKeydown entfernt
                     if (e.key === 'Enter' && !e.isComposing) {
                         e.preventDefault();
                         const value = searchAddInput.value.trim();
@@ -316,7 +340,7 @@
                         if (taskText) {
                             const fullTaskText = `${taskText} ${contextTags.join(' ')}`.trim();
                             this.addTask(fullTaskText);
-                            this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : ''); // Behalte Filter bei
+                            this.searchQuery = contextTags.join(' ') + (contextTags.length > 0 ? ' ' : '');
                             searchAddInput.value = this.searchQuery;
                             if (clearSearchBtn) { clearSearchBtn.style.display = searchAddInput.value ? 'block' : 'none'; }
                             this.render();
@@ -324,25 +348,40 @@
                     }
                     if (e.key === 'Escape') {
                         e.preventDefault();
-                         // if (this.autocomplete.active) { this.autocomplete.hide(); } // Entfernt
-                         if (searchAddInput.value !== '') { searchAddInput.value = ''; this.searchQuery = ''; if (clearSearchBtn) clearSearchBtn.style.display = 'none'; this.render(); /* this.autocomplete.hide(); */ } // Entfernt
-                         else { searchAddInput.blur(); }
+                        if (searchAddInput.value !== '') { searchAddInput.value = ''; this.searchQuery = ''; if (clearSearchBtn) clearSearchBtn.style.display = 'none'; this.render(); }
+                        else { searchAddInput.blur(); }
                     }
                     if (e.key === 'ArrowDown') { const firstTask = document.querySelector('#taskList .task-item'); if (firstTask) { e.preventDefault(); firstTask.focus(); } }
                 });
 
-                if (clearSearchBtn) { clearSearchBtn.addEventListener('click', () => { searchAddInput.value = ''; this.searchQuery = ''; clearSearchBtn.style.display = 'none'; this.render(); /* this.autocomplete.hide(); */ searchAddInput.focus(); }); } // Entfernt
+                if (clearSearchBtn) { clearSearchBtn.addEventListener('click', () => { searchAddInput.value = ''; this.searchQuery = ''; clearSearchBtn.style.display = 'none'; this.render(); searchAddInput.focus(); }); }
                 else { console.error("Clear search button not found!"); }
 
                 document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSortChange(e.target.value));
 
-                const addActionListener = (idBase, eventType = 'click', fn) => { const desktopEl = document.getElementById(idBase + 'Desktop'); const mobileEl = document.getElementById(idBase + 'Mobile'); if (typeof fn !== 'function') { console.error(`Error attaching listener: fn for ${idBase} is not a function.`); return; } const boundFn = fn.bind(this); if (desktopEl) desktopEl.addEventListener(eventType, boundFn); if (mobileEl) mobileEl.addEventListener(eventType, boundFn); if (idBase === 'fileInput' && eventType === 'change') { const fileInput = document.getElementById('fileInput'); if (fileInput && !fileInput.dataset.listenerAttached) { fileInput.addEventListener(eventType, boundFn); fileInput.dataset.listenerAttached = 'true'; } } };
+                const addActionListener = (idBase, eventType = 'click', fn) => {
+                    const desktopEl = document.getElementById(idBase + 'Desktop');
+                    const mobileEl = document.getElementById(idBase + 'Mobile');
+                    if (typeof fn !== 'function') { console.error(`Error attaching listener: fn for ${idBase} is not a function.`); return; }
+                    const boundFn = fn.bind(this);
+                    if (desktopEl) desktopEl.addEventListener(eventType, boundFn);
+                    if (mobileEl) mobileEl.addEventListener(eventType, boundFn);
+                    if (idBase === 'fileInput' && eventType === 'change') {
+                        const fileInput = document.getElementById('fileInput');
+                        if (fileInput && !fileInput.dataset.listenerAttached) {
+                            fileInput.addEventListener(eventType, boundFn);
+                            fileInput.dataset.listenerAttached = 'true';
+                        }
+                    }
+                };
+                
                 addActionListener('helpBtn', 'click', this.showHelp);
                 addActionListener('undoBtn', 'click', this.undo);
                 addActionListener('archiveCompletedBtn', 'click', this.archiveCompleted);
                 addActionListener('fileInput', 'change', (e) => { this.importFile(e.target.files[0]); e.target.value = ''; });
                 addActionListener('exportBtn', 'click', this.exportToFile);
                 addActionListener('clearLocalBtn', 'click', this.clearLocalStorage);
+                addActionListener('findDuplicatesBtn', 'click', this.findAndSelectDuplicates); // <-- NEUER LISTENER
                 addActionListener('gdriveLoginBtn', 'click', this.handleAuthClick);
                 addActionListener('gdrivePushBtn', 'click', this.pushToDrive);
                 addActionListener('gdrivePullBtn', 'click', this.pullFromDrive);
@@ -358,7 +397,7 @@
 
                 document.addEventListener('keydown', (e) => {
                     const searchAddInput = document.getElementById('searchAddInput');
-                    if (!!document.querySelector('.edit-input')) return; // Autocomplete-Check entfernt
+                    if (!!document.querySelector('.edit-input')) return;
                     const isTyping = e.target.matches('input, textarea');
                     if (e.key === '/' && !isTyping && searchAddInput.offsetParent !== null) {
                         e.preventDefault(); searchAddInput.focus();
@@ -598,6 +637,49 @@
             importFile(file) { if (!file || file.size > 1048576 && !confirm(`Large file (${(file.size / 1024 / 1024).toFixed(2)}MB). Continue?`)) return; const reader = new FileReader; reader.onload = e => { let content = e.target.result; if (content.charCodeAt(0) === 65279) content = content.slice(1); const lines = content.split("\n").filter(l => l.trim()); if (this.tasks.length > 0 && !confirm(`Import ${lines.length} tasks? (Will append)`)) return; this.saveUndoState(); this.tasks.push(...lines.map(l => this.parseTodoLine(l))); this.saveToLocalStorage(true); this.render(); this.showNotification(`✅ Imported ${lines.length} tasks`); }; reader.readAsText(file); },
             exportToFile() { if (this.tasks.length === 0) return alert("No tasks to export"); const content = this.tasks.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `todo-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); },
             archiveCompleted() { const completed = this.tasks.filter(t => t.completed); if (completed.length === 0 || !confirm(`Archive ${completed.length} completed task(s)?`)) return; this.saveUndoState(); const content = completed.map(t => t.raw).join("\n"); const blob = new Blob([content], { type: "text/plain;charset=utf-8" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `done-${(new Date).toISOString().slice(0, 10)}.txt`; a.click(); URL.revokeObjectURL(url); this.tasks = this.tasks.filter(t => !t.completed); if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask)) this.selectedTask = null; this.bulkSelected.clear(); this.saveToLocalStorage(); this.render(); this.updateBulkBar(); this.showNotification(`✅ Archived ${completed.length} tasks`); },
+            
+            // --- NEUE FUNKTION HINZUGEFÜGT ---
+            findAndSelectDuplicates() {
+                const seenTasks = new Map(); // Speichert: rawText -> task.id (nur die erste Instanz)
+                const duplicateIds = new Set(); // Speichert IDs aller Duplikate
+
+                for (const task of this.tasks) {
+                    const rawText = task.raw.trim();
+                    if (rawText === "") continue; // Leere Zeilen ignorieren
+
+                    if (seenTasks.has(rawText)) {
+                        // Diese Zeile ist ein Duplikat
+                        duplicateIds.add(task.id); // Füge die ID dieses Duplikats hinzu
+                        
+                        const firstInstanceId = seenTasks.get(rawText);
+                        if (firstInstanceId) { // Nur hinzufügen, wenn es nicht schon auf null gesetzt wurde
+                            duplicateIds.add(firstInstanceId);
+                            seenTasks.set(rawText, null); // Markieren, dass "Original" hinzugefügt wurde
+                        }
+                    } else {
+                        // Diese Zeile zum ersten Mal gesehen
+                        seenTasks.set(rawText, task.id);
+                    }
+                }
+
+                if (duplicateIds.size === 0) {
+                    this.showNotification('👍 No duplicates found.');
+                    return;
+                }
+
+                // Lösche zuerst die aktuelle Auswahl
+                this.bulkDeselectAll(); // (Stellt sicher, dass wir nur Duplikate auswählen)
+
+                // Füge alle Duplikat-IDs zur Bulk-Auswahl hinzu
+                duplicateIds.forEach(id => {
+                    this.bulkSelected.add(id);
+                });
+
+                this.showNotification(`🔎 ${duplicateIds.size} duplicate tasks selected.`);
+                this.render(); // rendert die Auswahl
+                this.updateBulkBar(); // Zeigt die Bulk Bar
+            },
+            
             clearLocalStorage() { if (confirm('Clear all local tasks?\n\nThis cannot be undone and will NOT affect your Google Drive file.')) { this.tasks = []; this.selectedTask = null; this.bulkSelected.clear(); this.undoStack = []; try { localStorage.removeItem('todoTxtTasks'); } catch (e) { console.error('Failed to remove tasks from localStorage:', e); } this.updateUndoButton(); this.render(); this.showNotification('🗑️ Local tasks cleared.'); } },
             saveUndoState() { this.undoStack.push(JSON.parse(JSON.stringify(this.tasks))); if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift(); this.updateUndoButton(); },
             updateUndoButton() { const disabled = this.undoStack.length === 0; const undoBtnDesktop = document.getElementById("undoBtnDesktop"); const undoBtnMobile = document.getElementById("undoBtnMobile"); if (undoBtnDesktop) undoBtnDesktop.disabled = disabled; if (undoBtnMobile) undoBtnMobile.disabled = disabled; },
@@ -614,143 +696,14 @@
             async pushToDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (!confirm("Lokale Daten ➔ Google Drive speichern?\n(Überschreibt die Cloud-Version)")) return; console.log(`PUSH zu GDrive ${this.DRIVE_FILE_ID}...`); const content = this.tasks.map(t => t.raw).join("\n"); try { await this.gapiClient.request({ path: `/upload/drive/v3/files/${this.DRIVE_FILE_ID}`, method: "PATCH", params: { uploadType: "media" }, body: content }); this.showNotification("✅ In Google Drive gespeichert"); } catch (e) { console.error("Fehler beim PUSH:", e); } },
             async pullFromDrive() { if (!this.DRIVE_FILE_ID) { alert("Fehler: Keine Datei-ID. Bitte neu verbinden."); return; } if (!this.gapiClient) { alert("Fehler: GAPI Client nicht bereit."); return; } if (this.tasks.length > 0 && !confirm("Google Drive ➔ Lokale Daten laden?\n(Überschreibt alle ungespeicherten lokalen Änderungen)")) return; console.log(`PULL von GDrive ${this.DRIVE_FILE_ID}...`); try { const response = await this.gapiClient.drive.files.get({ fileId: this.DRIVE_FILE_ID, alt: "media" }); const content = response.body; this.saveUndoState(); if (content) { this.tasks = content.split("\n").filter(l => l.trim()).map(l => this.parseTodoLine(l)); } else { this.tasks = []; } this.saveToLocalStorage(true); this.render(); this.showNotification("✅ Von Google Drive geladen"); } catch (e) { console.error("Fehler beim PULL:", e); } },
 
-            // --- autocomplete OBJEKT (v6 - Suggestion Bar) ---
-            autocomplete: {
-                app: null,
-                suggestionBar: null,
-                projectSuggestionsEl: null,
-                contextSuggestionsEl: null,
-                active: false,
-                targetInput: null,
-                triggerInfo: null, // { trigger, query, baseValue }
-
-                init(mainApp) {
-                    this.app = mainApp;
-                    this.suggestionBar = document.getElementById('suggestionBar');
-                    this.projectSuggestionsEl = document.getElementById('projectSuggestions');
-                    this.contextSuggestionsEl = document.getElementById('contextSuggestions');
-                    this.targetInput = document.getElementById('searchAddInput');
-
-                    // Event Delegation für Klicks auf Vorschläge
-                    this.suggestionBar.addEventListener('click', (e) => {
-                        const target = e.target.closest('.suggestion-item'); // Klick auf Button oder dessen Inhalt
-                        if (target) {
-                            e.preventDefault(); // Verhindert ggf. Fokusverlust
-                            this.confirmSelection(target.dataset.value);
-                        }
-                    });
-
-                    // Schließen bei Klick außerhalb
-                    document.addEventListener('click', (e) => {
-                         if (this.active && this.suggestionBar && !this.suggestionBar.contains(e.target) && e.target !== this.targetInput) {
-                              const clickedInSearchBox = e.target.closest('.search-add-box');
-                              if (!clickedInSearchBox) { this.hide(); }
-                         }
-                    });
-
-                     // Schließen, wenn das Input-Feld den Fokus verliert
-                     this.targetInput.addEventListener('blur', (e) => {
-                          setTimeout(() => {
-                               const relatedTargetIsInBar = document.activeElement && this.suggestionBar && this.suggestionBar.contains(document.activeElement);
-                               if (!relatedTargetIsInBar) { this.hide(); }
-                          }, 150); // Verzögerung, damit Klick auf Suggestion verarbeitet werden kann
-                     });
-
-                      // Zeige Bar wieder an, wenn man ins Feld klickt/tippt
-                     this.targetInput.addEventListener('focus', (e) => {
-                         this.handleInput({ target: this.targetInput });
-                     });
-                },
-
-                handleInput(e) {
-                    this.targetInput = e.target;
-                    const input = this.targetInput;
-                    const value = input.value;
-                    const cursorPos = input.selectionStart;
-
-                    if (cursorPos !== value.length) { this.hide(); return; } // Nur am Ende prüfen
-
-                    const valueBeforeCursor = value.substring(0, cursorPos);
-                    const match = valueBeforeCursor.match(/([+@])([\w.-]*)$/);
-
-                    if (match) {
-                        const trigger = match[1];
-                        const query = match[2] || "";
-                        const baseValue = valueBeforeCursor.substring(0, valueBeforeCursor.length - (trigger.length + query.length)); // Korrigierte Basis
-                        this.triggerInfo = { trigger, query, baseValue };
-
-                        const source = trigger === '+' ? this.app.tasks.flatMap(t => t.projects) : this.app.tasks.flatMap(t => t.contexts);
-                        const suggestions = [...new Set(source)]
-                            .filter(item => item.toLowerCase().startsWith(query.toLowerCase()))
-                            .sort()
-                            .slice(0, 10); // Max 10
-
-                        if (suggestions.length > 0) {
-                            this.show(trigger, suggestions);
-                        } else { this.hide(); }
-                    } else { this.triggerInfo = null; this.hide(); }
-                },
-
-                handleKeydown(e) {
-                    // Keine Tastatursteuerung der Vorschläge mehr nötig
-                    return false;
-                },
-
-                show(trigger, suggestions) {
-                    if (!this.projectSuggestionsEl || !this.contextSuggestionsEl || !this.suggestionBar) return;
-                    const projectCol = this.suggestionBar.querySelector('.suggestion-column.projects');
-                    const contextCol = this.suggestionBar.querySelector('.suggestion-column.contexts');
-                    const createSuggestionHTML = (item) => `<button class="suggestion-item" data-value="${this.app.escapeHtml(item)}">${this.app.escapeHtml(item)}</button>`;
-
-                    if (trigger === '+') {
-                        this.projectSuggestionsEl.innerHTML = suggestions.map(createSuggestionHTML).join('');
-                        this.contextSuggestionsEl.innerHTML = '';
-                        projectCol.style.display = 'block';
-                        contextCol.style.display = 'none';
-                        projectCol.classList.add('has-suggestions');
-                        contextCol.classList.remove('has-suggestions');
-                    } else { // trigger === '@'
-                        this.contextSuggestionsEl.innerHTML = suggestions.map(createSuggestionHTML).join('');
-                        this.projectSuggestionsEl.innerHTML = '';
-                        contextCol.style.display = 'block';
-                        projectCol.style.display = 'none';
-                        contextCol.classList.add('has-suggestions');
-                        projectCol.classList.remove('has-suggestions');
-                    }
-                    this.suggestionBar.style.display = 'flex';
-                    this.active = true;
-                },
-
-                hide() {
-                    if (!this.active || !this.suggestionBar) return;
-                    this.active = false;
-                    this.suggestionBar.style.display = 'none';
-                    this.triggerInfo = null;
-                },
-
-                confirmSelection(selectedValue) {
-                    if (!this.targetInput || !this.triggerInfo) return;
-                    const { baseValue, trigger, query } = this.triggerInfo;
-                    
-                    const replaceStart = this.targetInput.value.substring(0, this.targetInput.selectionStart).lastIndexOf(trigger + query);
-                    const baseText = this.targetInput.value.substring(0, replaceStart);
-                    const textAfter = this.targetInput.value.substring(this.targetInput.selectionStart);
-
-                    const newValue = baseText + trigger + selectedValue + ' ' + textAfter;
-
-                    this.targetInput.value = newValue.trim() + ' ';
-                    this.hide();
-                    this.targetInput.focus();
-                    const newCursorPos = this.targetInput.value.length;
-                    this.targetInput.setSelectionRange(newCursorPos, newCursorPos);
-
-                    this.app.searchQuery = this.targetInput.value;
-                    this.targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                },
-
-                updateSelectionUI() {}, // Nicht mehr benötigt
-                positionEl() {} // Nicht mehr benötigt
-            }, // --- ENDE autocomplete OBJEKT ---
+            // --- autocomplete OBJEKT (ENTFERNT) ---
+            // Leeres Objekt, um Fehler bei alten Aufrufen (z.B. in editMode) zu vermeiden
+             autocomplete: {
+                 init() {},
+                 handleInput() {},
+                 handleKeydown() { return false; }, // Wichtig: Immer false zurückgeben
+                 hide() {}
+             }
         };
 
         document.addEventListener('DOMContentLoaded', () => app.init());
