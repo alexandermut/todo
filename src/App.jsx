@@ -66,6 +66,9 @@ function App() {
             case 'upcoming':
                 const todayStr = new Date().toISOString().split('T')[0];
                 return result.filter(t => t.metadata && t.metadata.due > todayStr);
+            case 'overdue':
+                const nowStr = new Date().toISOString().split('T')[0];
+                return result.filter(t => t.metadata && t.metadata.due && t.metadata.due < nowStr && !t.completed);
             case 'project':
                 return result.filter(t => t.projects.includes(activeFilter.value));
             case 'context':
@@ -217,6 +220,28 @@ function App() {
                                         focusedTaskId={focusedTaskId}
                                         editingTaskId={editingTaskId}
                                         onEditEnd={() => setEditingTaskId(null)}
+                                        onFilterClick={(type, value) => {
+                                            let prefix = '';
+                                            if (type === 'project') prefix = '+';
+                                            if (type === 'context') prefix = '@';
+                                            if (type === 'tag') prefix = '#';
+                                            if (type === 'date') prefix = 'due:';
+
+                                            const token = `${prefix}${value}`;
+                                            const currentQuery = searchQuery || '';
+
+                                            // Toggle logic: if token exists, remove it; otherwise append it
+                                            if (currentQuery.includes(token)) {
+                                                const newQuery = currentQuery.replace(token, '').replace(/\s\s+/g, ' ').trim();
+                                                setSearchQuery(newQuery);
+                                            } else {
+                                                // If empty, add leading space so cursor at 0 puts text BEFORE the filter
+                                                const separator = currentQuery ? ' ' : ' ';
+                                                const newQuery = (currentQuery || '') + separator + token;
+                                                setSearchQuery(newQuery);
+                                            }
+                                            setSearchFocusTrigger(c => c + 1);
+                                        }}
                                     />
                                 )}
                             </div>
@@ -250,6 +275,8 @@ function App() {
                     onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     onSettingsClick={() => setIsSettingsOpen(!isSettingsOpen)}
                     focusTrigger={searchFocusTrigger}
+                    activeFilter={activeFilter}
+                    onClearFilter={() => setActiveFilter({ type: 'inbox' })}
                 />
             </div>
         </>

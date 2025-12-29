@@ -1,7 +1,7 @@
 import React from 'react';
 import { TaskItem } from './TaskItem';
 
-export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd }) {
+export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick }) {
 
     const getTitle = () => {
         if (!activeFilter) return 'Inbox';
@@ -33,6 +33,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                         isFocused={focusedTaskId === task.id}
                         isEditingProp={editingTaskId === task.id}
                         onEditEnd={onEditEnd}
+                        onFilterClick={onFilterClick}
                     />
                 ))}
             </div>

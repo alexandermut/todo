@@ -23,9 +23,9 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
             )}
 
             <aside className={`
-            w-[305px] bg-zinc-900 flex flex-col border-l border-zinc-800 pt-8 pl-8 pr-4 shrink-0 overflow-y-auto
-            fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-in-out
-            ${isOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'}
+            w-[305px] bg-zinc-900 flex flex-col border-r border-zinc-800 pt-8 pl-8 pr-4 shrink-0 overflow-y-auto
+            fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out
+            ${isOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'}
             bg-zinc-900 text-zinc-300
         `}>
                 <nav className="space-y-1 mb-8">
@@ -46,6 +46,12 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                         className={navItemClass(activeFilter.type === 'upcoming')}
                     >
                         <span className="text-purple-500 text-lg leading-none">🗓</span> Upcoming
+                    </button>
+                    <button
+                        onClick={() => { onFilterSelect({ type: 'overdue' }); if (onClose) onClose(); }}
+                        className={navItemClass(activeFilter.type === 'overdue')}
+                    >
+                        <span className="text-red-500 text-lg leading-none">⚠️</span> Overdue
                     </button>
                 </nav>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // Placeholder App Key - User must replace this
-const DROPBOX_APP_KEY = 'YOUR_DROPBOX_APP_KEY_HERE';
+const DROPBOX_APP_KEY = 'xdqurve95t2h4hb';
 
 export function useDropbox(onTasksLoaded) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);

@@ -38,3 +38,6 @@
 - [ ] **Search**: Fixated search bar with auto-clear.
 - [ ] **Notes**: Support for task notes (Markdown).
 - [ ] **Theming**: Dark mode support via Tailwind `dark:` classes.
+
+### Future Ideas / Discussions
+- [ ] **Word Filtering**: Evaluate Alt+Click (or similar interaction) to filter by any arbitrary word in a task without conflicting with edit mode.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '../store';
 
-export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd }) {
+export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd, onFilterClick }) {
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -22,23 +22,59 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
     };
 
     const priorityClass = {
-        'A': 'text-red-500',
-        'B': 'text-orange-500',
-        'C': 'text-blue-500'
-    }[task.priority] || 'text-gray-500';
+        'A': 'text-red-400',
+        'B': 'text-amber-400',
+        'C': 'text-sky-400'
+    }[task.priority] || 'text-gray-400';
 
-    // Basic rich text parsing for projects/contexts/tags
+    // Basic rich text parsing for projects/contexts/tags/dates
     const renderText = (text) => {
-        const parts = text.split(/(\+[\w.-]+|@[\w.-]+|#[\w.-]+)/g);
+        const parts = text.split(/(\+[\w.-]+|@[\w.-]+|#[\w.-]+|due:\d{4}-\d{2}-\d{2})/g);
         return parts.map((part, i) => {
             if (part.startsWith('+')) {
-                return <span key={i} className="text-todoist-brand hover:underline cursor-pointer">{part}</span>;
+                return (
+                    <span
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); onFilterClick && onFilterClick('project', part.substring(1)); }}
+                        className="text-cyan-400 hover:underline cursor-pointer"
+                    >
+                        {part}
+                    </span>
+                );
             }
             if (part.startsWith('@')) {
-                return <span key={i} className="text-todoist-textSec hover:underline cursor-pointer">{part}</span>;
+                return (
+                    <span
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); onFilterClick && onFilterClick('context', part.substring(1)); }}
+                        className="text-emerald-400 hover:underline cursor-pointer"
+                    >
+                        {part}
+                    </span>
+                );
             }
             if (part.startsWith('#')) {
-                return <span key={i} className="text-emerald-600 hover:underline cursor-pointer">{part}</span>;
+                return (
+                    <span
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); onFilterClick && onFilterClick('tag', part.substring(1)); }}
+                        className="text-purple-400 hover:underline cursor-pointer"
+                    >
+                        {part}
+                    </span>
+                );
+            }
+            if (part.startsWith('due:')) {
+                const dateValue = part.substring(4);
+                return (
+                    <span
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); onFilterClick && onFilterClick('date', dateValue); }}
+                        className="text-red-400 hover:underline cursor-pointer"
+                    >
+                        {part}
+                    </span>
+                );
             }
             return part;
         });
@@ -68,7 +104,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
     return (
         <div
-            className={`group flex items-center py-3 border-b border-gray-800 hover:bg-zinc-900 -mx-4 px-4 transition-colors cursor-pointer 
+            className={`group flex items-center py-1 border-b border-gray-800 hover:bg-zinc-900 -mx-4 px-4 transition-colors cursor-pointer 
                 ${selected ? 'bg-blue-900/20' : ''} 
                 ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`}
             data-id={task.id}
@@ -100,9 +136,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                     {task.priority && <span className={`text-xs font-bold mr-2 ${priorityClass}`}>({task.priority})</span>}
                     {renderText(task.text)}
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                    {task.metadata.due && <span className="text-xs text-red-400 flex items-center gap-1">📅 {task.metadata.due}</span>}
-                </div>
+
             </div>
 
             {/* Actions (Right) */}
