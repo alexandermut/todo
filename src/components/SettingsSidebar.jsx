@@ -30,19 +30,13 @@ export function SettingsSidebar({
             )}
 
             <aside className={`
-            w-[305px] bg-zinc-900 flex flex-col border-r border-zinc-800 pt-8 px-4 shrink-0 overflow-y-auto
-            fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out
-            ${isOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'}
+            w-[305px] bg-zinc-900 flex flex-col border-l border-zinc-800 pt-8 px-4 shrink-0 overflow-y-auto
+            fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-in-out
+            ${isOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'}
             text-zinc-300
         `}>
                 <div className="flex justify-between items-center mb-6 px-2">
                     <h2 className="text-lg font-bold text-gray-100">Settings</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-200">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
                 </div>
 
                 {/* Sync Section */}
@@ -201,6 +195,17 @@ export function SettingsSidebar({
                         </div>
                     )}
                 </div>
+
+                {/* Close Button - Bottom Right */}
+                <button
+                    onClick={onClose}
+                    className="absolute bottom-4 right-4 p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                    title="Close settings"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
             </aside>
         </>
     );
