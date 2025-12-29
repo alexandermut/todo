@@ -74,7 +74,8 @@ export function useDropbox(onTasksLoaded) {
         if (!accessToken) { login(); return; }
         setIsSyncing(true);
         try {
-            const response = await fetch('https://content.dropboxapi.com/2/files/download', {
+            // Fetch todo.txt
+            const todoResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -84,15 +85,47 @@ export function useDropbox(onTasksLoaded) {
                 }
             });
 
-            if (response.ok) {
-                const text = await response.text();
-                onTasksLoaded(text);
-                console.log('Dropbox pull successful');
+            let todoText = '';
+            if (todoResponse.ok) {
+                todoText = await todoResponse.text();
+                console.log('✅ todo.txt loaded');
             } else {
-                throw new Error(await response.text());
+                console.warn('⚠️ todo.txt not found or error:', todoResponse.status);
+            }
+
+            // Fetch done.txt (optional)
+            let doneText = '';
+            try {
+                const doneResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Dropbox-API-Arg': JSON.stringify({
+                            path: '/done.txt'
+                        })
+                    }
+                });
+
+                if (doneResponse.ok) {
+                    doneText = await doneResponse.text();
+                    console.log('✅ done.txt loaded');
+                } else {
+                    console.log('ℹ️ done.txt not found (optional)');
+                }
+            } catch (err) {
+                console.log('ℹ️ done.txt not available (optional)');
+            }
+
+            // Combine both files
+            const combinedText = [todoText, doneText].filter(t => t.trim()).join('\n');
+            if (combinedText) {
+                onTasksLoaded(combinedText);
+                console.log('✅ Dropbox pull successful (todo.txt + done.txt)');
+            } else {
+                console.warn('⚠️ No tasks found in Dropbox files');
             }
         } catch (err) {
-            console.error('Dropbox pull failed', err);
+            console.error('❌ Dropbox pull failed', err);
         } finally {
             setIsSyncing(false);
         }
