@@ -41,7 +41,9 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                 <div className="text-center py-10">
                     <div className="mb-4 text-6xl">🎉</div>
                     <div className="text-gray-800 font-medium">All clear</div>
-                    <div className="text-gray-500 text-sm mt-2">Looks like everything's organized in the right place.</div>
+                    <div className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+                        todo is a simple, offline-first task manager that allows you to organize your life and optionally sync with your todo.txt file on Google Drive or Dropbox.
+                    </div>
                 </div>
             )}
         </div>
