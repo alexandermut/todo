@@ -6,6 +6,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 // https://vitejs.dev/config/
 // Vite Configuration - Updated for Theme Refresh
 export default defineConfig({
+    base: '/todo/',
     plugins: [
         react(),
         wasm(),
