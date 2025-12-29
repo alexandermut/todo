@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-todoist-text bg-white;
+  }
+}
+
+/* Fallback/Forced classes to resolve Tailwind HMR issues */
+.bg-todoist-brand {
+  background-color: #334155 !important;
+}
+
+.text-todoist-brand {
+  color: #334155 !important;
+}
+
+.border-todoist-brand {
+  border-color: #334155 !important;
+}
