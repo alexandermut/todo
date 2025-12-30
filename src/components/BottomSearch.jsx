@@ -1,11 +1,9 @@
-```javascript
 import React, { useRef, useEffect, useState } from 'react';
 import { get_completions } from 'todo-parser';
 
 // Update props to include lists
 export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter, projects, contexts, tags }) {
     const inputRef = useRef(null);
-    // ... (rest of component unchanged until handleInput) ...
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [cursorPosition, setCursorPosition] = useState(0);
@@ -48,11 +46,11 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
 
         const val = inputRef.current.value;
         const pos = cursorPosition;
-        
+
         const textBeforeCursor = val.substring(0, pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
         const startOfToken = lastSpaceIndex + 1;
-        
+
         const textAfterCursor = val.substring(pos);
         const nextSpaceIndex = textAfterCursor.indexOf(' ');
         const endOfToken = nextSpaceIndex === -1 ? val.length : pos + nextSpaceIndex;
@@ -61,10 +59,10 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         const suffix = val.substring(endOfToken);
 
         let insertion = '';
-        if (item.type === 'date') insertion = `due:${ item.value } `;
-        else if (item.type === 'project') insertion = `+ ${ item.value } `;
-        else if (item.type === 'context') insertion = `@${ item.value } `;
-        else if (item.type === 'tag') insertion = `#${ item.value } `;
+        if (item.type === 'date') insertion = `due:${item.value}`;
+        else if (item.type === 'project') insertion = `+${item.value}`;
+        else if (item.type === 'context') insertion = `@${item.value}`;
+        else if (item.type === 'tag') insertion = `#${item.value}`;
         else insertion = item.value;
 
         const newVal = prefix + insertion + suffix;
@@ -85,11 +83,11 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
     let badge = null;
     if (activeFilter) {
         if (activeFilter.type === 'project') {
-            badge = { text: `+ ${ activeFilter.value } `, className: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' };
+            badge = { text: `+${activeFilter.value}`, className: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' };
         } else if (activeFilter.type === 'context') {
-            badge = { text: `@${ activeFilter.value } `, className: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' };
+            badge = { text: `@${activeFilter.value}`, className: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' };
         } else if (activeFilter.type === 'tag') {
-            badge = { text: `#${ activeFilter.value } `, className: 'text-purple-400 bg-purple-400/10 border-purple-400/20' };
+            badge = { text: `#${activeFilter.value}`, className: 'text-purple-400 bg-purple-400/10 border-purple-400/20' };
         } else if (activeFilter.type === 'today') {
             badge = { text: `📅 Today`, className: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' };
         } else if (activeFilter.type === 'upcoming') {
@@ -112,13 +110,13 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                             <span className="text-[10px] bg-zinc-800 px-1 rounded">TAB to select</span>
                         </div>
                         {suggestions.map((item) => {
-                             let icon = '⚡';
-                             let colorClass = 'text-zinc-400 bg-zinc-500/20';
-                             
-                             if (item.type === 'date') { icon = '📅'; colorClass = 'text-red-400 bg-red-500/20'; }
-                             else if (item.type === 'project') { icon = '+'; colorClass = 'text-cyan-400 bg-cyan-500/20'; }
-                             else if (item.type === 'context') { icon = '@'; colorClass = 'text-emerald-400 bg-emerald-500/20'; }
-                             else if (item.type === 'tag') { icon = '#'; colorClass = 'text-purple-400 bg-purple-500/20'; }
+                            let icon = '⚡';
+                            let colorClass = 'text-zinc-400 bg-zinc-500/20';
+
+                            if (item.type === 'date') { icon = '📅'; colorClass = 'text-red-400 bg-red-500/20'; }
+                            else if (item.type === 'project') { icon = '+'; colorClass = 'text-cyan-400 bg-cyan-500/20'; }
+                            else if (item.type === 'context') { icon = '@'; colorClass = 'text-emerald-400 bg-emerald-500/20'; }
+                            else if (item.type === 'tag') { icon = '#'; colorClass = 'text-purple-400 bg-purple-500/20'; }
 
                             return (
                                 <div
@@ -130,7 +128,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                     }}
                                 >
                                     <div className="flex items-center gap-3 w-full">
-                                        <div className={`w - 6 h - 6 rounded - full flex items - center justify - center text - xs font - bold ${ colorClass } `}>
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${colorClass}`}>
                                             {icon}
                                         </div>
                                         <div className="flex-1">
@@ -158,10 +156,6 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 if (showSuggestions && suggestions.length > 0) {
-                                    // Make enter select the first suggestion if visible? 
-                                    // Or let QuickAdd happen only if explicit?
-                                    // Let's simpler behavior: Enter = QuickAdd unless specific selection key used (like Tab).
-                                    // Ideally, Arrow Keys needed. For now mouse/touch only specified in previous turn implicitly.
                                     onQuickAdd(searchValue);
                                 } else {
                                     onQuickAdd(searchValue);
@@ -183,7 +177,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {badge && (
                         <button
                             onClick={onClearFilter}
-                            className={`flex items - center gap - 1 px - 2 py - 0.5 rounded - md text - xs font - mono border ml - 2 whitespace - nowrap select - none hover: opacity - 80 transition - opacity ${ badge.className } `}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono border ml-2 whitespace-nowrap select-none hover:opacity-80 transition-opacity ${badge.className}`}
                             title="Clear filter"
                         >
                             {badge.text}

@@ -309,6 +309,21 @@ pub fn get_date_aliases(query: &str) -> JsValue {
     let aliases = internal_get_date_aliases(query);
     serde_wasm_bindgen::to_value(&aliases).unwrap()
 }
+
+
+
+fn internal_get_date_aliases(query: &str) -> Vec<DateAlias> {
+    let lower = query.to_lowercase();
+    let mut aliases = Vec::new();
+    
+    // Check if query is empty or too short, return empty
+    if lower.trim().is_empty() {
+        return aliases;
+    }
+
+    let today = chrono::Local::now().date_naive();
+
+    let basics = vec![
         ("today", today, "Current date"),
         ("heute", today, "Heutiges Datum"),
         ("tomorrow", today + Duration::days(1), "Next day"),

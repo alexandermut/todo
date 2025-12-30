@@ -3,15 +3,23 @@
 
 <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/icons/todotext-appicon-dark-192.png" />
+    <link rel="apple-touch-icon" href="/icons/todotext-appicon-dark-192.png" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Simple, offline-first todo.txt task manager" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>todo</title>
-  <script type="module" crossorigin src="/todo/assets/index-CsPFjAvH.js"></script>
-  <link rel="stylesheet" crossorigin href="/todo/assets/index-DtYweMP_.css">
+    <title>todotext.de</title>
+  <script type="module" crossorigin src="/assets/index-BznViUXa.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BkV3U3zb.css">
 </head>
 
-<body class="bg-zinc-950 h-screen overflow-hidden text-zinc-100 antialiased font-sans">
-    <div id="root" class="h-full flex flex-col md:flex-row"></div>
+<body class="bg-zinc-950 h-screen overflow-hidden text-zinc-100 antialiased font-sans dark">
+    <div id="root" class="h-full flex flex-col md:flex-row custom-scrollbar"></div>
 
     <!-- Google Scripts -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
