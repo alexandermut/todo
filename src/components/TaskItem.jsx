@@ -27,9 +27,14 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         'C': 'text-sky-400'
     }[task.priority] || 'text-gray-400';
 
-    // Basic rich text parsing for projects/contexts/tags/dates
+    // Basic rich text parsing for projects/contexts/tags/dates/contacts
     const renderText = (text) => {
-        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:\d{4}-\d{2}-\d{2})/g);
+        // Regex to match:
+        // +project, @context, #tag
+        // due:YYYY-MM-DD
+        // tel:..., mail:..., contact:...
+        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:\d{4}-\d{2}-\d{2}|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
+
         return parts.map((part, i) => {
             if (part.startsWith('+')) {
                 return (
@@ -73,6 +78,43 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                         className="text-red-400 hover:underline cursor-pointer"
                     >
                         {part}
+                    </span>
+                );
+            }
+            if (part.startsWith('tel:')) {
+                return (
+                    <a
+                        key={i}
+                        href={part}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-lime-400 hover:underline flex-inline items-center gap-1"
+                        title="Call"
+                    >
+                        <span className="opacity-50">📞</span>{part.substring(4)}
+                    </a>
+                );
+            }
+            if (part.startsWith('mail:')) {
+                const email = part.substring(5);
+                return (
+                    <a
+                        key={i}
+                        href={`mailto:${email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-orange-400 hover:underline flex-inline items-center gap-1"
+                        title="Send Email"
+                    >
+                        <span className="opacity-50">✉️</span>{email}
+                    </a>
+                );
+            }
+            if (part.startsWith('contact:')) {
+                return (
+                    <span
+                        key={i}
+                        className="text-indigo-400 font-medium"
+                    >
+                        <span className="opacity-50">👤</span> {part.substring(8).replace(/_/g, ' ')}
                     </span>
                 );
             }
