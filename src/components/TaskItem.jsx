@@ -29,7 +29,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
     // Basic rich text parsing for projects/contexts/tags/dates
     const renderText = (text) => {
-        const parts = text.split(/(\+[\w.-]+|@[\w.-]+|#[\w.-]+|due:\d{4}-\d{2}-\d{2})/g);
+        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:\d{4}-\d{2}-\d{2})/g);
         return parts.map((part, i) => {
             if (part.startsWith('+')) {
                 return (
