@@ -60,6 +60,18 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                         </div>
                         <div className="flex items-start gap-2">
                             <span className="text-gray-400">•</span>
+                            <span>Add tags: <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">key:value</code> (e.g., <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">due:2024-12-31</code>)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-gray-400">•</span>
+                            <span>Set priority: <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">(A)</code> <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">(B)</code> <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">(C)</code> at the start</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-gray-400">•</span>
+                            <span>Mark complete with <code className="px-1 py-0.5 bg-zinc-800 rounded text-xs">x</code> or click checkbox</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-gray-400">•</span>
                             <span>Sync with Google Drive or Dropbox (settings ⚙️)</span>
                         </div>
                         <div className="flex items-start gap-2">
