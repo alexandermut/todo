@@ -109,7 +109,8 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
     // Basic rich text parsing
     const renderText = (text) => {
-        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:\d{4}-\d{2}-\d{2}|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
+        // Updated regex to support due:YYYY-MM-DD and due:DD.MM.YYYY and due:DD.MM.YY
+        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:(?:\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{2,4})|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
 
         return parts.map((part, i) => {
             if (part.startsWith('+')) {
@@ -201,33 +202,56 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
     if (isEditing) {
         return (
             <div className="py-2 -mx-4 px-4 bg-gray-50 dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700 relative">
-                <textarea
-                    ref={textareaRef}
-                    defaultValue={task.raw}
-                    autoFocus
-                    className="w-full bg-transparent text-sm text-gray-800 dark:text-gray-200 outline-none placeholder-gray-400 resize-none overflow-hidden"
-                    rows={1}
-                    onFocus={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                        const val = e.target.value;
-                        e.target.value = '';
-                        e.target.value = val;
-                    }}
-                    onInput={handleInput}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleEdit(e.target.value);
-                        } else if (e.key === 'Escape') {
-                            setIsEditing(false);
-                            if (onEditEnd) onEditEnd();
-                        }
-                    }}
-                    onBlur={(e) => {
-                        setTimeout(() => handleEdit(e.target.value), 200);
-                    }}
-                />
+                <div className="relative w-full">
+                    <textarea
+                        ref={textareaRef}
+                        defaultValue={task.raw}
+                        autoFocus
+                        className="w-full bg-transparent text-sm text-gray-800 dark:text-gray-200 outline-none placeholder-gray-400 resize-none overflow-hidden pr-8"
+                        rows={1}
+                        onFocus={(e) => {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                            const val = e.target.value;
+                            e.target.value = '';
+                            e.target.value = val;
+                        }}
+                        onInput={handleInput}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleEdit(e.target.value);
+                            } else if (e.key === 'Escape') {
+                                setIsEditing(false);
+                                if (onEditEnd) onEditEnd();
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // Delay to allow clicking suggestions or calendar
+                            setTimeout(() => {
+                                if (!showSuggestions) { // Only save if not interacting with something else
+                                    handleEdit(e.target.value);
+                                }
+                            }, 200);
+                        }}
+                    />
+
+                    {/* Calendar Picker Trigger */}
+                    <div className="absolute right-0 top-1">
+                        <label className="cursor-pointer text-zinc-500 hover:text-zinc-300 p-1">
+                            <input
+                                type="date"
+                                className="sr-only"
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        applySuggestion({ type: 'date', value: e.target.value });
+                                    }
+                                }}
+                            />
+                            📅
+                        </label>
+                    </div>
+                </div>
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (

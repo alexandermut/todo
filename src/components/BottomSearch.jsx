@@ -191,11 +191,25 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         </button>
                     )}
 
+                    {/* Calendar Picker Trigger */}
+                    <label className="cursor-pointer text-zinc-500 hover:text-zinc-300 p-1.5 transition-colors ml-1 shrink-0" title="Pick due date">
+                        <input
+                            type="date"
+                            className="sr-only"
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    applySuggestion({ type: 'date', value: e.target.value });
+                                }
+                            }}
+                        />
+                        📅
+                    </label>
+
                     {searchValue && (
                         <>
                             <button
                                 onClick={() => onSearch('')}
-                                className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors ml-2 shrink-0"
+                                className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors ml-1 shrink-0"
                                 title="Clear search"
                             >
                                 <span className="text-lg">×</span>
