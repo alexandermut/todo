@@ -267,9 +267,10 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
     return (
         <div
-            className={`group flex items - center py - 1 border - b border - gray - 800 hover: bg - zinc - 900 - mx - 4 px - 4 transition - colors cursor - pointer 
+            className={`group flex items-center py-1 -mx-4 px-4 transition-colors cursor-pointer 
+                hover:bg-zinc-900 
                 ${selected ? 'bg-blue-900/20' : ''} 
-                ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''} `}
+                ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`}
             data-id={task.id}
             onClick={() => setIsEditing(true)}
         >
