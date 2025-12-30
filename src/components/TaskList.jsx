@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { TaskItem } from './TaskItem';
 
 export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick }) {
+    const [sortCriteria, setSortCriteria] = useState('none'); // 'none', 'priority', 'due', 'alpha'
 
     const getTitle = () => {
         if (!activeFilter) return 'Inbox';
@@ -15,15 +16,57 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
         }
     };
 
+    const sortedTasks = useMemo(() => {
+        const sorted = [...tasks];
+        switch (sortCriteria) {
+            case 'priority':
+                return sorted.sort((a, b) => {
+                    if (a.priority && !b.priority) return -1;
+                    if (!a.priority && b.priority) return 1;
+                    if (a.priority && b.priority) return a.priority.localeCompare(b.priority);
+                    return 0;
+                });
+            case 'alpha':
+                return sorted.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
+            case 'due':
+                return sorted.sort((a, b) => {
+                    const dueA = a.due || '9999-99-99';
+                    const dueB = b.due || '9999-99-99';
+                    return dueA.localeCompare(dueB);
+                });
+            default:
+                return sorted;
+        }
+    }, [tasks, sortCriteria]);
+
     return (
         <div className="pb-20">
-            <header className="mb-6">
-                <h1 className="text-xl font-bold text-gray-800">{getTitle()}</h1>
-                <div className="text-xs text-gray-500 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+            <header className="mb-6 flex items-start justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100">{getTitle()}</h1>
+                    <div className="text-xs text-gray-500 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+                </div>
+
+                {/* Sort Control */}
+                {tasks.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs text-zinc-500 font-medium">Sort:</label>
+                        <select
+                            value={sortCriteria}
+                            onChange={(e) => setSortCriteria(e.target.value)}
+                            className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1 outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            <option value="none">Default</option>
+                            <option value="priority">Priority</option>
+                            <option value="due">Due Date</option>
+                            <option value="alpha">A-Z</option>
+                        </select>
+                    </div>
+                )}
             </header>
 
             <div className="mb-4">
-                {tasks.map(task => (
+                {sortedTasks.map(task => (
                     <TaskItem
                         key={task.id}
                         task={task}
