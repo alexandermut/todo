@@ -211,6 +211,14 @@ function App() {
                         }}
                     />
 
+                    {/* App Header with Branding */}
+                    {currentPage === 'tasks' && (
+                        <header className="bg-zinc-900 border-b border-zinc-800 py-3 px-6 flex items-center gap-3">
+                            <img src="/icons/logo.svg" alt="todotext.de" className="h-6" />
+                            <h1 className="text-lg font-semibold text-zinc-100">todotext.de</h1>
+                        </header>
+                    )}
+
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 p-4 sm:p-8 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-3xl">
                             <div className="mt-8 space-y-2">
@@ -275,6 +283,18 @@ function App() {
                     />
                 </div>
 
+                {/* Footer with Privacy Links - Above BottomSearch */}
+                {currentPage === 'tasks' && (
+                    <div className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-zinc-500">
+                        <a href="/datenschutz.html" className="hover:text-zinc-300 transition-colors">
+                            Datenschutzerklärung
+                        </a>
+                        {' • '}
+                        <a href="/impressum.html" className="hover:text-zinc-300 transition-colors">
+                            Impressum
+                        </a>
+                    </div>
+                )}
 
                 {/* Fixed Bottom Search Bar - Hidden on legal pages */}
                 {currentPage === 'tasks' && (
