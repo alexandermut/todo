@@ -12,4 +12,7 @@ export default defineConfig(({ mode }) => ({
         wasm(),
         topLevelAwait()
     ],
+    define: {
+        '__APP_VERSION__': JSON.stringify(new Date().toISOString().replace(/T/, '-').replace(/\..+/, '').replace(/:/g, '-').slice(0, 19))
+    }
 }))

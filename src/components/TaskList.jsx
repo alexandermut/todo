@@ -92,6 +92,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                     <div className="flex items-center gap-3 mb-12">
                         <img src={logo} alt="todotext.de" className="w-10 h-10" />
                         <h2 className="text-xl font-semibold text-zinc-300">todotext.de</h2>
+                        <span className="text-[10px] text-zinc-600 font-mono mt-1 ml-2">{__APP_VERSION__}</span>
                     </div>
 
                     <div className="space-y-12 max-w-xl">
