@@ -1,7 +1,14 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { useGoogleContacts } from '../hooks/useGoogleContacts';
 
 export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter }) {
     const inputRef = useRef(null);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [cursorPosition, setCursorPosition] = useState(0);
+
+    // Google Contacts Hook
+    const { searchContacts } = useGoogleContacts();
 
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
@@ -9,6 +16,68 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
             inputRef.current.setSelectionRange(0, 0);
         }
     }, [focusTrigger]);
+
+    // Input Handler for Autocomplete
+    const handleInput = async (e) => {
+        const val = e.target.value;
+        const pos = e.target.selectionStart;
+        setCursorPosition(pos);
+
+        // Propagate changes to parent
+        onSearch(val);
+
+        // Detect "contact:..." token being typed
+        const textBeforeCursor = val.substring(0, pos);
+        const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
+        const currentToken = textBeforeCursor.substring(lastSpaceIndex + 1);
+
+        if (currentToken.startsWith('contact:')) {
+            const query = currentToken.substring(8);
+            if (query.length > 1) {
+                const results = await searchContacts(query);
+                setSuggestions(results);
+                setShowSuggestions(results.length > 0);
+            } else {
+                setSuggestions([]);
+                setShowSuggestions(false);
+            }
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const selectContact = (contact) => {
+        if (!inputRef.current) return;
+
+        const val = inputRef.current.value;
+        const pos = cursorPosition;
+        const textBeforeCursor = val.substring(0, pos);
+        const textAfterCursor = val.substring(pos);
+
+        const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
+        const startOfToken = lastSpaceIndex + 1;
+
+        const prefix = val.substring(0, startOfToken);
+
+        // Sanitization
+        const safeName = contact.name.replace(/\s+/g, '_');
+        const tel = contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '';
+        const mail = contact.email ? `mail:${contact.email}` : '';
+
+        const insertion = `contact:${safeName} ${tel} ${mail}`.trim();
+
+        const newVal = prefix + insertion + ' ' + textAfterCursor;
+
+        onSearch(newVal); // Update parent state
+        // Focus back
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+                // inputRef.current.setSelectionRange(newVal.length, newVal.length); // Maybe useful
+            }
+        }, 10);
+        setShowSuggestions(false);
+    };
 
     // Determine badge content and color
     let badge = null;
@@ -32,6 +101,41 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800 z-40 flex items-center gap-3">
             {/* Search / Add Input Container */}
             <div className="relative flex-1 group">
+
+                {/* Autocomplete Dropdown - Positioned ABOVE input */}
+                {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-2 w-full sm:w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                        <div className="px-3 py-2 text-xs font-semibold text-zinc-500 border-b border-zinc-800 flex justify-between">
+                            <span>Contacts</span>
+                            <span className="text-[10px] bg-zinc-800 px-1 rounded">TAB to select</span>
+                        </div>
+                        {suggestions.map((contact) => (
+                            <div
+                                key={contact.id}
+                                className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3 transition-colors"
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent blur
+                                    selectContact(contact);
+                                }}
+                            >
+                                {contact.photo ? (
+                                    <img src={contact.photo} alt="" className="w-8 h-8 rounded-full" />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">
+                                        {contact.name.charAt(0)}
+                                    </div>
+                                )}
+                                <div className="overflow-hidden">
+                                    <div className="text-sm text-zinc-200 truncate font-medium">{contact.name}</div>
+                                    <div className="text-xs text-zinc-500 truncate">
+                                        {contact.email || contact.phone || 'No details'}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className="absolute inset-0 bg-zinc-800 rounded-xl transition-colors group-focus-within:bg-zinc-700 border border-zinc-700 shadow-sm group-focus-within:ring-1 group-focus-within:ring-zinc-600"></div>
 
                 <div className="relative flex items-center w-full px-3 py-1.5 h-[46px]">
@@ -41,11 +145,29 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         placeholder={badge ? "Add a new task..." : "Search, filter or add a new task ..."}
                         className="bg-transparent text-zinc-100 placeholder-zinc-500 text-sm outline-none flex-1 min-w-0 font-medium h-full"
                         value={searchValue}
-                        onChange={(e) => onSearch(e.target.value)}
+                        onChange={handleInput}
+                        // Note: handleInput calls onSearch
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                                onQuickAdd(searchValue);
+                                if (showSuggestions && suggestions.length > 0) {
+                                    // Make enter select the first suggestion if visible? 
+                                    // Or let QuickAdd happen only if explicit?
+                                    // Let's simpler behavior: Enter = QuickAdd unless specific selection key used (like Tab).
+                                    // Ideally, Arrow Keys needed. For now mouse/touch only specified in previous turn implicitly.
+                                    onQuickAdd(searchValue);
+                                } else {
+                                    onQuickAdd(searchValue);
+                                }
+                                setShowSuggestions(false);
                             }
+                            if (e.key === 'Tab' && showSuggestions && suggestions.length > 0) {
+                                e.preventDefault();
+                                selectContact(suggestions[0]);
+                            }
+                        }}
+                        onBlur={() => {
+                            // Delay hiding to allow click
+                            setTimeout(() => setShowSuggestions(false), 200);
                         }}
                     />
 
@@ -90,7 +212,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     title="Settings"
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" className="fill-current">
-                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path>
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6 3.6z"></path>
                     </svg>
                 </button>
 
