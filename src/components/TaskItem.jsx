@@ -108,6 +108,52 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         setShowSuggestions(false);
     };
 
+    const handlePriorityContextMenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Generate A-Z + null
+        const priorities = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+        priorities.push(null);
+
+        const current = task.priority || null;
+        let nextIndex = 0;
+
+        if (current) {
+            const idx = priorities.indexOf(current);
+            nextIndex = (idx + 1) % priorities.length;
+        } else {
+            // Start at A if no priority
+            nextIndex = 0;
+        }
+
+        const nextPriority = priorities[nextIndex];
+
+        let newRaw = task.raw;
+        // Regex to replace existing priority including spaces around it
+        // Assumes priority is (X) at start? Or anywhere?
+        // Standard todo.txt: Priority (x) at START.
+        // Actually, if priority is missing, we prepend.
+        // If priority exists, we replace.
+
+        const hasPriority = /^\([A-Z]\)\s/.test(newRaw);
+
+        if (nextPriority) {
+            if (hasPriority) {
+                newRaw = newRaw.replace(/^\([A-Z]\)\s/, `(${nextPriority}) `);
+            } else {
+                newRaw = `(${nextPriority}) ` + newRaw;
+            }
+        } else {
+            // Removing priority
+            if (hasPriority) {
+                newRaw = newRaw.replace(/^\([A-Z]\)\s/, '');
+            }
+        }
+
+        Store.updateTask(task.id, newRaw);
+    };
+
     const priorityClass = {
         'A': 'text-red-400',
         'B': 'text-amber-400',
@@ -334,6 +380,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                 setIsEditing(true);
                 if (onTaskFocus) onTaskFocus(task.id);
             }}
+            onContextMenu={handlePriorityContextMenu}
         >
             {/* 2. Selection (Visible on Hover/Selected) */}
             <div className="mr-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
