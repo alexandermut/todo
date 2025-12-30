@@ -3,19 +3,21 @@
 
 <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/todotext-appicon-dark-32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/todotext-appicon-dark-16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/todotext-appicon-dark-180.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#09090b" />
-    <meta name="description" content="A simple, offline-first todo.txt task manager" />
+    <link rel="icon" type="image/png" href="/icons/todotext-appicon-dark-192.png" />
+    <link rel="apple-touch-icon" href="/icons/todotext-appicon-dark-192.png" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Simple, offline-first todo.txt task manager" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>todotext.de</title>
 </head>
 
-<body class="bg-zinc-950 h-screen overflow-hidden text-zinc-100 antialiased font-sans">
-    <div id="root" class="h-full flex flex-col md:flex-row"></div>
+<body class="bg-zinc-950 h-screen overflow-hidden text-zinc-100 antialiased font-sans dark">
+    <div id="root" class="h-full flex flex-col md:flex-row custom-scrollbar"></div>
     <script type="module" src="/src/main.jsx"></script>
 
     <!-- Google Scripts -->
