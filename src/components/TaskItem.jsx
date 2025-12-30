@@ -83,13 +83,26 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
     if (isEditing) {
         return (
             <div className="py-2 -mx-4 px-4 bg-gray-50 dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700">
-                <input
-                    type="text"
+                <textarea
                     defaultValue={task.raw}
                     autoFocus
-                    className="w-full bg-transparent text-sm text-gray-800 dark:text-gray-200 outline-none placeholder-gray-400"
+                    className="w-full bg-transparent text-sm text-gray-800 dark:text-gray-200 outline-none placeholder-gray-400 resize-none overflow-hidden"
+                    rows={1}
+                    onFocus={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                        // Move cursor to end
+                        const val = e.target.value;
+                        e.target.value = '';
+                        e.target.value = val;
+                    }}
+                    onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
+                            e.preventDefault(); // Prevent newline
                             handleEdit(e.target.value);
                         } else if (e.key === 'Escape') {
                             setIsEditing(false);
