@@ -224,7 +224,7 @@ function App() {
 
     return (
         <>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-[100dvh]">
                 <div className="flex flex-1 overflow-hidden relative">
                     <SettingsSidebar
                         isOpen={isSettingsOpen}
@@ -321,7 +321,7 @@ function App() {
 
                 {/* Sort Bar, Search, and Footer - Fixed bottom stack */}
                 {currentPage === 'tasks' && (
-                    <div className="bg-zinc-950 border-t border-zinc-800 flex flex-col">
+                    <div className="bg-zinc-950 border-t border-zinc-800 flex flex-col pb-[env(safe-area-inset-bottom)]">
                         <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
                             <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider mr-1 shrink-0">Sort:</span>
                             <SortButton label="Default" value="none" current={sortCriteria} />
