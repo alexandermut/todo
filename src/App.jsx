@@ -20,6 +20,7 @@ function App() {
     const [focusedTaskId, setFocusedTaskId] = useState(null);
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState('tasks'); // 'tasks' | 'impressum' | 'datenschutz'
 
     const handleCloudLoad = (text) => {
         Store.loadFromString(text);
@@ -213,10 +214,10 @@ function App() {
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 p-4 sm:p-8 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-3xl">
                             <div className="mt-8 space-y-2">
-                                {activeFilter.type === 'impressum' ? (
-                                    <Impressum />
-                                ) : activeFilter.type === 'datenschutz' ? (
-                                    <Datenschutz />
+                                {currentPage === 'impressum' ? (
+                                    <Impressum onBack={() => setCurrentPage('tasks')} />
+                                ) : currentPage === 'datenschutz' ? (
+                                    <Datenschutz onBack={() => setCurrentPage('tasks')} />
                                 ) : (
                                     <TaskList
                                         tasks={filteredTasks}
@@ -263,6 +264,7 @@ function App() {
                         tasks={tasks}
                         isOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}
+                        onPageNavigate={setCurrentPage}
                     />
 
                     <BulkActionsBar
@@ -273,17 +275,20 @@ function App() {
                     />
                 </div>
 
-                {/* Fixed Bottom Search Bar */}
-                <BottomSearch
-                    searchValue={searchQuery}
-                    onSearch={setSearchQuery}
-                    onQuickAdd={handleQuickAdd}
-                    onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    onSettingsClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                    focusTrigger={searchFocusTrigger}
-                    activeFilter={activeFilter}
-                    onClearFilter={() => setActiveFilter({ type: 'inbox' })}
-                />
+
+                {/* Fixed Bottom Search Bar - Hidden on legal pages */}
+                {currentPage === 'tasks' && (
+                    <BottomSearch
+                        searchValue={searchQuery}
+                        onSearch={setSearchQuery}
+                        onQuickAdd={handleQuickAdd}
+                        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        onSettingsClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                        focusTrigger={searchFocusTrigger}
+                        activeFilter={activeFilter}
+                        onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                    />
+                )}
             </div>
         </>
     );

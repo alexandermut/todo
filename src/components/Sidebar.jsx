@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync }) {
+export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate }) {
     const [projectsExpanded, setProjectsExpanded] = useState(true);
     const [contextsExpanded, setContextsExpanded] = useState(true);
     const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -185,18 +185,18 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
 
                 <div className="mt-auto pt-6 border-t border-gray-100 dark:border-zinc-800">
                     <div className="flex flex-col space-y-2 px-2 pb-4">
-                        <button
-                            onClick={() => { onFilterSelect({ type: 'impressum' }); if (onClose) onClose(); }}
-                            className={`text-sm text-left transition-colors ${activeFilter.type === 'impressum' ? 'text-zinc-100 font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                        <a
+                            href="/impressum.html"
+                            className="text-sm text-left transition-colors text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
                         >
                             Impressum
-                        </button>
-                        <button
-                            onClick={() => { onFilterSelect({ type: 'datenschutz' }); if (onClose) onClose(); }}
-                            className={`text-sm text-left transition-colors ${activeFilter.type === 'datenschutz' ? 'text-zinc-100 font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                        </a>
+                        <a
+                            href="/datenschutz.html"
+                            className="text-sm text-left transition-colors text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
                         >
                             Datenschutz
-                        </button>
+                        </a>
                     </div>
                 </div>
 
