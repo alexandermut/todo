@@ -50,7 +50,7 @@ export function CalendarPopup({ onSelect, onClose }) {
     }
 
     return (
-        <div className="fixed bottom-24 right-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 w-72 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed top-32 right-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 w-72 z-[60] animate-in fade-in slide-in-from-top-4 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <button onClick={(e) => { e.preventDefault(); handlePrevMonth(); }} className="p-1 hover:text-white text-zinc-400">

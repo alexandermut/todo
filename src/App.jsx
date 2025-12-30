@@ -109,6 +109,7 @@ function App() {
     }, [tasks, activeFilter, searchQuery, sortCriteria]);
 
     const handleQuickAdd = (text) => {
+        console.log('handleQuickAdd called with:', text);
         if (!text.trim()) return;
 
         let finalTaskText = text;
@@ -134,8 +135,15 @@ function App() {
             }
         }
 
-        Store.addTask(finalTaskText);
-        setSearchQuery('');
+        console.log('Final task text:', finalTaskText);
+        try {
+            Store.addTask(finalTaskText);
+            console.log('Store.addTask executed');
+            setSearchQuery('');
+        } catch (error) {
+            console.error('Error in handleQuickAdd:', error);
+            alert('Error adding task: ' + error.message);
+        }
     };
 
     const projects = useMemo(() => [...new Set(tasks.flatMap(t => t.projects || []))].sort(), [tasks]);
@@ -225,6 +233,38 @@ function App() {
     return (
         <>
             <div className="flex flex-col h-[100dvh]">
+
+                {/* TOP: Search & Sort Bar */}
+                {currentPage === 'tasks' && (
+                    <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col pt-[env(safe-area-inset-top)] z-30 relative shrink-0">
+                        <BottomSearch
+                            searchValue={searchQuery}
+                            onSearch={setSearchQuery}
+                            onQuickAdd={handleQuickAdd}
+                            onMenuClick={() => setIsSidebarOpen(true)}
+                            onSettingsClick={() => setIsSettingsOpen(true)}
+                            focusTrigger={searchFocusTrigger}
+                            activeFilter={activeFilter}
+                            onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                            projects={projects}
+                            contexts={contexts}
+                            tags={tags}
+                            onOpenCalendar={openCalendar}
+                        />
+
+                        <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            <SortButton label="Default" value="none" current={sortCriteria} />
+                            <SortButton label="Priority" value="priority" current={sortCriteria} />
+                            <SortButton label="Project" value="project" current={sortCriteria} />
+                            <SortButton label="Context" value="context" current={sortCriteria} />
+                            <SortButton label="Due Date" value="due" current={sortCriteria} />
+                            <SortButton label="A-Z" value="alpha-asc" current={sortCriteria} />
+                            <SortButton label="Z-A" value="alpha-desc" current={sortCriteria} />
+                        </div>
+                    </div>
+                )}
+
+                {/* MIDDLE: Main Content */}
                 <div className="flex flex-1 overflow-hidden relative">
                     <SettingsSidebar
                         isOpen={isSettingsOpen}
@@ -246,9 +286,7 @@ function App() {
                         }}
                     />
 
-
-
-                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-48">
+                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-6">
                             {/* Branding Header */}
                             <div className="flex items-center gap-3 mb-8 -ml-0.5">
@@ -319,51 +357,23 @@ function App() {
                     />
                 </div>
 
-                {/* Sort Bar, Search, and Footer - Fixed bottom stack */}
+                {/* BOTTOM: Footer */}
                 {currentPage === 'tasks' && (
-                    <div className="bg-zinc-950 border-t border-zinc-800 flex flex-col pb-[env(safe-area-inset-bottom)]">
-                        <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider mr-1 shrink-0">Sort:</span>
-                            <SortButton label="Default" value="none" current={sortCriteria} />
-                            <SortButton label="Priority" value="priority" current={sortCriteria} />
-                            <SortButton label="Project" value="project" current={sortCriteria} />
-                            <SortButton label="Context" value="context" current={sortCriteria} />
-                            <SortButton label="Due Date" value="due" current={sortCriteria} />
-                            <SortButton label="A-Z" value="alpha-asc" current={sortCriteria} />
-                            <SortButton label="Z-A" value="alpha-desc" current={sortCriteria} />
-                        </div>
-
-                        <BottomSearch
-                            searchValue={searchQuery}
-                            onSearch={setSearchQuery}
-                            onQuickAdd={handleQuickAdd}
-                            onMenuClick={() => setIsSidebarOpen(true)}
-                            onSettingsClick={() => setIsSettingsOpen(true)}
-                            focusTrigger={searchFocusTrigger}
-                            activeFilter={activeFilter}
-                            onClearFilter={() => setActiveFilter({ type: 'inbox' })}
-                            projects={projects}
-                            contexts={contexts}
-                            tags={tags}
-                            onOpenCalendar={openCalendar}
-                        />
-
-                        {/* Footer with Privacy Links & Version - Below BottomSearch */}
-                        <div className="bg-zinc-950 py-1 px-4 text-center text-[10px] text-zinc-600 flex justify-center gap-3 items-center border-t border-zinc-900">
-                            <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors">
-                                Datenschutzerklärung
-                            </a>
-                            <span>•</span>
-                            <a href="/impressum.html" className="hover:text-zinc-400 transition-colors">
-                                Impressum
-                            </a>
-                            <span className="w-px h-3 bg-zinc-800 mx-1"></span>
-                            <span className="font-mono opacity-50">{__APP_VERSION__}</span>
-                        </div>
+                    <div className="bg-zinc-950 py-1 px-4 text-center text-[10px] text-zinc-600 flex justify-center gap-3 items-center border-t border-zinc-900 pb-[env(safe-area-inset-bottom)] shrink-0 z-20">
+                        <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors">
+                            Datenschutzerklärung
+                        </a>
+                        <span>•</span>
+                        <a href="/impressum.html" className="hover:text-zinc-400 transition-colors">
+                            Impressum
+                        </a>
+                        <span className="w-px h-3 bg-zinc-800 mx-1"></span>
+                        <span className="font-mono opacity-50">{__APP_VERSION__}</span>
                     </div>
                 )}
-            </div>
 
+
+            </div>
             {/* Global Calendar Popup */}
             {calendarState.isOpen && (
                 <CalendarPopup

@@ -75,7 +75,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         <div className="relative">
             {/* Suggestions Overlay */}
             {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute bottom-full left-0 mb-2 w-full bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
                     <div className="px-3 py-2 text-xs font-semibold text-zinc-500 border-b border-zinc-800">
                         Suggestions
                     </div>
@@ -135,21 +135,36 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         </button>
                     )}
 
+                    {/* Submit Button (Visible when typing) */}
+                    {searchValue.trim().length > 0 && (
+                        <button
+                            onClick={() => onQuickAdd(searchValue)}
+                            className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-colors"
+                            title="Add Task"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    )}
+
+
                     {/* Quick Calendar Trigger */}
                     <button
                         onClick={() => {
-                            if (onOpenCalendar) {
-                                onOpenCalendar((dateStr) => {
-                                    applySuggestion({ type: 'date', value: dateStr }, dateStr);
-                                });
-                            }
+                            // Close keyboard if possible (blur input) - optional
+                            // inputRef.current?.blur();
+                            onOpenCalendar((date) => {
+                                applySuggestion({ type: 'date', value: date }, date);
+                            });
                         }}
-                        className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
-                        title="Pick Date"
+                        className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 rounded-lg transition-colors"
+                        title="Add Due Date"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                     </button>
-
                     <div className="w-px h-4 bg-zinc-700 mx-1"></div>
 
                     <button onClick={onSettingsClick} className="text-zinc-500 hover:text-zinc-300 transition-colors">
