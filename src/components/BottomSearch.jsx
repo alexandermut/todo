@@ -1,14 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useGoogleContacts } from '../hooks/useGoogleContacts';
+import { resolveDateAlias, getDateAliases } from '../utils/dateAliases';
 
 export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter }) {
     const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [cursorPosition, setCursorPosition] = useState(0);
-
-    // Google Contacts Hook
-    const { searchContacts } = useGoogleContacts();
 
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
@@ -26,19 +23,26 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         // Propagate changes to parent
         onSearch(val);
 
-        // Detect "contact:..." token being typed
+        // Detect Token
         const textBeforeCursor = val.substring(0, pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
         const currentToken = textBeforeCursor.substring(lastSpaceIndex + 1);
 
-        if (currentToken.startsWith('contact:')) {
-            const query = currentToken.substring(8);
-            if (query.length > 1) {
-                const results = await searchContacts(query);
-                setSuggestions(results);
-                setShowSuggestions(results.length > 0);
+        // Date Alias Search (due:)
+        if (currentToken.startsWith('due:')) {
+            const query = currentToken.substring(4).toLowerCase();
+            const allAliases = getDateAliases();
+            const matches = Object.keys(allAliases).filter(key => key.startsWith(query));
+
+            if (matches.length > 0) {
+                const dateSuggestions = matches.map(alias => ({
+                    id: alias,
+                    name: alias,
+                    value: allAliases[alias]
+                }));
+                setSuggestions(dateSuggestions);
+                setShowSuggestions(true);
             } else {
-                setSuggestions([]);
                 setShowSuggestions(false);
             }
         } else {
@@ -46,7 +50,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         }
     };
 
-    const selectContact = (contact) => {
+    const applySuggestion = (item) => {
         if (!inputRef.current) return;
 
         const val = inputRef.current.value;
@@ -58,14 +62,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         const startOfToken = lastSpaceIndex + 1;
 
         const prefix = val.substring(0, startOfToken);
-
-        // Sanitization
-        const safeName = contact.name.replace(/\s+/g, '_');
-        const tel = contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '';
-        const mail = contact.email ? `mail:${contact.email}` : '';
-
-        const insertion = `contact:${safeName} ${tel} ${mail}`.trim();
-
+        const insertion = `due:${item.value}`;
         const newVal = prefix + insertion + ' ' + textAfterCursor;
 
         onSearch(newVal); // Update parent state
@@ -73,7 +70,6 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         setTimeout(() => {
             if (inputRef.current) {
                 inputRef.current.focus();
-                // inputRef.current.setSelectionRange(newVal.length, newVal.length); // Maybe useful
             }
         }, 10);
         setShowSuggestions(false);
@@ -106,29 +102,25 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                 {showSuggestions && suggestions.length > 0 && (
                     <div className="absolute bottom-full left-0 mb-2 w-full sm:w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
                         <div className="px-3 py-2 text-xs font-semibold text-zinc-500 border-b border-zinc-800 flex justify-between">
-                            <span>Contacts</span>
+                            <span>Dates</span>
                             <span className="text-[10px] bg-zinc-800 px-1 rounded">TAB to select</span>
                         </div>
-                        {suggestions.map((contact) => (
+                        {suggestions.map((item) => (
                             <div
-                                key={contact.id}
+                                key={item.id}
                                 className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3 transition-colors"
                                 onMouseDown={(e) => {
                                     e.preventDefault(); // Prevent blur
-                                    selectContact(contact);
+                                    applySuggestion(item);
                                 }}
                             >
-                                {contact.photo ? (
-                                    <img src={contact.photo} alt="" className="w-8 h-8 rounded-full" />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">
-                                        {contact.name.charAt(0)}
+                                <div className="flex items-center gap-3 w-full">
+                                    <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">
+                                        📅
                                     </div>
-                                )}
-                                <div className="overflow-hidden">
-                                    <div className="text-sm text-zinc-200 truncate font-medium">{contact.name}</div>
-                                    <div className="text-xs text-zinc-500 truncate">
-                                        {contact.email || contact.phone || 'No details'}
+                                    <div className="flex-1">
+                                        <div className="text-sm text-zinc-200 font-medium capitalize">{item.name}</div>
+                                        <div className="text-xs text-zinc-500">{item.value}</div>
                                     </div>
                                 </div>
                             </div>
@@ -162,7 +154,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                             }
                             if (e.key === 'Tab' && showSuggestions && suggestions.length > 0) {
                                 e.preventDefault();
-                                selectContact(suggestions[0]);
+                                applySuggestion(suggestions[0]);
                             }
                         }}
                         onBlur={() => {

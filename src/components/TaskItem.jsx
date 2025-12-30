@@ -1,18 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store } from '../store';
-import { useGoogleContacts } from '../hooks/useGoogleContacts';
 import { resolveDateAlias, getDateAliases } from '../utils/dateAliases';
 
 export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd, onFilterClick }) {
     const [isEditing, setIsEditing] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestionType, setSuggestionType] = useState(null); // 'contact' or 'date'
     const [cursorPosition, setCursorPosition] = useState(0);
     const textareaRef = useRef(null);
-
-    // Google Contacts Hook
-    const { searchContacts } = useGoogleContacts();
 
     useEffect(() => {
         if (isEditingProp) {
@@ -47,20 +42,8 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
         const currentToken = textBeforeCursor.substring(lastSpaceIndex + 1);
 
-        // 1. Contact Search
-        if (currentToken.startsWith('contact:')) {
-            const query = currentToken.substring(8);
-            if (query.length > 1) {
-                const results = await searchContacts(query);
-                setSuggestions(results);
-                setSuggestionType('contact');
-                setShowSuggestions(results.length > 0);
-            } else {
-                setShowSuggestions(false);
-            }
-        }
-        // 2. Date Alias Search (due:)
-        else if (currentToken.startsWith('due:')) {
+        // Date Alias Search (due:)
+        if (currentToken.startsWith('due:')) {
             const query = currentToken.substring(4).toLowerCase();
             // Show all aliases that match query
             const allAliases = getDateAliases();
@@ -75,7 +58,6 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                     type: 'date'
                 }));
                 setSuggestions(dateSuggestions);
-                setSuggestionType('date');
                 setShowSuggestions(true);
             } else {
                 // If query is valid date part (2025...), mostly ignore or help?
@@ -98,16 +80,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         const startOfToken = lastSpaceIndex + 1;
         const prefix = val.substring(0, startOfToken);
 
-        let insertion = '';
-
-        if (suggestionType === 'contact') {
-            const safeName = item.name.replace(/\s+/g, '_');
-            const tel = item.phone ? `tel:${item.phone.replace(/\s+/g, '')}` : '';
-            const mail = item.email ? `mail:${item.email}` : '';
-            insertion = `contact:${safeName} ${tel} ${mail}`.trim();
-        } else if (suggestionType === 'date') {
-            insertion = `due:${item.value}`;
-        }
+        let insertion = `due:${item.value}`;
 
         const newVal = prefix + insertion + ' ' + textAfterCursor;
         textareaRef.current.value = newVal;
@@ -117,8 +90,6 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         textareaRef.current.focus();
         setShowSuggestions(false);
     };
-
-    const selectContact = (contact) => applySuggestion(contact); // Alias for backward compat
 
     const priorityClass = {
         'A': 'text-red-400',
@@ -252,7 +223,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                 {showSuggestions && suggestions.length > 0 && (
                     <div className="absolute left-4 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
                         <div className="px-3 py-2 text-xs font-semibold text-zinc-500 border-b border-zinc-800">
-                            {suggestionType === 'contact' ? 'Contacts' : 'Dates'}
+                            Dates
                         </div>
                         {suggestions.map((item, idx) => (
                             <div
@@ -263,33 +234,15 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                                     applySuggestion(item);
                                 }}
                             >
-                                {suggestionType === 'contact' ? (
-                                    <>
-                                        {item.photo ? (
-                                            <img src={item.photo} alt="" className="w-6 h-6 rounded-full" />
-                                        ) : (
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">
-                                                {item.name.charAt(0)}
-                                            </div>
-                                        )}
-                                        <div className="overflow-hidden">
-                                            <div className="text-sm text-zinc-200 truncate">{item.name}</div>
-                                            <div className="text-xs text-zinc-500 truncate">
-                                                {item.email || item.phone || 'No details'}
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex items-center gap-3 w-full">
-                                        <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">
-                                            📅
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-sm text-zinc-200 font-medium capitalize">{item.name}</div>
-                                            <div className="text-xs text-zinc-500">{item.value}</div>
-                                        </div>
+                                <div className="flex items-center gap-3 w-full">
+                                    <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">
+                                        📅
                                     </div>
-                                )}
+                                    <div className="flex-1">
+                                        <div className="text-sm text-zinc-200 font-medium capitalize">{item.name}</div>
+                                        <div className="text-xs text-zinc-500">{item.value}</div>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

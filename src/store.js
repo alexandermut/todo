@@ -48,6 +48,7 @@ export const Store = {
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) this.tasks = parsed;
+                this.notify();
             }
         } catch (e) { console.error('Failed to load tasks:', e); }
     },
