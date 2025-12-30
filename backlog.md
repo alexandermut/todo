@@ -1,4 +1,4 @@
-# 🧭 Todo.txt App – Entwicklungs-Roadmap v2.0
+# 🧭 todotext.de – Entwicklungs-Roadmap v2.0
 
 **Technologie:** HTML / CSS / JavaScript (PWA, plattformunabhängig)
 **Architektur:** Modular, offlinefähig, optional Cloud-Sync

@@ -1,4 +1,4 @@
-# Todo App - Development Roadmap
+# todotext.de - Development Roadmap
 
 ## Project Status: React + Rust Migration 🚀
 

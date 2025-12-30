@@ -1,6 +1,6 @@
-# 📝 todo App
+# 📝 todotext.de
 
-A minimalist, offline-first web app for managing tasks in the `todo.txt` format, featuring optional Google Drive synchronization.
+A minimalist, offline-first web app for managing tasks in the `todo.txt` format, featuring optional Google Drive and Dropbox synchronization.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -8,7 +8,7 @@ A minimalist, offline-first web app for managing tasks in the `todo.txt` format,
 
 ## Live Demo
 
-Try the app live: **[https://alexandermut.github.io/todo/](https://alexandermut.github.io/todo/)**
+Try the app live: **[https://todotext.de](https://todotext.de)** (or [https://alexandermut.github.io/todo/](https://alexandermut.github.io/todo/))
 
 ---
 

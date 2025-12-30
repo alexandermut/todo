@@ -28,6 +28,11 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
             ${isOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'}
             bg-zinc-900 text-zinc-300
         `}>
+                {/* Logo */}
+                <div className="mb-8 px-2">
+                    <img src="/icons/logo.svg" alt="todo.txt" className="h-8" />
+                </div>
+
                 <nav className="space-y-1 mb-8">
                     <button
                         onClick={() => { onFilterSelect({ type: 'inbox' }); if (onClose) onClose(); }}

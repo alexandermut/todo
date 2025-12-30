@@ -63,30 +63,88 @@ export function useGoogleServices(onTasksLoaded) {
         }
     };
 
+    // --- Helper Functions for Visible Folder ---
+    const findOrCreateFolder = async (folderName) => {
+        try {
+            // 1. Search for folder
+            const response = await window.gapi.client.drive.files.list({
+                q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                fields: 'files(id, name)',
+                spaces: 'drive'
+            });
+
+            if (response.result.files && response.result.files.length > 0) {
+                console.log(`✅ Found existing folder: ${folderName}`);
+                return response.result.files[0].id;
+            }
+
+            // 2. Create folder
+            const folder = await window.gapi.client.drive.files.create({
+                resource: {
+                    name: folderName,
+                    mimeType: 'application/vnd.google-apps.folder'
+                },
+                fields: 'id'
+            });
+
+            console.log(`✅ Created new folder: ${folderName}`);
+            return folder.result.id;
+        } catch (err) {
+            console.error('❌ Folder creation failed', err);
+            throw err;
+        }
+    };
+
+    const findOrCreateFile = async (fileName, folderId) => {
+        try {
+            // 1. Search for file in folder
+            const response = await window.gapi.client.drive.files.list({
+                q: `name='${fileName}' and '${folderId}' in parents and trashed=false`,
+                fields: 'files(id, name)',
+                spaces: 'drive'
+            });
+
+            if (response.result.files && response.result.files.length > 0) {
+                console.log(`✅ Found existing file: ${fileName}`);
+                return response.result.files[0].id;
+            }
+
+            // 2. Create empty file
+            const file = await window.gapi.client.drive.files.create({
+                resource: {
+                    name: fileName,
+                    parents: [folderId],
+                    mimeType: 'text/plain'
+                },
+                fields: 'id'
+            });
+
+            console.log(`✅ Created new file: ${fileName}`);
+            return file.result.id;
+        } catch (err) {
+            console.error('❌ File creation failed', err);
+            throw err;
+        }
+    };
+
     // --- Google Drive Sync ---
     const syncPushDrive = async (tasks) => {
         if (!isAuthenticated) { login(); return; }
         setIsSyncing(true);
         try {
+            // 1. Find or create todotext.de folder
+            const folderId = await findOrCreateFolder('todotext.de');
+
+            // 2. Find or create todo.txt file in that folder
+            const fileId = await findOrCreateFile('todo.txt', folderId);
+
+            // 3. Update file content
             const content = tasks.map(t => t.raw).join('\n');
-            const listResp = await window.gapi.client.drive.files.list({
-                q: "name = 'todo.txt' and trashed = false",
-                fields: 'files(id, name)',
-                spaces: 'drive',
-            });
+            await updateFile(fileId, content);
 
-            const files = listResp.result.files;
-            const metadata = { name: 'todo.txt', mimeType: 'text/plain' };
-
-            if (files && files.length > 0) {
-                await updateFile(files[0].id, content);
-                console.log('Updated existing todo.txt');
-            } else {
-                await createFile(metadata, content);
-                console.log('Created new todo.txt');
-            }
+            console.log('✅ Pushed to Google Drive: /todotext.de/todo.txt');
         } catch (err) {
-            console.error('Drive Push failed', err);
+            console.error('❌ Drive Push failed', err);
         } finally {
             setIsSyncing(false);
         }
@@ -119,18 +177,22 @@ export function useGoogleServices(onTasksLoaded) {
         if (!isAuthenticated) { login(); return; }
         setIsSyncing(true);
         try {
-            const listResp = await window.gapi.client.drive.files.list({
-                q: "name = 'todo.txt' and trashed = false",
-                fields: 'files(id, name)',
-                spaces: 'drive',
+            // 1. Find or create todotext.de folder
+            const folderId = await findOrCreateFolder('todotext.de');
+
+            // 2. Find or create todo.txt file in that folder
+            const fileId = await findOrCreateFile('todo.txt', folderId);
+
+            // 3. Download file content
+            const resp = await window.gapi.client.drive.files.get({
+                fileId: fileId,
+                alt: 'media'
             });
-            const files = listResp.result.files;
-            if (files && files.length > 0) {
-                const resp = await window.gapi.client.drive.files.get({ fileId: files[0].id, alt: 'media' });
-                onTasksLoaded(resp.body);
-            }
+
+            onTasksLoaded(resp.body);
+            console.log('✅ Pulled from Google Drive: /todotext.de/todo.txt');
         } catch (err) {
-            console.error('Drive Pull failed', err);
+            console.error('❌ Drive Pull failed', err);
         } finally {
             setIsSyncing(false);
         }
