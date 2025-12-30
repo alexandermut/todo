@@ -211,11 +211,11 @@ function App() {
                         }}
                     />
 
-                    {/* App Header with Branding */}
+                    {/* Minimal App Header - Mobile Ready */}
                     {currentPage === 'tasks' && (
-                        <header className="bg-zinc-900 border-b border-zinc-800 py-3 px-6 flex items-center gap-3">
-                            <img src="/icons/logo.svg" alt="todotext.de" className="h-6" />
-                            <h1 className="text-lg font-semibold text-zinc-100">todotext.de</h1>
+                        <header className="bg-zinc-950 border-b border-zinc-800/50 py-2 px-4 flex items-center gap-2">
+                            <img src="/icons/todotext-appicon-dark-192.png" alt="" className="w-5 h-5" />
+                            <span className="text-sm font-medium text-zinc-400">todotext.de</span>
                         </header>
                     )}
 
