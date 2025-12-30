@@ -2,9 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { TaskItem } from './TaskItem';
 
 
-export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags }) {
-    const [sortCriteria, setSortCriteria] = useState('none'); // 'none', 'priority', 'due', 'alpha'
-
+export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
     const getTitle = () => {
         if (!activeFilter) return 'Inbox';
         switch (activeFilter.type) {
@@ -13,32 +11,10 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
             case 'upcoming': return 'Upcoming';
             case 'project': return `${activeFilter.value}`;
             case 'context': return `@${activeFilter.value}`;
+            case 'tag': return `#${activeFilter.value}`;
             default: return 'Inbox';
         }
     };
-
-    const sortedTasks = useMemo(() => {
-        const sorted = [...tasks];
-        switch (sortCriteria) {
-            case 'priority':
-                return sorted.sort((a, b) => {
-                    if (a.priority && !b.priority) return -1;
-                    if (!a.priority && b.priority) return 1;
-                    if (a.priority && b.priority) return a.priority.localeCompare(b.priority);
-                    return 0;
-                });
-            case 'alpha':
-                return sorted.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
-            case 'due':
-                return sorted.sort((a, b) => {
-                    const dueA = a.due || '9999-99-99';
-                    const dueB = b.due || '9999-99-99';
-                    return dueA.localeCompare(dueB);
-                });
-            default:
-                return sorted;
-        }
-    }, [tasks, sortCriteria]);
 
     return (
         <div className="pb-20">
@@ -48,26 +24,11 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                     <div className="text-xs text-gray-500 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
                 </div>
 
-                {/* Sort Control */}
-                {tasks.length > 0 && (
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-zinc-500 font-medium">Sort:</label>
-                        <select
-                            value={sortCriteria}
-                            onChange={(e) => setSortCriteria(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1 outline-none focus:border-blue-500 cursor-pointer"
-                        >
-                            <option value="none">Default</option>
-                            <option value="priority">Priority</option>
-                            <option value="due">Due Date</option>
-                            <option value="alpha">A-Z</option>
-                        </select>
-                    </div>
-                )}
+                {/* Sort Control Removed (Moved to Global Footer) */}
             </header>
 
             <div className="mb-4">
-                {sortedTasks.map(task => (
+                {tasks.map(task => (
                     <TaskItem
                         key={task.id}
                         task={task}
@@ -81,71 +42,62 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                         projects={projects}
                         contexts={contexts}
                         tags={tags}
+                        onOpenCalendar={onOpenCalendar}
                     />
                 ))}
             </div>
 
 
             {tasks.length === 0 && (
-                <div className="py-8">
+                <div className="py-8 w-full">
 
-                    <div className="space-y-12 max-w-xl">
+                    <div className="space-y-12 w-full">
 
                         {/* Visual Syntax Guide (Anatomy of a Task) */}
-                        <div className="relative w-full max-w-2xl px-4 mb-20">
-                            <h3 className="text-zinc-500 font-medium text-xs uppercase tracking-wider mb-12 text-center">Structure of a Task</h3>
+                        <div className="relative w-full px-4 mb-12">
+                            <h3 className="text-zinc-500 font-medium text-xs uppercase tracking-wider mb-8 text-center">Anatomy of a Task</h3>
 
-                            {/* The Task Line */}
-                            <div className="font-mono text-sm sm:text-base text-zinc-300 bg-zinc-900/50 p-4 rounded border border-zinc-800/50 flex flex-wrap gap-x-3 gap-y-2 justify-center shadow-lg relative z-10">
-                                <span>x</span>
-                                <span className="text-amber-400">(A)</span>
-                                <span className="text-zinc-400">2025-12-30</span>
-                                <span>measure space for</span>
-                                <span className="text-cyan-400">+kitchen</span>
-                                <span className="text-emerald-400">@home</span>
-                                <span className="text-red-400">due:2025-12-31</span>
-                            </div>
-
-                            {/* Annotations Layer */}
-                            <div className="absolute inset-0 pointer-events-none hidden sm:block">
-
-                                {/* Top Annotations */}
-                                {/* x - Completed */}
-                                <div className="absolute -top-8 left-8 w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute -top-10 left-8 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
-                                    Completed (opt)
+                            <div className="flex flex-wrap gap-4 sm:gap-6 justify-center items-start">
+                                {/* Component: Completed */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-300 transition-colors cursor-help">x</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Done</span>
                                 </div>
 
-                                {/* (A) - Priority */}
-                                <div className="absolute -top-8 left-16 w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute -top-10 left-16 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
-                                    Priority (opt)
+                                {/* Component: Priority */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-amber-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-amber-400 transition-colors cursor-help">(A)</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Priority</span>
                                 </div>
 
-                                {/* Date - Creation/Completion */}
-                                <div className="absolute -top-8 left-32 w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute -top-10 left-32 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
-                                    Date (opt)
+                                {/* Component: Date */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-200 transition-colors cursor-help">2025-12-30</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Date</span>
                                 </div>
 
-                                {/* Bottom Annotations */}
-
-                                {/* +project */}
-                                <div className="absolute top-[3.5rem] right-[13rem] w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute top-[5.5rem] right-[13rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
-                                    +Project Tag
+                                {/* Component: Description */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 px-3 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-100 transition-colors w-full text-center">Measure kitchen</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Description</span>
                                 </div>
 
-                                {/* @context */}
-                                <div className="absolute top-[3.5rem] right-[8rem] w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute top-[5.5rem] right-[8rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
-                                    @Context Tag
+                                {/* Component: Project */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-cyan-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-cyan-400 transition-colors cursor-pointer">+Home</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Project</span>
                                 </div>
 
-                                {/* due:date */}
-                                <div className="absolute top-[3.5rem] right-[3rem] w-px h-8 bg-zinc-700"></div>
-                                <div className="absolute top-[5.5rem] right-[3rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
-                                    Key:Value Tag
+                                {/* Component: Context */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-emerald-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-emerald-400 transition-colors cursor-pointer">@Phone</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Context</span>
+                                </div>
+
+                                {/* Component: Key:Value */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-red-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-red-400 transition-colors cursor-pointer">due:2025-12-31</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Due Date</span>
                                 </div>
                             </div>
                         </div>

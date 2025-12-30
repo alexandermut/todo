@@ -25,7 +25,9 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         Store.updateTask(task.id, newRaw);
         setIsEditing(false);
         setShowSuggestions(false);
-        if (onEditEnd) onEditEnd();
+        if (onEditEnd) onEditEnd(task.id);
+        // Ensure focus remains here for keyboard nav
+        if (onTaskFocus) onTaskFocus(task.id);
     };
 
     // Check for tokens under cursor
@@ -60,10 +62,12 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         }
     };
 
-    const applySuggestion = (item) => {
-        if (!textareaRef.current) return;
-        const val = textareaRef.current.value;
-        const pos = cursorPosition;
+    // Update props to include lists
+    const applySuggestion = (item, manualVal = null, manualPos = null) => {
+        const val = manualVal ?? (textareaRef.current ? textareaRef.current.value : null);
+        const pos = manualPos ?? cursorPosition;
+
+        if (val === null) return;
 
         // We need to replace the *current token* with the suggestion
         // This logic is partially duplicated in Rust (finding bounds) but specific replacement logic needed here.
@@ -89,14 +93,17 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         else insertion = item.value;
 
         const newVal = prefix + insertion + suffix;
-        textareaRef.current.value = newVal;
 
-        // Move cursor after insertion
-        const newCursorPos = prefix.length + insertion.length;
-
+        // Update Store
         Store.updateTask(task.id, newVal);
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+
+        // If we are still editing (ref exists), update UI and focus
+        if (textareaRef.current) {
+            textareaRef.current.value = newVal;
+            const newCursorPos = prefix.length + insertion.length;
+            textareaRef.current.focus();
+            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
 
         setShowSuggestions(false);
     };
@@ -220,17 +227,32 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
-                                handleEdit(e.target.value);
+                                e.stopPropagation();
+
+                                // Ensure we save, handling potential store errors gracefully
+                                try {
+                                    handleEdit(e.target.value);
+                                } catch (err) {
+                                    console.error("Failed to save task:", err);
+                                    // Even if save fails, exit edit mode to prevent stuck state
+                                    setIsEditing(false);
+                                    if (onEditEnd) onEditEnd(task.id);
+                                }
                             } else if (e.key === 'Escape') {
                                 setIsEditing(false);
-                                if (onEditEnd) onEditEnd();
+                                if (onEditEnd) onEditEnd(task.id);
                             }
                         }}
                         onBlur={(e) => {
-                            // Delay to allow clicking suggestions or calendar
+                            // Small delay to allow clicking suggestions or calendar without premature close
                             setTimeout(() => {
-                                if (!showSuggestions) { // Only save if not interacting with something else
-                                    handleEdit(e.target.value);
+                                if (!showSuggestions) {
+                                    try {
+                                        handleEdit(e.target.value);
+                                    } catch (err) {
+                                        console.error("Failed to save task on blur:", err);
+                                        setIsEditing(false);
+                                    }
                                 }
                             }, 200);
                         }}
@@ -238,18 +260,24 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
                     {/* Calendar Picker Trigger */}
                     <div className="absolute right-0 top-1">
-                        <label className="cursor-pointer text-zinc-500 hover:text-zinc-300 p-1">
-                            <input
-                                type="date"
-                                className="sr-only"
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        applySuggestion({ type: 'date', value: e.target.value });
-                                    }
-                                }}
-                            />
+                        <button
+                            type="button"
+                            className="cursor-pointer text-zinc-500 hover:text-zinc-300 p-1 bg-transparent border-none outline-none"
+                            onMouseDown={(e) => e.preventDefault()} // Try to prevent blur on click
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onOpenCalendar && textareaRef.current) {
+                                    const currentVal = textareaRef.current.value;
+                                    const currentPos = cursorPosition;
+                                    onOpenCalendar((dateStr) => {
+                                        applySuggestion({ type: 'date', value: dateStr }, currentVal, currentPos);
+                                    });
+                                }
+                            }}
+                            title="Pick due date"
+                        >
                             📅
-                        </label>
+                        </button>
                     </div>
                 </div>
 
@@ -302,7 +330,10 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                 ${selected ? 'bg-blue-900/20' : ''} 
                 ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`}
             data-id={task.id}
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+                setIsEditing(true);
+                if (onTaskFocus) onTaskFocus(task.id);
+            }}
         >
             {/* 2. Selection (Visible on Hover/Selected) */}
             <div className="mr-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>

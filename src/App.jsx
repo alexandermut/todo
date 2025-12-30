@@ -10,6 +10,9 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { searchParser } from './utils/searchParser';
 import { SettingsSidebar } from './components/SettingsSidebar';
 
+import { CalendarPopup } from './components/CalendarPopup';
+import { sortTasks } from './utils/sortUtils';
+
 import { Impressum } from './components/Impressum';
 import { Datenschutz } from './components/Datenschutz';
 import logo from './assets/logo.png';
@@ -22,6 +25,16 @@ function App() {
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState('tasks'); // 'tasks' | 'impressum' | 'datenschutz'
+
+    // GLOBAL CALENDAR STATE
+    const [calendarState, setCalendarState] = useState({ isOpen: false, onSelect: null });
+
+    const openCalendar = (onSelectCallback) => {
+        setCalendarState({ isOpen: true, onSelect: onSelectCallback });
+    };
+
+    // SORT STATE
+    const [sortCriteria, setSortCriteria] = useState('none');
 
     const handleCloudLoad = (text) => {
         Store.loadFromString(text);
@@ -58,32 +71,42 @@ function App() {
             result = searchParser(result, searchQuery);
         }
 
-        if (!activeFilter) return result;
-
-        // ... (existing switch case logic)
-        switch (activeFilter.type) {
-            case 'today':
-                const today = new Date().toISOString().split('T')[0];
-                return result.filter(t => t.metadata && t.metadata.due === today);
-            case 'upcoming':
-                const todayStr = new Date().toISOString().split('T')[0];
-                return result.filter(t => t.metadata && t.metadata.due > todayStr);
-            case 'overdue':
-                const nowStr = new Date().toISOString().split('T')[0];
-                return result.filter(t => t.metadata && t.metadata.due && t.metadata.due < nowStr && !t.completed);
-            case 'project':
-                return result.filter(t => t.projects.includes(activeFilter.value));
-            case 'context':
-                return result.filter(t => t.contexts && t.contexts.includes(activeFilter.value));
-            case 'tag':
-                return result.filter(t => t.tags && t.tags.includes(activeFilter.value));
-            case 'inbox':
-            case 'impressum':
-            case 'datenschutz':
-            default:
-                return result;
+        if (activeFilter) {
+            switch (activeFilter.type) {
+                case 'today':
+                    const today = new Date().toISOString().split('T')[0];
+                    result = result.filter(t => t.metadata && t.metadata.due === today);
+                    break;
+                case 'upcoming':
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    result = result.filter(t => t.metadata && t.metadata.due > todayStr);
+                    break;
+                case 'overdue':
+                    const nowStr = new Date().toISOString().split('T')[0];
+                    result = result.filter(t => t.metadata && t.metadata.due && t.metadata.due < nowStr && !t.completed);
+                    break;
+                case 'project':
+                    result = result.filter(t => t.projects.includes(activeFilter.value));
+                    break;
+                case 'context':
+                    result = result.filter(t => t.contexts && t.contexts.includes(activeFilter.value));
+                    break;
+                case 'tag':
+                    result = result.filter(t => t.tags && t.tags.includes(activeFilter.value));
+                    break;
+                case 'inbox':
+                case 'impressum':
+                case 'datenschutz':
+                default:
+                    // no filter
+                    break;
+            }
         }
-    }, [tasks, activeFilter, searchQuery]);
+
+        // Apply Sorting
+        return sortTasks(result, sortCriteria);
+
+    }, [tasks, activeFilter, searchQuery, sortCriteria]);
 
     const handleQuickAdd = (text) => {
         if (!text.trim()) return;
@@ -112,7 +135,7 @@ function App() {
         }
 
         Store.addTask(finalTaskText);
-        setSearchQuery(''); // Clear after adding
+        setSearchQuery('');
     };
 
     const projects = useMemo(() => [...new Set(tasks.flatMap(t => t.projects || []))].sort(), [tasks]);
@@ -133,17 +156,19 @@ function App() {
 
     const handleBulkComplete = () => {
         const tasksToUpdate = tasks.filter(t => selectedTaskIds.has(t.id));
-        tasksToUpdate.forEach(t => Store.updateTask(t.id, { completed: true }));
+        tasksToUpdate.forEach(t => {
+            if (!t.completed) {
+                Store.toggleTask(t.id);
+            }
+        });
         setSelectedTaskIds(new Set());
     };
 
     const handleBulkDelete = () => {
-        // We likely need a bulk delete on Store to be efficient/notify once, but loop works for now
         Array.from(selectedTaskIds).forEach(id => Store.deleteTask(id));
         setSelectedTaskIds(new Set());
     };
 
-    // Keyboard Shortcuts Integration
     useKeyboardShortcuts({
         tasks: filteredTasks,
         focusedTaskId,
@@ -160,16 +185,14 @@ function App() {
             const task = tasks.find(t => t.id === id);
             if (!task) return;
 
-            // Direct assignment
             if (['A', 'B', 'C', null].includes(action)) {
                 Store.setTaskPriority(id, action);
                 return;
             }
 
-            // Directional cycling
-            const priorities = [null, 'C', 'B', 'A']; // Ascending order of importance
+            const priorities = [null, 'C', 'B', 'A'];
             let currentIdx = priorities.indexOf(task.priority || null);
-            if (currentIdx === -1) currentIdx = 0; // treat unknown as null
+            if (currentIdx === -1) currentIdx = 0;
 
             let newIdx = currentIdx;
             if (action === 'up') newIdx = Math.min(newIdx + 1, priorities.length - 1);
@@ -187,6 +210,18 @@ function App() {
         }
     });
 
+    const SortButton = ({ label, value, current }) => (
+        <button
+            onClick={() => setSortCriteria(value)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${current === value
+                ? 'bg-zinc-700 text-zinc-100 border-zinc-600'
+                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+                }`}
+        >
+            {label}
+        </button>
+    );
+
     return (
         <>
             <div className="flex flex-col h-full">
@@ -194,7 +229,6 @@ function App() {
                     <SettingsSidebar
                         isOpen={isSettingsOpen}
                         onClose={() => setIsSettingsOpen(false)}
-                        // Sync Props passed here now
                         onSyncClick={() => isAuthenticated ? syncPushDrive(tasks) : login()}
                         onPullClick={syncPullDrive}
                         isSyncing={isSyncing}
@@ -214,13 +248,12 @@ function App() {
 
 
 
-                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
+                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-48">
                         <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-6">
                             {/* Branding Header */}
                             <div className="flex items-center gap-3 mb-8 -ml-0.5">
                                 <img src={logo} alt="todotext.de" className="w-10 h-10" />
                                 <h2 className="text-xl font-semibold text-zinc-300">todotext.de</h2>
-                                <span className="text-[10px] text-zinc-600 font-mono mt-1 ml-2">{__APP_VERSION__}</span>
                             </div>
 
                             <div className="space-y-2">
@@ -235,11 +268,17 @@ function App() {
                                         selectedTaskIds={selectedTaskIds}
                                         onTaskSelect={handleTaskSelect}
                                         focusedTaskId={focusedTaskId}
+                                        onTaskFocus={setFocusedTaskId}
                                         editingTaskId={editingTaskId}
-                                        onEditEnd={() => setEditingTaskId(null)}
+                                        onEditEnd={(id) => {
+                                            setEditingTaskId(null);
+                                            // Restore focus to the task that was just edited/cancelled
+                                            if (id) setFocusedTaskId(id);
+                                        }}
                                         projects={projects}
                                         contexts={contexts}
                                         tags={tags}
+                                        onOpenCalendar={openCalendar}
                                         onFilterClick={(type, value) => {
                                             let prefix = '';
                                             if (type === 'project') prefix = '+';
@@ -248,19 +287,11 @@ function App() {
                                             if (type === 'date') prefix = 'due:';
 
                                             const token = `${prefix}${value}`;
-                                            const currentQuery = searchQuery || '';
 
-                                            // Toggle logic: if token exists, remove it; otherwise append it
-                                            if (currentQuery.includes(token)) {
-                                                const newQuery = currentQuery.replace(token, '').replace(/\s\s+/g, ' ').trim();
-                                                setSearchQuery(newQuery);
-                                            } else {
-                                                // If empty, add leading space so cursor at 0 puts text BEFORE the filter
-                                                const separator = currentQuery ? ' ' : ' ';
-                                                const newQuery = (currentQuery || '') + separator + token;
-                                                setSearchQuery(newQuery);
+                                            // Append to search query
+                                            if (!searchQuery.includes(token)) {
+                                                setSearchQuery(prev => prev ? `${prev} ${token}` : token);
                                             }
-                                            setSearchFocusTrigger(c => c + 1);
                                         }}
                                     />
                                 )}
@@ -288,36 +319,61 @@ function App() {
                     />
                 </div>
 
-                {/* Footer with Privacy Links - Above BottomSearch */}
+                {/* Sort Bar, Search, and Footer - Fixed bottom stack */}
                 {currentPage === 'tasks' && (
-                    <div className="bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-800 py-2 px-4 text-center text-xs text-zinc-500">
-                        <a href="/datenschutz.html" className="hover:text-zinc-300 transition-colors">
-                            Datenschutzerklärung
-                        </a>
-                        {' • '}
-                        <a href="/impressum.html" className="hover:text-zinc-300 transition-colors">
-                            Impressum
-                        </a>
+                    <div className="bg-zinc-950 border-t border-zinc-800 flex flex-col">
+                        <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider mr-1 shrink-0">Sort:</span>
+                            <SortButton label="Default" value="none" current={sortCriteria} />
+                            <SortButton label="Priority" value="priority" current={sortCriteria} />
+                            <SortButton label="Project" value="project" current={sortCriteria} />
+                            <SortButton label="Context" value="context" current={sortCriteria} />
+                            <SortButton label="Due Date" value="due" current={sortCriteria} />
+                            <SortButton label="A-Z" value="alpha-asc" current={sortCriteria} />
+                            <SortButton label="Z-A" value="alpha-desc" current={sortCriteria} />
+                        </div>
+
+                        <BottomSearch
+                            searchValue={searchQuery}
+                            onSearch={setSearchQuery}
+                            onQuickAdd={handleQuickAdd}
+                            onMenuClick={() => setIsSidebarOpen(true)}
+                            onSettingsClick={() => setIsSettingsOpen(true)}
+                            focusTrigger={searchFocusTrigger}
+                            activeFilter={activeFilter}
+                            onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                            projects={projects}
+                            contexts={contexts}
+                            tags={tags}
+                            onOpenCalendar={openCalendar}
+                        />
+
+                        {/* Footer with Privacy Links & Version - Below BottomSearch */}
+                        <div className="bg-zinc-950 py-1 px-4 text-center text-[10px] text-zinc-600 flex justify-center gap-3 items-center border-t border-zinc-900">
+                            <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors">
+                                Datenschutzerklärung
+                            </a>
+                            <span>•</span>
+                            <a href="/impressum.html" className="hover:text-zinc-400 transition-colors">
+                                Impressum
+                            </a>
+                            <span className="w-px h-3 bg-zinc-800 mx-1"></span>
+                            <span className="font-mono opacity-50">{__APP_VERSION__}</span>
+                        </div>
                     </div>
                 )}
-
-                {/* Fixed Bottom Search Bar - Hidden on legal pages */}
-                {currentPage === 'tasks' && (
-                    <BottomSearch
-                        searchValue={searchQuery}
-                        onSearch={setSearchQuery}
-                        onQuickAdd={handleQuickAdd}
-                        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        onSettingsClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                        focusTrigger={searchFocusTrigger}
-                        activeFilter={activeFilter}
-                        onClearFilter={() => setActiveFilter({ type: 'inbox' })}
-                        projects={projects}
-                        contexts={contexts}
-                        tags={tags}
-                    />
-                )}
             </div>
+
+            {/* Global Calendar Popup */}
+            {calendarState.isOpen && (
+                <CalendarPopup
+                    onSelect={(date) => {
+                        if (calendarState.onSelect) calendarState.onSelect(date);
+                        setCalendarState({ ...calendarState, isOpen: false });
+                    }}
+                    onClose={() => setCalendarState({ ...calendarState, isOpen: false })}
+                />
+            )}
         </>
     );
 }
