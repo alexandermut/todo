@@ -12,6 +12,7 @@ import { SettingsSidebar } from './components/SettingsSidebar';
 
 import { Impressum } from './components/Impressum';
 import { Datenschutz } from './components/Datenschutz';
+import logo from './assets/logo.png';
 
 function App() {
     const [tasks, setTasks] = useState(Store.getTasks());
@@ -215,6 +216,13 @@ function App() {
 
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-6">
+                            {/* Branding Header */}
+                            <div className="flex items-center gap-3 mb-8 -ml-0.5">
+                                <img src={logo} alt="todotext.de" className="w-10 h-10" />
+                                <h2 className="text-xl font-semibold text-zinc-300">todotext.de</h2>
+                                <span className="text-[10px] text-zinc-600 font-mono mt-1 ml-2">{__APP_VERSION__}</span>
+                            </div>
+
                             <div className="space-y-2">
                                 {currentPage === 'impressum' ? (
                                     <Impressum onBack={() => setCurrentPage('tasks')} />

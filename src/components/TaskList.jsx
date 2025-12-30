@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { TaskItem } from './TaskItem';
-import logo from '../assets/logo.png';
+
 
 export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags }) {
     const [sortCriteria, setSortCriteria] = useState('none'); // 'none', 'priority', 'due', 'alpha'
@@ -42,7 +42,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
 
     return (
         <div className="pb-20">
-            <header className="mb-6 flex items-start justify-between">
+            <header className="mb-6 flex items-start justify-between pl-[3.75rem]">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100">{getTitle()}</h1>
                     <div className="text-xs text-gray-500 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
@@ -88,44 +88,64 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
 
             {tasks.length === 0 && (
                 <div className="py-8">
-                    {/* Logo + Brand - Left Aligned */}
-                    <div className="flex items-center gap-3 mb-12">
-                        <img src={logo} alt="todotext.de" className="w-10 h-10" />
-                        <h2 className="text-xl font-semibold text-zinc-300">todotext.de</h2>
-                        <span className="text-[10px] text-zinc-600 font-mono mt-1 ml-2">{__APP_VERSION__}</span>
-                    </div>
 
                     <div className="space-y-12 max-w-xl">
 
-                        {/* Syntax Guide */}
-                        <div className="space-y-5">
-                            <h3 className="text-zinc-500 font-medium text-xs uppercase tracking-wider flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                                Syntax Guide
-                            </h3>
-                            <div className="space-y-4 text-sm text-zinc-400">
-                                <div>
-                                    <div className="text-xs text-zinc-500 mb-1.5">Projects & Contexts</div>
-                                    <div className="flex gap-2">
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">+project</code>
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">@context</code>
-                                    </div>
+                        {/* Visual Syntax Guide (Anatomy of a Task) */}
+                        <div className="relative w-full max-w-2xl px-4 mb-20">
+                            <h3 className="text-zinc-500 font-medium text-xs uppercase tracking-wider mb-12 text-center">Structure of a Task</h3>
+
+                            {/* The Task Line */}
+                            <div className="font-mono text-sm sm:text-base text-zinc-300 bg-zinc-900/50 p-4 rounded border border-zinc-800/50 flex flex-wrap gap-x-3 gap-y-2 justify-center shadow-lg relative z-10">
+                                <span>x</span>
+                                <span className="text-amber-400">(A)</span>
+                                <span className="text-zinc-400">2025-12-30</span>
+                                <span>measure space for</span>
+                                <span className="text-cyan-400">+kitchen</span>
+                                <span className="text-emerald-400">@home</span>
+                                <span className="text-red-400">due:2025-12-31</span>
+                            </div>
+
+                            {/* Annotations Layer */}
+                            <div className="absolute inset-0 pointer-events-none hidden sm:block">
+
+                                {/* Top Annotations */}
+                                {/* x - Completed */}
+                                <div className="absolute -top-8 left-8 w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute -top-10 left-8 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
+                                    Completed (opt)
                                 </div>
-                                <div>
-                                    <div className="text-xs text-zinc-500 mb-1.5">Priorities</div>
-                                    <div className="flex gap-2">
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">(A)</code>
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">(B)</code>
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">(C)</code>
-                                        <span className="text-zinc-500 text-xs self-center ml-1">start of line</span>
-                                    </div>
+
+                                {/* (A) - Priority */}
+                                <div className="absolute -top-8 left-16 w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute -top-10 left-16 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
+                                    Priority (opt)
                                 </div>
-                                <div>
-                                    <div className="text-xs text-zinc-500 mb-1.5">Key:Value Tags</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">due:2025-12-31</code>
-                                        <code className="text-zinc-300 bg-zinc-900/50 px-1.5 py-0.5 rounded border border-zinc-800/50">rec:1w</code>
-                                    </div>
+
+                                {/* Date - Creation/Completion */}
+                                <div className="absolute -top-8 left-32 w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute -top-10 left-32 -translate-x-1/2 -rotate-45 origin-bottom-right text-[10px] text-zinc-500 whitespace-nowrap">
+                                    Date (opt)
+                                </div>
+
+                                {/* Bottom Annotations */}
+
+                                {/* +project */}
+                                <div className="absolute top-[3.5rem] right-[13rem] w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute top-[5.5rem] right-[13rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
+                                    +Project Tag
+                                </div>
+
+                                {/* @context */}
+                                <div className="absolute top-[3.5rem] right-[8rem] w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute top-[5.5rem] right-[8rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
+                                    @Context Tag
+                                </div>
+
+                                {/* due:date */}
+                                <div className="absolute top-[3.5rem] right-[3rem] w-px h-8 bg-zinc-700"></div>
+                                <div className="absolute top-[5.5rem] right-[3rem] -translate-x-1/2 rotate-45 origin-top-left text-[10px] text-zinc-500 whitespace-nowrap">
+                                    Key:Value Tag
                                 </div>
                             </div>
                         </div>

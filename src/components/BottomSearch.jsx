@@ -52,7 +52,7 @@ function CalendarPopup({ onSelect, onClose }) {
     }
 
     return (
-        <div className="absolute bottom-full right-0 mb-4 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4 w-72 z-50">
+        <div className="fixed bottom-24 right-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 w-72 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <button onClick={(e) => { e.preventDefault(); handlePrevMonth(); }} className="p-1 hover:text-white text-zinc-400">
@@ -224,7 +224,24 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
 
                 <div className="absolute inset-0 bg-zinc-800 rounded-xl transition-colors group-focus-within:bg-zinc-700 border border-zinc-700 shadow-sm group-focus-within:ring-1 group-focus-within:ring-zinc-600"></div>
 
-                <div className="relative flex items-center w-full px-3 py-1.5 h-[46px]">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (showSuggestions && suggestions.length > 0) {
+                            // Let suggestions take precedence if specific key used, but Enter usually signifies submit
+                            // However, if we want Enter to pick suggestion ONLY if one is selected via keyboard (which we don't have fully yet)
+                            // For now: Enter = Submit Text. 
+                            // If user wants suggestion, they tap it. 
+                            // Exception: If exact match?
+                            // Simplest: Always submit current text.
+                            onQuickAdd(searchValue);
+                        } else {
+                            onQuickAdd(searchValue);
+                        }
+                        setShowSuggestions(false);
+                    }}
+                    className="relative flex items-center w-full px-3 py-1.5 h-[46px]"
+                >
                     <input
                         ref={inputRef}
                         type="text"
@@ -234,14 +251,6 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         onChange={handleInput}
                         // Note: handleInput calls onSearch
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                if (showSuggestions && suggestions.length > 0) {
-                                    onQuickAdd(searchValue);
-                                } else {
-                                    onQuickAdd(searchValue);
-                                }
-                                setShowSuggestions(false);
-                            }
                             if (e.key === 'Tab' && showSuggestions && suggestions.length > 0) {
                                 e.preventDefault();
                                 applySuggestion(suggestions[0]);
@@ -256,6 +265,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {/* Filter Badge */}
                     {badge && (
                         <button
+                            type="button"
                             onClick={onClearFilter}
                             className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono border ml-2 whitespace-nowrap select-none hover:opacity-80 transition-opacity ${badge.className}`}
                             title="Clear filter"
@@ -267,6 +277,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
 
                     {/* Calendar Toggle */}
                     <button
+                        type="button"
                         onClick={() => setShowCalendar(!showCalendar)}
                         className={`p-1.5 ml-1 shrink-0 rounded transition-colors ${showCalendar ? 'text-red-400 bg-red-400/10' : 'text-zinc-500 hover:text-zinc-300'}`}
                         title="Pick due date"
@@ -277,6 +288,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {searchValue && (
                         <>
                             <button
+                                type="button"
                                 onClick={() => onSearch('')}
                                 className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors ml-1 shrink-0"
                                 title="Clear search"
@@ -284,14 +296,14 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                 <span className="text-lg">×</span>
                             </button>
                             <button
-                                onClick={() => onQuickAdd(searchValue)}
+                                type="submit"
                                 className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors ml-1 shrink-0"
                             >
                                 <span className="text-xs font-bold">↵</span>
                             </button>
                         </>
                     )}
-                </div>
+                </form>
             </div>
 
             {/* Right Controls Container */}
@@ -317,6 +329,19 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     </svg>
                 </button>
             </div>
-        </div>
+
+            {/* Calendar Popup - Fixed Position */}
+            {
+                showCalendar && (
+                    <CalendarPopup
+                        onSelect={(dateStr) => {
+                            applySuggestion({ type: 'date', value: dateStr });
+                            setShowCalendar(false);
+                        }}
+                        onClose={() => setShowCalendar(false)}
+                    />
+                )
+            }
+        </div >
     );
 }
