@@ -60,7 +60,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
 
                                 {/* Component: Description */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-100 transition-colors w-full text-center">Measure kitchen</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-100 transition-colors w-full text-center">call mum</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Description</span>
                                 </div>
 

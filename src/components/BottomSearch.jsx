@@ -121,7 +121,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                 }
                             }
                         }}
-                        placeholder={activeFilter && activeFilter.type !== 'inbox' ? `Add to ${activeFilter.value}...` : "Search, filter or add a new task ..."}
+                        placeholder={activeFilter && activeFilter.type !== 'inbox' ? `Add to ${activeFilter.value}...` : "add a new task, filter or search..."}
                         className="flex-1 bg-transparent border-none outline-none text-zinc-200 placeholder-zinc-500 text-sm h-8"
                     />
 

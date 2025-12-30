@@ -228,7 +228,13 @@ function App() {
 
                 {/* TOP: Search & Sort Bar */}
                 {currentPage === 'tasks' && (
-                    <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col pt-[env(safe-area-inset-top)] z-30 relative shrink-0">
+                    <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col pt-[max(env(safe-area-inset-top),16px)] z-30 relative shrink-0">
+                        {/* Branding - Above Search */}
+                        <div className="flex items-center gap-3 px-4 pb-2">
+                            <img src={logo} alt="todotext.de" className="w-8 h-8" />
+                            <h2 className="text-lg font-semibold text-zinc-300">todotext.de</h2>
+                        </div>
+
                         <BottomSearch
                             searchValue={searchQuery}
                             onSearch={setSearchQuery}
@@ -280,11 +286,7 @@ function App() {
 
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-6">
-                            {/* Branding Header */}
-                            <div className="flex items-center gap-3 mb-8 -ml-0.5">
-                                <img src={logo} alt="todotext.de" className="w-10 h-10" />
-                                <h2 className="text-xl font-semibold text-zinc-300">todotext.de</h2>
-                            </div>
+                            {/* Branding Header Removed (Moved to Top) */}
 
                             <div className="space-y-2">
                                 {currentPage === 'impressum' ? (
