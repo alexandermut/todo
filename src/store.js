@@ -80,13 +80,8 @@ export const Store = {
     },
 
     addTask(rawText) {
-        console.log('Store.addTask called with:', rawText);
         const task = parse_todo_line(rawText);
-        console.log('Parsed task:', task);
-        if (!task || !task.text.trim()) {
-            console.error('Parser returned invalid task or empty text');
-            return;
-        }
+        if (!task || !task.text.trim()) return;
 
         this.saveUndoState();
         this.tasks.push(task);

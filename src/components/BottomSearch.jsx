@@ -135,6 +135,25 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         </button>
                     )}
 
+                    {/* Clear Button (X) - Visible when typing */}
+                    {searchValue.length > 0 && (
+                        <button
+                            onClick={() => {
+                                onSearch('');
+                                inputRef.current?.focus();
+                                // To close keyboard on mobile, we might want to blur instead?
+                                // User said "to get out", implying blur/close keyboard.
+                                inputRef.current?.blur();
+                            }}
+                            className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-colors"
+                            title="Clear"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+
                     {/* Submit Button (Visible when typing) */}
                     {searchValue.trim().length > 0 && (
                         <button

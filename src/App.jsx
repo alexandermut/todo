@@ -109,7 +109,6 @@ function App() {
     }, [tasks, activeFilter, searchQuery, sortCriteria]);
 
     const handleQuickAdd = (text) => {
-        console.log('handleQuickAdd called with:', text);
         if (!text.trim()) return;
 
         let finalTaskText = text;
@@ -135,15 +134,8 @@ function App() {
             }
         }
 
-        console.log('Final task text:', finalTaskText);
-        try {
-            Store.addTask(finalTaskText);
-            console.log('Store.addTask executed');
-            setSearchQuery('');
-        } catch (error) {
-            console.error('Error in handleQuickAdd:', error);
-            alert('Error adding task: ' + error.message);
-        }
+        Store.addTask(finalTaskText);
+        setSearchQuery('');
     };
 
     const projects = useMemo(() => [...new Set(tasks.flatMap(t => t.projects || []))].sort(), [tasks]);
