@@ -3,29 +3,11 @@ import { TaskItem } from './TaskItem';
 
 
 export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
-    const getTitle = () => {
-        if (!activeFilter) return 'Inbox';
-        switch (activeFilter.type) {
-            case 'inbox': return 'Inbox';
-            case 'today': return 'Today';
-            case 'upcoming': return 'Upcoming';
-            case 'project': return `${activeFilter.value}`;
-            case 'context': return `@${activeFilter.value}`;
-            case 'tag': return `#${activeFilter.value}`;
-            default: return 'Inbox';
-        }
-    };
+
 
     return (
         <div className="pb-20">
-            <header className="mb-6 flex items-start justify-between pl-[3.75rem]">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100">{getTitle()}</h1>
-                    <div className="text-xs text-gray-500 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
-                </div>
 
-                {/* Sort Control Removed (Moved to Global Footer) */}
-            </header>
 
             <div className="mb-4">
                 {tasks.map(task => (
@@ -57,46 +39,52 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                         <div className="relative w-full px-4 mb-12">
                             <h3 className="text-zinc-500 font-medium text-xs uppercase tracking-wider mb-8 text-center">Anatomy of a Task</h3>
 
-                            <div className="flex flex-wrap gap-4 sm:gap-6 justify-center items-start">
+                            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-start">
                                 {/* Component: Completed */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-300 transition-colors cursor-help">x</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-300 transition-colors cursor-help">x</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Done</span>
                                 </div>
 
                                 {/* Component: Priority */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-amber-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-amber-400 transition-colors cursor-help">(A)</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-amber-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-amber-400 transition-colors cursor-help">(A)</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Priority</span>
                                 </div>
 
                                 {/* Component: Date */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-200 transition-colors cursor-help">2025-12-30</span>
-                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Date</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-200 transition-colors cursor-help">2025-12-30</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Created</span>
                                 </div>
 
                                 {/* Component: Description */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 px-3 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-100 transition-colors w-full text-center">Measure kitchen</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-zinc-100 transition-colors w-full text-center">Measure kitchen</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Description</span>
                                 </div>
 
                                 {/* Component: Project */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-cyan-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-cyan-400 transition-colors cursor-pointer">+Home</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-cyan-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-cyan-400 transition-colors cursor-pointer">+Home</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Project</span>
                                 </div>
 
                                 {/* Component: Context */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-emerald-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-emerald-400 transition-colors cursor-pointer">@Phone</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-emerald-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-emerald-400 transition-colors cursor-pointer">@Phone</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Context</span>
+                                </div>
+
+                                {/* Component: Tag */}
+                                <div className="flex flex-col items-center gap-2 group">
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-purple-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-purple-400 transition-colors cursor-pointer">#urgent</span>
+                                    <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Hashtag</span>
                                 </div>
 
                                 {/* Component: Key:Value */}
                                 <div className="flex flex-col items-center gap-2 group">
-                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-red-500 px-2 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-red-400 transition-colors cursor-pointer">due:2025-12-31</span>
+                                    <span className="bg-zinc-800/80 border border-zinc-700/50 text-red-500 px-1.5 py-1 rounded font-mono text-sm group-hover:bg-zinc-800 group-hover:text-red-400 transition-colors cursor-pointer">due:2025-12-31</span>
                                     <span className="text-[10px] text-zinc-600 uppercase tracking-wide">Due Date</span>
                                 </div>
                             </div>
