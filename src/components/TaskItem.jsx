@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store } from '../store';
-import { resolveDateAlias, getDateAliases } from '../utils/dateAliases';
+import { get_completions } from 'todo-parser';
 
-export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd, onFilterClick }) {
+// Note: We need to receive projects, contexts, tags via props
+export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd, onFilterClick, projects, contexts, tags }) {
     const [isEditing, setIsEditing] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -37,35 +38,24 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         e.target.style.height = 'auto';
         e.target.style.height = e.target.scrollHeight + 'px';
 
-        // Detect Token
-        const textBeforeCursor = val.substring(0, pos);
-        const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
-        const currentToken = textBeforeCursor.substring(lastSpaceIndex + 1);
+        // Use unified Rust completion logic
+        // We pass the full line and position, plus available tokens
+        const completions = get_completions(val, pos, projects || [], contexts || [], tags || []);
 
-        // Date Alias Search (due:)
-        if (currentToken.startsWith('due:')) {
-            const query = currentToken.substring(4).toLowerCase();
-            // Show all aliases that match query
-            const allAliases = getDateAliases();
-            // Filter keys
-            const matches = Object.keys(allAliases).filter(key => key.startsWith(query));
-
-            if (matches.length > 0) {
-                const dateSuggestions = matches.map(alias => ({
-                    id: alias,
-                    name: alias, // e.g. "morgen"
-                    value: allAliases[alias], // e.g. "2025-12-31"
-                    type: 'date'
-                }));
-                setSuggestions(dateSuggestions);
-                setShowSuggestions(true);
-            } else {
-                // If query is valid date part (2025...), mostly ignore or help?
-                // For now only help with textual aliases
-                setShowSuggestions(false);
-            }
-        }
-        else {
+        if (completions && completions.length > 0) {
+            // Map Rust structure to UI structure if needed, or use directly
+            // Rust returns { id, display, value, category }
+            // UI expects { id, name, value, type } (type used for icon/color logic?)
+            // Let's adapt map:
+            const mapped = completions.map(c => ({
+                id: c.id,
+                name: c.display,
+                value: c.value,
+                type: c.category
+            }));
+            setSuggestions(mapped);
+            setShowSuggestions(true);
+        } else {
             setShowSuggestions(false);
         }
     };
@@ -74,20 +64,40 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         if (!textareaRef.current) return;
         const val = textareaRef.current.value;
         const pos = cursorPosition;
+
+        // We need to replace the *current token* with the suggestion
+        // This logic is partially duplicated in Rust (finding bounds) but specific replacement logic needed here.
+        // Simple heuristic: find bounds around cursor.
         const textBeforeCursor = val.substring(0, pos);
-        const textAfterCursor = val.substring(pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
         const startOfToken = lastSpaceIndex + 1;
+
+        // Find end of token
+        const textAfterCursor = val.substring(pos);
+        const nextSpaceIndex = textAfterCursor.indexOf(' ');
+        const endOfToken = nextSpaceIndex === -1 ? val.length : pos + nextSpaceIndex;
+
         const prefix = val.substring(0, startOfToken);
+        const suffix = val.substring(endOfToken);
 
-        let insertion = `due:${item.value}`;
+        // Construct insertion
+        let insertion = '';
+        if (item.type === 'date') insertion = `due:${item.value}`;
+        else if (item.type === 'project') insertion = `+${item.value}`;
+        else if (item.type === 'context') insertion = `@${item.value}`;
+        else if (item.type === 'tag') insertion = `#${item.value}`;
+        else insertion = item.value;
 
-        const newVal = prefix + insertion + ' ' + textAfterCursor;
+        const newVal = prefix + insertion + suffix;
         textareaRef.current.value = newVal;
-        // Keep editing
-        // Update store but don't close
+
+        // Move cursor after insertion
+        const newCursorPos = prefix.length + insertion.length;
+
         Store.updateTask(task.id, newVal);
         textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+
         setShowSuggestions(false);
     };
 
@@ -223,28 +233,38 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                 {showSuggestions && suggestions.length > 0 && (
                     <div className="absolute left-4 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
                         <div className="px-3 py-2 text-xs font-semibold text-zinc-500 border-b border-zinc-800">
-                            Dates
+                            Suggestions
                         </div>
-                        {suggestions.map((item, idx) => (
-                            <div
-                                key={item.id || idx}
-                                className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3 transition-colors"
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    applySuggestion(item);
-                                }}
-                            >
-                                <div className="flex items-center gap-3 w-full">
-                                    <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">
-                                        📅
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-sm text-zinc-200 font-medium capitalize">{item.name}</div>
-                                        <div className="text-xs text-zinc-500">{item.value}</div>
+                        {suggestions.map((item, idx) => {
+                            let icon = '⚡';
+                            let colorClass = 'text-zinc-400 bg-zinc-500/20';
+
+                            if (item.type === 'date') { icon = '📅'; colorClass = 'text-red-400 bg-red-500/20'; }
+                            else if (item.type === 'project') { icon = '+'; colorClass = 'text-cyan-400 bg-cyan-500/20'; }
+                            else if (item.type === 'context') { icon = '@'; colorClass = 'text-emerald-400 bg-emerald-500/20'; }
+                            else if (item.type === 'tag') { icon = '#'; colorClass = 'text-purple-400 bg-purple-500/20'; }
+
+                            return (
+                                <div
+                                    key={item.id || idx}
+                                    className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3 transition-colors"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        applySuggestion(item);
+                                    }}
+                                >
+                                    <div className="flex items-center gap-3 w-full">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${colorClass}`}>
+                                            {icon}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-sm text-zinc-200 font-medium capitalize">{item.name}</div>
+                                            {item.type === 'date' && <div className="text-xs text-zinc-500">{item.value}</div>}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

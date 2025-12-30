@@ -37,12 +37,12 @@ function App() {
 
 
     useEffect(() => {
-        Store.init();
         const unsubscribe = Store.subscribe((updatedTasks) => {
             setTasks([...updatedTasks]);
         });
+        Store.init();
         return () => {
-            // Store.unsubscribe(unsubscribe)
+            Store.unsubscribe(unsubscribe)
         };
     }, []);
 
@@ -229,6 +229,9 @@ function App() {
                                         focusedTaskId={focusedTaskId}
                                         editingTaskId={editingTaskId}
                                         onEditEnd={() => setEditingTaskId(null)}
+                                        projects={projects}
+                                        contexts={contexts}
+                                        tags={tags}
                                         onFilterClick={(type, value) => {
                                             let prefix = '';
                                             if (type === 'project') prefix = '+';
@@ -301,6 +304,9 @@ function App() {
                         focusTrigger={searchFocusTrigger}
                         activeFilter={activeFilter}
                         onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                        projects={projects}
+                        contexts={contexts}
+                        tags={tags}
                     />
                 )}
             </div>

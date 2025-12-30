@@ -1,5 +1,5 @@
-import { parse_todo_line } from './parser.js';
-import { get, set } from 'idb-keyval';
+import { parse_todo_line } from 'todo-parser';
+// import { get, set } from 'idb-keyval';
 
 export const Store = {
     tasks: [],

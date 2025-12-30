@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TaskItem } from './TaskItem';
 
-export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick }) {
+export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags }) {
     const [sortCriteria, setSortCriteria] = useState('none'); // 'none', 'priority', 'due', 'alpha'
 
     const getTitle = () => {
@@ -77,6 +77,9 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                         isEditingProp={editingTaskId === task.id}
                         onEditEnd={onEditEnd}
                         onFilterClick={onFilterClick}
+                        projects={projects}
+                        contexts={contexts}
+                        tags={tags}
                     />
                 ))}
             </div>
