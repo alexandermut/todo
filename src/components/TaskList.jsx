@@ -40,8 +40,15 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
 
 
             {tasks.length === 0 && (
-                <div className="text-center py-10 px-4">
-                    <div className="text-gray-600 font-medium mb-4">Get started</div>
+                <div className="text-center py-12 px-4">
+                    {/* Logo + Brand */}
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <img src="/icons/todotext-appicon-dark-192.png" alt="" className="w-12 h-12" />
+                        <h2 className="text-2xl font-semibold text-zinc-300">todotext.de</h2>
+                    </div>
+
+                    {/* Getting Started */}
+                    <div className="text-gray-500 font-medium mb-6">Get started</div>
                     <div className="text-left max-w-md mx-auto space-y-3 text-sm text-gray-500">
                         <div className="flex items-start gap-2">
                             <span className="text-gray-400">•</span>

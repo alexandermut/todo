@@ -211,13 +211,7 @@ function App() {
                         }}
                     />
 
-                    {/* Minimal App Header - Mobile Ready */}
-                    {currentPage === 'tasks' && (
-                        <header className="bg-zinc-950 border-b border-zinc-800/50 py-2 px-4 flex items-center justify-between">
-                            <span className="text-sm font-medium text-zinc-400">todotext.de</span>
-                            <img src="/icons/todotext-appicon-dark-192.png" alt="" className="w-5 h-5 opacity-60" />
-                        </header>
-                    )}
+
 
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 p-4 sm:p-8 flex justify-center transition-colors pb-32">
                         <div className="w-full max-w-3xl">
