@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const CLIENT_ID = '533958879265-u2sipqoup3j5fobgfkq1f37r5g8eo7lj.apps.googleusercontent.com'; // From original file
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const CLIENT_ID = '533958879265-u2sipqoup3j5fobgfkq1f37r5g8eo7lj.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/contacts.readonly';
 
 export function useGoogleDrive(onTasksLoaded) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,7 +37,10 @@ export function useGoogleDrive(onTasksLoaded) {
         window.gapi.load('client', async () => {
             await window.gapi.client.init({
                 // apiKey: API_KEY, // Not strictly needed for user-scoped Drive access if using access token
-                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                discoveryDocs: [
+                    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                    'https://people.googleapis.com/$discovery/rest?version=v1'
+                ],
             });
         });
     };
