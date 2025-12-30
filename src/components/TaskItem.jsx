@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect, useRef } from 'react';
 import { Store } from '../store';
 import { useGoogleContacts } from '../hooks/useGoogleContacts';
@@ -11,7 +10,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
     const [suggestionType, setSuggestionType] = useState(null); // 'contact' or 'date'
     const [cursorPosition, setCursorPosition] = useState(0);
     const textareaRef = useRef(null);
-    
+
     // Google Contacts Hook
     const { searchContacts } = useGoogleContacts();
 
@@ -32,13 +31,13 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         setShowSuggestions(false);
         if (onEditEnd) onEditEnd();
     };
-    
+
     // Check for tokens under cursor
     const handleInput = async (e) => {
         const val = e.target.value;
         const pos = e.target.selectionStart;
         setCursorPosition(pos);
-        
+
         // Auto-resize
         e.target.style.height = 'auto';
         e.target.style.height = e.target.scrollHeight + 'px';
@@ -47,7 +46,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         const textBeforeCursor = val.substring(0, pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
         const currentToken = textBeforeCursor.substring(lastSpaceIndex + 1);
-        
+
         // 1. Contact Search
         if (currentToken.startsWith('contact:')) {
             const query = currentToken.substring(8);
@@ -59,7 +58,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
             } else {
                 setShowSuggestions(false);
             }
-        } 
+        }
         // 2. Date Alias Search (due:)
         else if (currentToken.startsWith('due:')) {
             const query = currentToken.substring(4).toLowerCase();
@@ -67,17 +66,17 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
             const allAliases = getDateAliases();
             // Filter keys
             const matches = Object.keys(allAliases).filter(key => key.startsWith(query));
-            
+
             if (matches.length > 0) {
-                 const dateSuggestions = matches.map(alias => ({
-                     id: alias,
-                     name: alias, // e.g. "morgen"
-                     value: allAliases[alias], // e.g. "2025-12-31"
-                     type: 'date'
-                 }));
-                 setSuggestions(dateSuggestions);
-                 setSuggestionType('date');
-                 setShowSuggestions(true);
+                const dateSuggestions = matches.map(alias => ({
+                    id: alias,
+                    name: alias, // e.g. "morgen"
+                    value: allAliases[alias], // e.g. "2025-12-31"
+                    type: 'date'
+                }));
+                setSuggestions(dateSuggestions);
+                setSuggestionType('date');
+                setShowSuggestions(true);
             } else {
                 // If query is valid date part (2025...), mostly ignore or help?
                 // For now only help with textual aliases
@@ -88,7 +87,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
             setShowSuggestions(false);
         }
     };
-    
+
     const applySuggestion = (item) => {
         if (!textareaRef.current) return;
         const val = textareaRef.current.value;
@@ -102,12 +101,12 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         let insertion = '';
 
         if (suggestionType === 'contact') {
-             const safeName = item.name.replace(/\s+/g, '_'); 
-             const tel = item.phone ? `tel:${ item.phone.replace(/\s+/g, '') } ` : '';
-             const mail = item.email ? `mail:${ item.email } ` : '';
-             insertion = `contact:${ safeName } ${ tel } ${ mail } `.trim();
+            const safeName = item.name.replace(/\s+/g, '_');
+            const tel = item.phone ? `tel:${item.phone.replace(/\s+/g, '')}` : '';
+            const mail = item.email ? `mail:${item.email}` : '';
+            insertion = `contact:${safeName} ${tel} ${mail}`.trim();
         } else if (suggestionType === 'date') {
-             insertion = `due:${ item.value } `;
+            insertion = `due:${item.value}`;
         }
 
         const newVal = prefix + insertion + ' ' + textAfterCursor;
@@ -118,9 +117,8 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         textareaRef.current.focus();
         setShowSuggestions(false);
     };
-    
-    const selectContact = (contact) => applySuggestion(contact); // Alias for backward compat if needed, but better use generic apply
 
+    const selectContact = (contact) => applySuggestion(contact); // Alias for backward compat
 
     const priorityClass = {
         'A': 'text-red-400',
@@ -128,12 +126,8 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
         'C': 'text-sky-400'
     }[task.priority] || 'text-gray-400';
 
-    // Basic rich text parsing for projects/contexts/tags/dates/contacts
+    // Basic rich text parsing
     const renderText = (text) => {
-        // Regex to match:
-        // +project, @context, #tag
-        // due:YYYY-MM-DD
-        // tel:..., mail:..., contact:...
         const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:\d{4}-\d{2}-\d{2}|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
 
         return parts.map((part, i) => {
@@ -200,7 +194,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                 return (
                     <a
                         key={i}
-                        href={`mailto:${ email } `}
+                        href={`mailto:${email}`}
                         onClick={(e) => e.stopPropagation()}
                         className="text-orange-400 hover:underline inline-flex items-center gap-1"
                         title="Send Email"
@@ -235,7 +229,6 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                     onFocus={(e) => {
                         e.target.style.height = 'auto';
                         e.target.style.height = e.target.scrollHeight + 'px';
-                        // Move cursor to end
                         const val = e.target.value;
                         e.target.value = '';
                         e.target.value = val;
@@ -243,7 +236,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                     onInput={handleInput}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                            e.preventDefault(); // Prevent newline
+                            e.preventDefault();
                             handleEdit(e.target.value);
                         } else if (e.key === 'Escape') {
                             setIsEditing(false);
@@ -251,7 +244,6 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                         }
                     }}
                     onBlur={(e) => {
-                        // Delay blur to allow click on suggestion
                         setTimeout(() => handleEdit(e.target.value), 200);
                     }}
                 />
@@ -263,11 +255,11 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                             {suggestionType === 'contact' ? 'Contacts' : 'Dates'}
                         </div>
                         {suggestions.map((item, idx) => (
-                            <div 
+                            <div
                                 key={item.id || idx}
                                 className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3 transition-colors"
                                 onMouseDown={(e) => {
-                                    e.preventDefault(); // Prevent blur
+                                    e.preventDefault();
                                     applySuggestion(item);
                                 }}
                             >
@@ -288,7 +280,6 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                                         </div>
                                     </>
                                 ) : (
-                                    /* Date Suggestions */
                                     <div className="flex items-center gap-3 w-full">
                                         <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold">
                                             📅
@@ -309,15 +300,15 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
     return (
         <div
-            className={`group flex items - center py - 1 - mx - 4 px - 4 transition - colors cursor - pointer
-hover: bg - zinc - 900 
-                ${ selected ? 'bg-blue-900/20' : '' } 
-                ${ isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : '' } `}
+            className={`group flex items-center py-1 -mx-4 px-4 transition-colors cursor-pointer
+                hover:bg-zinc-900 
+                ${selected ? 'bg-blue-900/20' : ''} 
+                ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`}
             data-id={task.id}
             onClick={() => setIsEditing(true)}
         >
-            {/* 2. Selection (Always Visible) */}
-            <div className="mr-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            {/* 2. Selection (Visible on Hover/Selected) */}
+            <div className="mr-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                 <input
                     type="checkbox"
                     checked={selected || false}
@@ -331,22 +322,21 @@ hover: bg - zinc - 900
             {/* 3. Toggle Complete (Circle) */}
             <button
                 onClick={handleToggle}
-                className={`mr - 3 w - 5 h - 5 rounded - full border border - zinc - 500 hover: border - zinc - 300 flex items - center justify - center text - transparent hover: text - zinc - 500 transition - all ${ task.completed ? '!bg-zinc-500 !border-zinc-500 text-white !text-white' : '' } `}
+                className={`mr-3 w-5 h-5 rounded-full border border-zinc-500 hover:border-zinc-300 flex items-center justify-center text-transparent hover:text-zinc-500 transition-all ${task.completed ? '!bg-zinc-500 !border-zinc-500 text-white !text-white' : ''}`}
             >
                 {task.completed ? '✓' : ''}
             </button>
 
             {/* 4. Content */}
             <div className="flex-1 min-w-0">
-                <div className={`text - sm text - zinc - 200 ${ task.completed ? 'line-through text-zinc-500' : '' } `}>
-                    {task.priority && <span className={`text - xs font - bold mr - 4 ${ priorityClass } `}>({task.priority})</span>}
+                <div className={`text-sm text-zinc-200 ${task.completed ? 'line-through text-zinc-500' : ''}`}>
+                    {task.priority && <span className={`text-xs font-bold mr-1 ${priorityClass}`}>({task.priority})</span>}
                     {renderText(task.text)}
                 </div>
-
             </div>
 
             {/* Actions (Right) */}
-            <div className="flex items-center ml-2">
+            <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                     onClick={(e) => { e.stopPropagation(); Store.deleteTask(task.id); }}
                     className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
