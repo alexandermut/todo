@@ -77,20 +77,20 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                                 Keyboard Shortcuts
                             </h3>
-                            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm text-zinc-400 items-baseline">
-                                <span className="justify-self-end"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px">/</kbd></span>
+                            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-zinc-400 items-baseline">
+                                <span className="justify-self-start"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">/</kbd></span>
                                 <span>Focus search / New Task</span>
 
-                                <span className="justify-self-end"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">x</kbd></span>
+                                <span className="justify-self-start"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">x</kbd></span>
                                 <span>Complete task</span>
 
-                                <span className="justify-self-end"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">e</kbd></span>
+                                <span className="justify-self-start"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">e</kbd></span>
                                 <span>Edit task</span>
 
-                                <span className="justify-self-end text-nowrap"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">p</kbd> + <kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">a-c</kbd></span>
+                                <span className="justify-self-start text-nowrap"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">p</kbd> <span className="text-zinc-600 text-[10px] px-0.5">+</span> <kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">a-c</kbd></span>
                                 <span>Set priority</span>
 
-                                <span className="justify-self-end text-nowrap"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">⌘</kbd> + <kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">z</kbd></span>
+                                <span className="justify-self-start text-nowrap"><kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">⌘</kbd> <span className="text-zinc-600 text-[10px] px-0.5">+</span> <kbd className="bg-zinc-800 border border-zinc-700 px-1.5 rounded text-zinc-300 font-mono text-[10px]">z</kbd></span>
                                 <span>Undo action</span>
                             </div>
                         </div>
