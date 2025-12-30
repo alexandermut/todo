@@ -111,6 +111,13 @@ export const Store = {
         this.notify();
     },
 
+    clearAllTasks() {
+        this.saveUndoState();
+        this.tasks = [];
+        this.saveToPersistence();
+        this.notify();
+    },
+
     setTaskPriority(id, priority) {
         const index = this.tasks.findIndex(t => t.id === id);
         if (index === -1) return;

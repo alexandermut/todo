@@ -13,7 +13,9 @@ export function SettingsSidebar({
     onDropboxPull,
     isDropboxAuth,
     isDropboxSyncing,
-    onGTasksSync
+    onGTasksSync,
+    onGTasksPull,
+    onClearAll
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -78,13 +80,22 @@ export function SettingsSidebar({
                             {isAuthenticated && (
                                 <div className="flex items-center justify-between p-2 rounded hover:bg-zinc-800/50 transition-colors">
                                     <span className="text-sm text-gray-300">Google Tasks</span>
-                                    <button
-                                        onClick={onGTasksSync}
-                                        className={`p-1.5 rounded hover:bg-zinc-700 ${isSyncing ? 'animate-pulse text-blue-500' : 'text-gray-500'}`}
-                                        title="Push to GTasks"
-                                    >
-                                        ☑️
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={onGTasksSync}
+                                            className={`p-1.5 rounded hover:bg-zinc-700 ${isSyncing ? 'animate-pulse text-blue-500' : 'text-gray-500'}`}
+                                            title="Push to Google Tasks"
+                                        >
+                                            📦
+                                        </button>
+                                        <button
+                                            onClick={onGTasksPull}
+                                            className={`p-1.5 rounded hover:bg-zinc-700 ${isSyncing ? 'animate-pulse text-blue-500' : 'text-gray-500'}`}
+                                            title="Pull from Google Tasks"
+                                        >
+                                            🔄
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
@@ -112,6 +123,17 @@ export function SettingsSidebar({
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Clear All Tasks */}
+                <div className="mb-4 p-3 rounded bg-zinc-800/30 border border-red-900/30">
+                    <button
+                        onClick={onClearAll}
+                        className="w-full px-3 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span>🗑️</span>
+                        <span>Clear All Tasks</span>
+                    </button>
                 </div>
 
                 {/* Shortcuts & Help Section */}

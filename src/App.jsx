@@ -25,7 +25,7 @@ function App() {
         Store.loadFromString(text);
     };
 
-    const { isAuthenticated, isSyncing, login, syncPushDrive, syncPullDrive, syncPushTasks } = useGoogleServices(handleCloudLoad);
+    const { isAuthenticated, isSyncing, login, syncPushDrive, syncPullDrive, syncPushTasks, syncPullTasks } = useGoogleServices(handleCloudLoad);
     const {
         isAuthenticated: isDropboxAuth,
         isSyncing: isDropboxSyncing,
@@ -202,6 +202,12 @@ function App() {
                         isDropboxAuth={isDropboxAuth}
                         isDropboxSyncing={isDropboxSyncing}
                         onGTasksSync={() => isAuthenticated ? syncPushTasks(tasks) : login()}
+                        onGTasksPull={syncPullTasks}
+                        onClearAll={() => {
+                            if (window.confirm(`Are you sure you want to delete all ${tasks.length} tasks? This cannot be undone (but you can undo with Cmd+Z).`)) {
+                                Store.clearAllTasks();
+                            }
+                        }}
                     />
 
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 p-4 sm:p-8 flex justify-center transition-colors pb-32">

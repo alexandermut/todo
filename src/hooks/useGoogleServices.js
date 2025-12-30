@@ -164,12 +164,47 @@ export function useGoogleServices(onTasksLoaded) {
         }
     };
 
+    const syncPullTasks = async () => {
+        if (!isAuthenticated) { login(); return; }
+        setIsSyncing(true);
+        try {
+            const lists = await window.gapi.client.tasks.tasklists.list();
+            const defaultList = lists.result.items[0];
+
+            const response = await window.gapi.client.tasks.tasks.list({
+                tasklist: defaultList.id,
+                showCompleted: true,
+                showHidden: true
+            });
+
+            const gTasks = response.result.items || [];
+
+            // Convert Google Tasks to todo.txt format
+            const todoLines = gTasks.map(task => {
+                const completed = task.status === 'completed' ? 'x ' : '';
+                const title = task.title || '';
+                const notes = task.notes ? ` ${task.notes}` : '';
+                return `${completed}${title}${notes}`;
+            }).filter(line => line.trim());
+
+            const todoText = todoLines.join('\n');
+            onTasksLoaded(todoText);
+            console.log('✅ Pulled tasks from Google Tasks');
+
+        } catch (err) {
+            console.error('❌ GTasks Pull failed', err);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     return {
         isAuthenticated,
         isSyncing,
         login,
         syncPushDrive,
         syncPullDrive,
-        syncPushTasks
+        syncPushTasks,
+        syncPullTasks
     };
 }
