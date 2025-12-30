@@ -296,8 +296,8 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
 
             {/* 4. Content */}
             <div className="flex-1 min-w-0">
-                <div className={`text - sm text - zinc - 200 ${task.completed ? 'line-through text-zinc-500' : ''} `}>
-                    {task.priority && <span className={`text - xs font - bold mr - 2 ${priorityClass} `}>({task.priority})</span>}
+                <div className={`text-sm text-zinc-200 ${task.completed ? 'line-through text-zinc-500' : ''}`}>
+                    {task.priority && <span className={`text-xs font-bold mr-4 ${priorityClass}`}>({task.priority})</span>}
                     {renderText(task.text)}
                 </div>
 
