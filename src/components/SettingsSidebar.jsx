@@ -179,7 +179,7 @@ export function SettingsSidebar({
                                     {isDropboxAuth && dropboxLastSync && (
                                         <div className="mt-2 text-center">
                                             <span className="text-[10px] text-zinc-500 font-mono">
-                                                Last successful push: {(() => {
+                                                Synced: {(() => {
                                                     const d = new Date(dropboxLastSync);
                                                     const p = n => n.toString().padStart(2, '0');
                                                     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
