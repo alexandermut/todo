@@ -5,7 +5,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
     const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [cursorPosition, setCursorPosition] = useState(0);
+    const [selectedIndex, setSelectedIndex] = useState(0);
 
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
@@ -32,8 +32,10 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
             }));
             setSuggestions(mapped);
             setShowSuggestions(true);
+            setSelectedIndex(0); // Reset selection
         } else {
             setShowSuggestions(false);
+            setSelectedIndex(0);
         }
     };
 
@@ -84,6 +86,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
 
         setShowSuggestions(false);
+        setSelectedIndex(0);
     };
 
     return (
@@ -97,7 +100,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {suggestions.map((item, idx) => (
                         <div
                             key={idx}
-                            className="px-3 py-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-3"
+                            className={`px-3 py-2 cursor-pointer flex items-center gap-3 ${idx === selectedIndex ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
                             onClick={() => applySuggestion(item)}
                         >
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold 
@@ -126,18 +129,36 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         value={searchValue}
                         onChange={handleInput}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                if (showSuggestions && suggestions.length > 0) {
+                            if (showSuggestions && suggestions.length > 0) {
+                                if (e.key === 'ArrowDown') {
                                     e.preventDefault();
-                                    applySuggestion(suggestions[0]);
-                                } else {
+                                    setSelectedIndex(prev => (prev + 1) % suggestions.length);
+                                } else if (e.key === 'ArrowUp') {
                                     e.preventDefault();
-                                    onQuickAdd(searchValue);
+                                    setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+                                } else if (e.key === 'Tab') {
+                                    e.preventDefault();
+                                    applySuggestion(suggestions[selectedIndex]);
+                                } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    applySuggestion(suggestions[selectedIndex]);
+                                } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    setShowSuggestions(false);
                                 }
+                            } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                onQuickAdd(searchValue);
                             }
                         }}
                         placeholder={activeFilter && activeFilter.type !== 'inbox' ? `Add to ${activeFilter.value}...` : "add a new task, filter or search..."}
                         className="flex-1 bg-transparent border-none outline-none text-zinc-200 placeholder-zinc-500 text-sm h-8"
+                        onBlur={() => {
+                            // Delay hiding to allow click event on suggestion to fire
+                            setTimeout(() => {
+                                setShowSuggestions(false);
+                            }, 150);
+                        }}
                     />
 
                     {/* Clear Filter Badge */}
