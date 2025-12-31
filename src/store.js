@@ -5,7 +5,7 @@ export const Store = {
     tasks: [],
     listeners: [],
     undoStack: [],
-    // maxUndoSize: 20, // Removed as per instruction
+    redoStack: [], // Added Redo Stack
 
     init() {
         this.loadFromPersistence();
@@ -20,25 +20,22 @@ export const Store = {
         this.listeners = this.listeners.filter(l => l !== listener);
     },
 
-    notify() {
-        this.listeners.forEach(fn => fn(this.tasks));
+    notify(source = 'STORE') {
+        this.listeners.forEach(fn => fn(this.tasks, source));
     },
 
     loadFromString(text) {
         const lines = text.split('\n');
         this.tasks = [];
         lines.forEach(line => {
-            // Ensure line is not empty
             if (!line.trim()) return;
             const task = parse_todo_line(line);
             if (task) {
-                // WASM parser might return object even if text empty? Check text.
-                // Actually WASM returns Struct.
                 this.tasks.push(task);
             }
         });
-        this.saveToPersistence(); // Kept this line as it was in the original and makes sense with loadFromPersistence
-        this.notify();
+        this.saveToPersistence();
+        this.notify('CLOUD');
     },
 
 
@@ -48,7 +45,7 @@ export const Store = {
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) this.tasks = parsed;
-                this.notify();
+                this.notify('LOCAL_STORAGE');
             }
         } catch (e) { console.error('Failed to load tasks:', e); }
     },
@@ -68,16 +65,41 @@ export const Store = {
     },
 
     saveUndoState() {
+        // Limit stack size if needed (e.g. 50)
+        if (this.undoStack.length > 50) this.undoStack.shift();
+
         this.undoStack.push(JSON.parse(JSON.stringify(this.tasks)));
-        // if (this.undoStack.length > this.maxUndoSize) this.undoStack.shift(); // maxUndoSize removed, so this line is commented out
+        this.redoStack = []; // Clear redo stack on new action
     },
 
     undo() {
         if (this.undoStack.length === 0) return;
+
+        // Push current to Redo
+        this.redoStack.push(JSON.parse(JSON.stringify(this.tasks)));
+
+        // Pop from Undo
         this.tasks = this.undoStack.pop();
+
         this.saveToPersistence();
-        this.notify();
+        this.notify('UNDO');
     },
+
+    redo() {
+        if (this.redoStack.length === 0) return;
+
+        // Push current to Undo
+        this.undoStack.push(JSON.parse(JSON.stringify(this.tasks)));
+
+        // Pop from Redo
+        this.tasks = this.redoStack.pop();
+
+        this.saveToPersistence();
+        this.notify('REDO');
+    },
+
+    getCanUndo() { return this.undoStack.length > 0; },
+    getCanRedo() { return this.redoStack.length > 0; },
 
     addTask(rawText) {
         const task = parse_todo_line(rawText);
@@ -86,7 +108,7 @@ export const Store = {
         this.saveUndoState();
         this.tasks.push(task);
         this.saveToPersistence();
-        this.notify();
+        this.notify('ADD_TASK');
     },
 
     updateTask(id, newRaw) {
@@ -101,9 +123,18 @@ export const Store = {
             }
             this.tasks[index] = updatedTask;
             this.saveToPersistence();
-            this.notify();
+            this.notify('UPDATE_TASK');
         }
     },
+
+    replaceAllTasks(newTasks, shouldNotify = true) {
+        this.tasks = newTasks;
+        this.saveToPersistence();
+        if (shouldNotify) {
+            this.notify('REPLACE_ALL');
+        }
+    },
+
 
     deleteTask(id) {
         this.saveUndoState();
@@ -171,15 +202,11 @@ export const Store = {
         }
         task.raw = newRaw;
 
-        this.saveToLocalStorage();
-        this.notify();
-    },
+        // Update parsed object properties for consistency
+        // (Parsing the raw string is arguably safer but let's trust our mutation here)
 
-    deleteTask(taskId) {
-        this.saveUndoState();
-        this.tasks = this.tasks.filter(t => t.id !== taskId);
-        this.saveToLocalStorage();
-        this.notify();
+        this.saveToPersistence();
+        this.notify('TOGGLE_TASK');
     },
 
     // Simplified getter for now

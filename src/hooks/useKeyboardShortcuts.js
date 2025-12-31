@@ -11,6 +11,7 @@ export const useKeyboardShortcuts = ({
     onTaskEdit, // Enters edit mode for the task
     onTaskPriority, // Callback to update priority
     onUndo, // Callback for undo
+    onRedo, // Callback for redo
     clearFilters,
     onClearSelection, // Callback to clear task selection
     selectedTaskIds, // New prop
@@ -19,17 +20,21 @@ export const useKeyboardShortcuts = ({
     const [priorityMode, setPriorityMode] = useState(false);
 
     // Use refs to hold latest values for use inside event listener
-    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds });
+    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters });
 
     // useLayoutEffect ensures the ref is updated synchronously after render/DOM mutation,
     // preventing any "stale" state window between the visual update and the event listener's execution.
     useLayoutEffect(() => {
-        latestProps.current = { tasks, focusedTaskId, selectedTaskIds };
-    }, [tasks, focusedTaskId, selectedTaskIds]);
+        latestProps.current = { tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters };
+    }, [tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            const { tasks, focusedTaskId, selectedTaskIds } = latestProps.current;
+            const {
+                tasks, focusedTaskId, selectedTaskIds,
+                onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete,
+                onTaskEdit, onClearSelection, setSearchFocus, clearFilters
+            } = latestProps.current;
 
             // Ignore if focus is in an input or textarea (unless it's Esc to blur)
             const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
@@ -61,10 +66,20 @@ export const useKeyboardShortcuts = ({
                 return;
             }
 
-            // Undo (Ctrl+Z or Cmd+Z)
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            // Undo (Ctrl+Z or Cmd+Z) and Redo (Cmd+Shift+Z)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                console.log(`Shortcut Triggered: ${e.shiftKey ? 'Redo' : 'Undo'}`);
                 e.preventDefault();
-                if (onUndo) onUndo();
+                if (e.shiftKey) {
+                    if (onRedo) {
+                        console.log("Calling onRedo callback");
+                        onRedo();
+                    } else {
+                        console.log("onRedo callback is missing");
+                    }
+                } else {
+                    if (onUndo) onUndo();
+                }
                 return;
             }
 

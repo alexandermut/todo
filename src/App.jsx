@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TaskList } from './components/TaskList';
 import { BulkActionsBar } from './components/BulkActionsBar';
@@ -17,8 +17,16 @@ import { Impressum } from './components/Impressum';
 import { Datenschutz } from './components/Datenschutz';
 import logo from './assets/logo.png';
 
+
 function App() {
     const [tasks, setTasks] = useState(Store.getTasks());
+
+    // Undo/Redo state proxies (derived from Store/Force Update?)
+    // Actually, Store doesn't expose canUndo/canRedo reactively yet.
+    // For now we just implement the actions. Visuals for canUndo/canRedo can be added later if needed.
+    // Or we subscribe to Store full state including history counts?
+    // Let's stick to actions first.
+
     const [activeFilter, setActiveFilter] = useState({ type: 'inbox' }); // { type: 'inbox' | 'today' | 'upcoming' | 'project' | 'context' | 'tag', value: string }
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [focusedTaskId, setFocusedTaskId] = useState(null);
@@ -49,6 +57,7 @@ function App() {
         syncPull: syncPullDropbox
     } = useDropbox(handleCloudLoad);
 
+    // REMOVED: isMyOwnUpdate ref - superseded by reliable source check in Store
 
     useEffect(() => {
         const unsubscribe = Store.subscribe((updatedTasks) => {
@@ -59,6 +68,8 @@ function App() {
             Store.unsubscribe(unsubscribe)
         };
     }, []);
+
+
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocusTrigger, setSearchFocusTrigger] = useState(0); // Simple counter to trigger strict mode ref focus
@@ -291,6 +302,8 @@ function App() {
         onTaskEdit: (id) => {
             setEditingTaskId(id);
         },
+        onUndo: () => Store.undo(),
+        onRedo: () => Store.redo(),
         onClearSelection: () => setSelectedTaskIds(new Set()),
         selectedTaskIds,
         onSelectTask: (id, shouldSelect = true) => {
