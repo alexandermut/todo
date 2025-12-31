@@ -383,7 +383,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
             onContextMenu={handlePriorityContextMenu}
         >
             {/* 2. Selection (Visible on Hover/Selected) */}
-            <div className="mr-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            <div className={`mr-3 flex-shrink-0 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} onClick={(e) => e.stopPropagation()}>
                 <input
                     type="checkbox"
                     checked={selected || false}

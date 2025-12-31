@@ -257,13 +257,20 @@ function App() {
                 return;
             }
 
-            const priorities = [null, 'C', 'B', 'A'];
+            // Generate priorities: A-Z, then null
+            const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+            const priorities = [...alphabet, null];
+
             let currentIdx = priorities.indexOf(task.priority || null);
-            if (currentIdx === -1) currentIdx = 0;
+            if (currentIdx === -1) currentIdx = priorities.length - 1; // Default to null if unknown
 
             let newIdx = currentIdx;
-            if (action === 'up') newIdx = Math.min(newIdx + 1, priorities.length - 1);
-            if (action === 'down') newIdx = Math.max(newIdx - 1, 0);
+            if (action === 'up') {
+                newIdx = (currentIdx + 1) % priorities.length;
+            }
+            if (action === 'down') {
+                newIdx = (currentIdx - 1 + priorities.length) % priorities.length;
+            }
 
             if (newIdx !== currentIdx) {
                 Store.setTaskPriority(id, priorities[newIdx]);
