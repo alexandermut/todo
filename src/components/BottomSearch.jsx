@@ -6,6 +6,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const cursorPositionRef = useRef(0);
 
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
@@ -15,34 +16,39 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
     }, [focusTrigger]);
 
     // Input Handler for Autocomplete
-    const handleInput = async (e) => {
+    const handleInput = (e) => {
         const val = e.target.value;
         const pos = e.target.selectionStart;
-        setCursorPosition(pos);
+        cursorPositionRef.current = pos;
         onSearch(val); // Propagate up for filtering
 
-        const completions = get_completions(val, pos, projects || [], contexts || [], tags || []);
+        try {
+            const completions = get_completions(val, pos, projects || [], contexts || [], tags || []);
 
-        if (completions && completions.length > 0) {
-            const mapped = completions.map(c => ({
-                id: c.id,
-                name: c.display,
-                value: c.value,
-                type: c.category
-            }));
-            setSuggestions(mapped);
-            setShowSuggestions(true);
-            setSelectedIndex(0); // Reset selection
-        } else {
+            if (completions && completions.length > 0) {
+                const mapped = completions.map(c => ({
+                    id: c.id,
+                    name: c.display,
+                    value: c.value,
+                    type: c.category
+                }));
+                setSuggestions(mapped);
+                setShowSuggestions(true);
+                setSelectedIndex(0); // Reset selection
+            } else {
+                setShowSuggestions(false);
+                setSelectedIndex(0);
+            }
+        } catch (err) {
+            console.error("Autocomplete error:", err);
             setShowSuggestions(false);
-            setSelectedIndex(0);
         }
     };
 
     const applySuggestion = (item, dateValue = null) => {
         if (!inputRef.current) return;
         const val = inputRef.current.value;
-        const pos = cursorPosition;
+        const pos = cursorPositionRef.current;
 
         const textBeforeCursor = val.substring(0, pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
