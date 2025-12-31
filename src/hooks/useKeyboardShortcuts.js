@@ -12,22 +12,24 @@ export const useKeyboardShortcuts = ({
     onTaskPriority, // Callback to update priority
     onUndo, // Callback for undo
     clearFilters,
-    onClearSelection // Callback to clear task selection
+    onClearSelection, // Callback to clear task selection
+    selectedTaskIds, // New prop
+    onSelectTask // New prop: (id, multi) => void
 }) => {
     const [priorityMode, setPriorityMode] = useState(false);
 
     // Use refs to hold latest values for use inside event listener
-    const latestProps = useRef({ tasks, focusedTaskId });
+    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds });
 
     // useLayoutEffect ensures the ref is updated synchronously after render/DOM mutation,
     // preventing any "stale" state window between the visual update and the event listener's execution.
     useLayoutEffect(() => {
-        latestProps.current = { tasks, focusedTaskId };
-    }, [tasks, focusedTaskId]);
+        latestProps.current = { tasks, focusedTaskId, selectedTaskIds };
+    }, [tasks, focusedTaskId, selectedTaskIds]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            const { tasks, focusedTaskId } = latestProps.current;
+            const { tasks, focusedTaskId, selectedTaskIds } = latestProps.current;
 
             // Ignore if focus is in an input or textarea (unless it's Esc to blur)
             const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
@@ -89,69 +91,97 @@ export const useKeyboardShortcuts = ({
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
+                    let nextIdDown = null;
                     if (currentIndex < tasks.length - 1) {
-                        setFocusedTaskId(tasks[currentIndex + 1].id);
+                        nextIdDown = tasks[currentIndex + 1].id;
                     } else if (currentIndex === -1) {
-                        setFocusedTaskId(tasks[0].id);
+                        nextIdDown = tasks[0].id;
+                    }
+
+                    if (nextIdDown) {
+                        setFocusedTaskId(nextIdDown);
+                        if (e.shiftKey && onSelectTask) {
+                            // Select current AND next if not already selected
+                            // This effectively "drags" selection
+                            if (focusedTaskId) onSelectTask(focusedTaskId, true); // Ensure current is selected
+                            onSelectTask(nextIdDown, true); // Add next to selection
+                        }
                     }
                     break;
+
                 case 'ArrowUp':
                     e.preventDefault();
+                    let nextIdUp = null;
                     if (currentIndex > 0) {
-                        setFocusedTaskId(tasks[currentIndex - 1].id);
-                    } else if (currentIndex === -1 && tasks.length > 0) {
-                        setFocusedTaskId(tasks[tasks.length - 1].id);
+                        nextIdUp = tasks[currentIndex - 1].id;
+                    } else if (currentIndex === -1) {
+                        nextIdUp = tasks[tasks.length - 1].id;
+                    }
+
+                    if (nextIdUp) {
+                        setFocusedTaskId(nextIdUp);
+                        if (e.shiftKey && onSelectTask) {
+                            if (focusedTaskId) onSelectTask(focusedTaskId, true);
+                            onSelectTask(nextIdUp, true);
+                        }
                     }
                     break;
-                case ' ': // Toggle completion (Space)
-                case 'x': // Toggle completion (x)
-                    if (focusedTaskId) {
+
+                case 'x':
+                case ' ': // Space alias for 'x'
+                    if (focusedTaskId && onTaskComplete) {
                         e.preventDefault();
                         onTaskComplete(focusedTaskId);
                     }
-                    else if (currentIndex !== -1) {
-                        // Fallback: If focusedTaskId is set but currentIndex is valid (redundant check but safe)
-                        e.preventDefault();
-                        onTaskComplete(tasks[currentIndex].id);
+                    break;
+
+                case 'Delete':
+                case 'Backspace':
+                    if (focusedTaskId && onTaskDelete) {
+                        e.preventDefault(); // Prevent navigating back
+                        onTaskDelete(focusedTaskId);
                     }
                     break;
-                case 'e': // Edit
+
+                case 'ArrowRight':
                     if (focusedTaskId) {
+                        e.preventDefault();
+                        if (e.shiftKey && onSelectTask) {
+                            onSelectTask(focusedTaskId, true); // Select
+                        } else {
+                            onTaskPriority(focusedTaskId, 'up');
+                        }
+                    }
+                    break;
+
+                case 'ArrowLeft':
+                    if (focusedTaskId) {
+                        e.preventDefault();
+                        if (e.shiftKey && onSelectTask) {
+                            onSelectTask(focusedTaskId, false); // Deselect
+                        } else {
+                            onTaskPriority(focusedTaskId, 'down');
+                        }
+                    }
+                    break;
+
+                case 'Enter':
+                    if (focusedTaskId && onTaskEdit) {
                         e.preventDefault();
                         onTaskEdit(focusedTaskId);
                     }
                     break;
-                case 'Delete':
-                case 'Backspace':
-                    if (focusedTaskId) {
-                        e.preventDefault();
-                        onTaskDelete(focusedTaskId);
-                    }
-                    break;
-                case 'ArrowRight':
-                    if (focusedTaskId) {
-                        e.preventDefault();
-                        // Still support arrows for cycling
-                        onTaskPriority(focusedTaskId, 'up');
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (focusedTaskId) {
-                        e.preventDefault();
-                        // Still support arrows for cycling
-                        onTaskPriority(focusedTaskId, 'down');
-                    }
-                    break;
-                case 'p':
-                    if (focusedTaskId) {
-                        e.preventDefault();
-                        setPriorityMode(true);
-                    }
+
+                case '!':
+                    e.preventDefault();
+                    setPriorityMode(true);
                     break;
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setFocusedTaskId, setSearchFocus, onTaskComplete, onTaskDelete, onTaskEdit, onTaskPriority, onUndo, clearFilters, onClearSelection, priorityMode]); // Removed tasks/focusedTaskId from deps
+    }, [setFocusedTaskId, setSearchFocus, onTaskComplete, onTaskDelete, onTaskEdit, onTaskPriority, onUndo, clearFilters, onClearSelection, onSelectTask, priorityMode, tasks, focusedTaskId, selectedTaskIds]);
+
+    return { priorityMode };
 };

@@ -292,6 +292,18 @@ function App() {
             setEditingTaskId(id);
         },
         onClearSelection: () => setSelectedTaskIds(new Set()),
+        selectedTaskIds,
+        onSelectTask: (id, shouldSelect = true) => {
+            setSelectedTaskIds(prev => {
+                const next = new Set(prev);
+                if (shouldSelect) {
+                    next.add(id);
+                } else {
+                    next.delete(id);
+                }
+                return next;
+            });
+        },
         onTaskPriority: (id, action) => {
             const task = tasks.find(t => t.id === id);
             if (!task) return;
@@ -343,17 +355,20 @@ function App() {
         }
     };
 
-    const SortButton = ({ label, value, isActive, onClick }) => (
+    const SortButton = ({ icon, label, value, isActive, onClick }) => (
         <button
             onClick={onClick}
-            className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium transition-colors border ${isActive
+            title={label}
+            className={`whitespace-nowrap p-2 rounded-lg text-xs font-medium transition-colors border ${isActive
                 ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
                 : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
                 }`}
         >
-            {label}
-            {isActive && sortCriteria.includes('desc') && <span className="ml-1 opacity-60">↓</span>}
-            {isActive && !sortCriteria.includes('desc') && !sortCriteria.includes('none') && <span className="ml-1 opacity-60">↑</span>}
+            <div className="flex items-center justify-center gap-1">
+                {icon}
+                {isActive && sortCriteria.includes('desc') && <span className="opacity-60 text-[10px]">↓</span>}
+                {isActive && !sortCriteria.includes('desc') && !sortCriteria.includes('none') && <span className="opacity-60 text-[10px]">↑</span>}
+            </div>
         </button>
     );
 
@@ -400,42 +415,49 @@ function App() {
                                 value="none"
                                 isActive={sortCriteria === 'none'}
                                 onClick={() => setSortCriteria('none')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>}
                             />
                             <SortButton
                                 label="Priority"
                                 value="priority"
                                 isActive={sortCriteria.startsWith('priority')}
                                 onClick={() => handleSortClick('priority')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
                             />
                             <SortButton
                                 label="Project"
                                 value="project"
                                 isActive={sortCriteria.startsWith('project')}
                                 onClick={() => handleSortClick('project')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
                             />
                             <SortButton
                                 label="Context"
                                 value="context"
                                 isActive={sortCriteria.startsWith('context')}
                                 onClick={() => handleSortClick('context')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>}
                             />
                             <SortButton
                                 label="Tag"
                                 value="tag"
                                 isActive={sortCriteria.startsWith('tag')}
                                 onClick={() => handleSortClick('tag')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
                             />
                             <SortButton
                                 label="Due Date"
                                 value="due"
                                 isActive={sortCriteria.startsWith('due')}
                                 onClick={() => handleSortClick('due')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                             />
                             <SortButton
                                 label="A-Z"
                                 value="alpha"
                                 isActive={sortCriteria.startsWith('alpha')}
                                 onClick={() => handleSortClick('alpha-asc')}
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>}
                             />
                         </div>
                     </div>

@@ -17,7 +17,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 md:left-[305px] bg-white dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700 p-4 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30 transition-all transform translate-y-0">
+        <div className="fixed bottom-0 left-0 right-0 md:left-[305px] bg-white dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700 py-2 px-4 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30 transition-all transform translate-y-0">
             {isAdding ? (
                 <form onSubmit={handleAddSubmit} className="flex-1 flex items-center gap-2">
                     <input
@@ -50,10 +50,10 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
                 </form>
             ) : (
                 <>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">{selectedCount} selected</span>
-                        <button onClick={onDeselectAll} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            Cancel
+                        <button onClick={onDeselectAll} className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" title="Cancel Selection">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
 
