@@ -3,7 +3,7 @@ import { Store } from '../store';
 import { get_completions } from 'todo-parser';
 
 // Note: We need to receive projects, contexts, tags via props
-export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, isEditingProp, onEditEnd, onFilterClick, projects, contexts, tags }) {
+export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, onTaskFocus, isEditingProp, onEditEnd, onFilterClick, projects, contexts, tags }) {
     const [isEditing, setIsEditing] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -372,18 +372,18 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
     return (
         <div
             className={`group flex items-center py-1 -mx-4 px-4 transition-colors cursor-pointer
-                hover:bg-zinc-900 
                 ${selected ? 'bg-blue-900/20' : ''} 
                 ${isFocused ? 'bg-zinc-800 ring-1 ring-zinc-700' : ''}`}
             data-id={task.id}
+            onMouseEnter={() => onTaskFocus && onTaskFocus(task.id)}
             onClick={() => {
                 setIsEditing(true);
                 if (onTaskFocus) onTaskFocus(task.id);
             }}
             onContextMenu={handlePriorityContextMenu}
         >
-            {/* 2. Selection (Visible on Hover/Selected) */}
-            <div className={`mr-3 flex-shrink-0 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} onClick={(e) => e.stopPropagation()}>
+            {/* 2. Selection (Visible on Hover/Selected/Focused) */}
+            <div className={`mr-3 flex-shrink-0 transition-opacity ${selected || isFocused ? 'opacity-100' : 'opacity-0'}`} onClick={(e) => e.stopPropagation()}>
                 <input
                     type="checkbox"
                     checked={selected || false}
@@ -413,7 +413,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
             </div>
 
             {/* Actions (Right) */}
-            <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className={`flex items-center ml-2 transition-opacity ${isFocused ? 'opacity-100' : 'opacity-0'}`}>
                 <button
                     onClick={(e) => { e.stopPropagation(); Store.deleteTask(task.id); }}
                     className="p-2 text-zinc-500 hover:text-red-500 transition-colors"

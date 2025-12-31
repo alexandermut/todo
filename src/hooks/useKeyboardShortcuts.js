@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useLayoutEffect } from 'react';
 
 export const useKeyboardShortcuts = ({
     tasks,
@@ -16,8 +16,19 @@ export const useKeyboardShortcuts = ({
 }) => {
     const [priorityMode, setPriorityMode] = useState(false);
 
+    // Use refs to hold latest values for use inside event listener
+    const latestProps = useRef({ tasks, focusedTaskId });
+
+    // useLayoutEffect ensures the ref is updated synchronously after render/DOM mutation,
+    // preventing any "stale" state window between the visual update and the event listener's execution.
+    useLayoutEffect(() => {
+        latestProps.current = { tasks, focusedTaskId };
+    }, [tasks, focusedTaskId]);
+
     useEffect(() => {
         const handleKeyDown = (e) => {
+            const { tasks, focusedTaskId } = latestProps.current;
+
             // Ignore if focus is in an input or textarea (unless it's Esc to blur)
             const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
 
@@ -58,7 +69,7 @@ export const useKeyboardShortcuts = ({
             // If no tasks, navigation doesn't make sense
             if (!tasks || tasks.length === 0) return;
 
-            const currentIndex = tasks.findIndex(t => t.id === focusedTaskId);
+            const currentIndex = tasks.findIndex(t => String(t.id) === String(focusedTaskId));
 
             // Priority Mode Handling
             if (priorityMode) {
@@ -70,10 +81,7 @@ export const useKeyboardShortcuts = ({
                     }
                     setPriorityMode(false);
                 } else {
-                    // Any other key keeps us out of priority mode? Or just ignore?
-                    // Let's exit priority mode on invalid key to avoid getting stuck
                     setPriorityMode(false);
-                    // Re-process this key? Maybe complicated. Just consume and exit.
                 }
                 return;
             }
@@ -100,6 +108,11 @@ export const useKeyboardShortcuts = ({
                     if (focusedTaskId) {
                         e.preventDefault();
                         onTaskComplete(focusedTaskId);
+                    }
+                    else if (currentIndex !== -1) {
+                        // Fallback: If focusedTaskId is set but currentIndex is valid (redundant check but safe)
+                        e.preventDefault();
+                        onTaskComplete(tasks[currentIndex].id);
                     }
                     break;
                 case 'e': // Edit
@@ -140,5 +153,5 @@ export const useKeyboardShortcuts = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [tasks, focusedTaskId, setFocusedTaskId, setSearchFocus, onTaskComplete, onTaskDelete, onTaskEdit, onTaskPriority, onUndo, clearFilters, priorityMode]);
+    }, [setFocusedTaskId, setSearchFocus, onTaskComplete, onTaskDelete, onTaskEdit, onTaskPriority, onUndo, clearFilters, onClearSelection, priorityMode]); // Removed tasks/focusedTaskId from deps
 };

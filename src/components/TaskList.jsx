@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { TaskItem } from './TaskItem';
 
 
-export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, onSelectAll, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
+export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, onSelectAll, focusedTaskId, onTaskFocus, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
     const allVisibleSelected = tasks.length > 0 && tasks.every(t => selectedTaskIds?.has(t.id));
     const someSelected = tasks.some(t => selectedTaskIds?.has(t.id));
     const isIndeterminate = someSelected && !allVisibleSelected;
@@ -48,6 +48,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, o
                         onSelect={(e) => onTaskSelect && onTaskSelect(task.id, e)}
                         selectionMode={selectedTaskIds && selectedTaskIds.size > 0}
                         isFocused={focusedTaskId === task.id}
+                        onTaskFocus={onTaskFocus}
                         isEditingProp={editingTaskId === task.id}
                         onEditEnd={onEditEnd}
                         onFilterClick={onFilterClick}
