@@ -42,12 +42,29 @@ export const sortTasks = (tasks, criteria) => {
                 return 0;
             });
 
+        case 'priority-desc':
+            // None > C > B > A
+            return sorted.sort((a, b) => {
+                if (a.priority && !b.priority) return 1;
+                if (!a.priority && b.priority) return -1;
+                if (a.priority && b.priority) return b.priority.localeCompare(a.priority);
+                return 0;
+            });
+
         case 'due':
             // Chronological
             return sorted.sort((a, b) => {
                 const valA = parseDateValue(a.due || a.metadata?.due);
                 const valB = parseDateValue(b.due || b.metadata?.due);
                 return valA - valB;
+            });
+
+        case 'due-desc':
+            // Reverse Chronological
+            return sorted.sort((a, b) => {
+                const valA = parseDateValue(a.due || a.metadata?.due);
+                const valB = parseDateValue(b.due || b.metadata?.due);
+                return valB - valA;
             });
 
         case 'project':
@@ -58,12 +75,26 @@ export const sortTasks = (tasks, criteria) => {
                 return projA.localeCompare(projB);
             });
 
+        case 'project-desc':
+            return sorted.sort((a, b) => {
+                const projA = (a.projects && a.projects[0]) || 'zzzz';
+                const projB = (b.projects && b.projects[0]) || 'zzzz';
+                return projB.localeCompare(projA);
+            });
+
         case 'context':
             // Alphabetical by first context
             return sorted.sort((a, b) => {
                 const ctxA = (a.contexts && a.contexts[0]) || 'zzzz';
                 const ctxB = (b.contexts && b.contexts[0]) || 'zzzz';
                 return ctxA.localeCompare(ctxB);
+            });
+
+        case 'context-desc':
+            return sorted.sort((a, b) => {
+                const ctxA = (a.contexts && a.contexts[0]) || 'zzzz';
+                const ctxB = (b.contexts && b.contexts[0]) || 'zzzz';
+                return ctxB.localeCompare(ctxA);
             });
 
         case 'alpha-asc': // A-Z

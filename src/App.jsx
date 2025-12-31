@@ -210,15 +210,32 @@ function App() {
         }
     });
 
-    const SortButton = ({ label, value, current }) => (
+    const handleSortClick = (base) => {
+        if (base === 'alpha-asc') {
+            if (sortCriteria === 'alpha-asc') setSortCriteria('alpha-desc');
+            else setSortCriteria('alpha-asc');
+            return;
+        }
+        if (sortCriteria === base) {
+            setSortCriteria(`${base}-desc`);
+        } else if (sortCriteria === `${base}-desc`) {
+            setSortCriteria(base);
+        } else {
+            setSortCriteria(base);
+        }
+    };
+
+    const SortButton = ({ label, value, isActive, onClick }) => (
         <button
-            onClick={() => setSortCriteria(value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${current === value
-                ? 'bg-zinc-700 text-zinc-100 border-zinc-600'
-                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+            onClick={onClick}
+            className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium transition-colors border ${isActive
+                    ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
                 }`}
         >
             {label}
+            {isActive && sortCriteria.includes('desc') && <span className="ml-1 opacity-60">↓</span>}
+            {isActive && !sortCriteria.includes('desc') && !sortCriteria.includes('none') && <span className="ml-1 opacity-60">↑</span>}
         </button>
     );
 
@@ -251,13 +268,42 @@ function App() {
                         />
 
                         <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                            <SortButton label="Default" value="none" current={sortCriteria} />
-                            <SortButton label="Priority" value="priority" current={sortCriteria} />
-                            <SortButton label="Project" value="project" current={sortCriteria} />
-                            <SortButton label="Context" value="context" current={sortCriteria} />
-                            <SortButton label="Due Date" value="due" current={sortCriteria} />
-                            <SortButton label="A-Z" value="alpha-asc" current={sortCriteria} />
-                            <SortButton label="Z-A" value="alpha-desc" current={sortCriteria} />
+                            <SortButton
+                                label="Default"
+                                value="none"
+                                isActive={sortCriteria === 'none'}
+                                onClick={() => setSortCriteria('none')}
+                            />
+                            <SortButton
+                                label="Priority"
+                                value="priority"
+                                isActive={sortCriteria.startsWith('priority')}
+                                onClick={() => handleSortClick('priority')}
+                            />
+                            <SortButton
+                                label="Project"
+                                value="project"
+                                isActive={sortCriteria.startsWith('project')}
+                                onClick={() => handleSortClick('project')}
+                            />
+                            <SortButton
+                                label="Context"
+                                value="context"
+                                isActive={sortCriteria.startsWith('context')}
+                                onClick={() => handleSortClick('context')}
+                            />
+                            <SortButton
+                                label="Due Date"
+                                value="due"
+                                isActive={sortCriteria.startsWith('due')}
+                                onClick={() => handleSortClick('due')}
+                            />
+                            <SortButton
+                                label="A-Z"
+                                value="alpha"
+                                isActive={sortCriteria.startsWith('alpha')}
+                                onClick={() => handleSortClick('alpha-asc')}
+                            />
                         </div>
                     </div>
                 )}
