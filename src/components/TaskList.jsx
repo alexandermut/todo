@@ -45,7 +45,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, o
                         key={task.id}
                         task={task}
                         selected={selectedTaskIds?.has(task.id)}
-                        onSelect={() => onTaskSelect && onTaskSelect(task.id)}
+                        onSelect={(e) => onTaskSelect && onTaskSelect(task.id, e)}
                         selectionMode={selectedTaskIds && selectedTaskIds.size > 0}
                         isFocused={focusedTaskId === task.id}
                         isEditingProp={editingTaskId === task.id}
