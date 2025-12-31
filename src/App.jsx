@@ -303,6 +303,10 @@ function App() {
             Store.toggleTask(id);
         },
         onTaskDelete: (id) => Store.deleteTask(id),
+        onTasksDelete: (ids) => {
+            Store.deleteTasks(ids);
+            setSelectedTaskIds(new Set()); // Clear selection after delete
+        },
         onTaskEdit: (id) => {
             setEditingTaskId(id);
         },

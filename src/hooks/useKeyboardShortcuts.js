@@ -15,24 +15,25 @@ export const useKeyboardShortcuts = ({
     clearFilters,
     onClearSelection, // Callback to clear task selection
     selectedTaskIds, // New prop
-    onSelectTask // New prop: (id, multi) => void
+    onSelectTask, // New prop: (id, multi) => void
+    onTasksDelete // New prop: (ids) => void
 }) => {
     const [priorityMode, setPriorityMode] = useState(false);
 
     // Use refs to hold latest values for use inside event listener
-    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters });
+    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters });
 
     // useLayoutEffect ensures the ref is updated synchronously after render/DOM mutation,
     // preventing any "stale" state window between the visual update and the event listener's execution.
     useLayoutEffect(() => {
-        latestProps.current = { tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters };
-    }, [tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters]);
+        latestProps.current = { tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters };
+    }, [tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             const {
                 tasks, focusedTaskId, selectedTaskIds,
-                onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete,
+                onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete,
                 onTaskEdit, onClearSelection, setSearchFocus, clearFilters
             } = latestProps.current;
 
@@ -152,7 +153,13 @@ export const useKeyboardShortcuts = ({
 
                 case 'Delete':
                 case 'Backspace':
-                    if (focusedTaskId && onTaskDelete) {
+                    // Bulk Delete (Shift + Delete)
+                    if (e.shiftKey && selectedTaskIds && selectedTaskIds.size > 0 && onTasksDelete) {
+                        e.preventDefault();
+                        onTasksDelete(Array.from(selectedTaskIds));
+                    }
+                    // Single Delete (Focused Task)
+                    else if (focusedTaskId && onTaskDelete) {
                         e.preventDefault(); // Prevent navigating back
                         onTaskDelete(focusedTaskId);
                     }

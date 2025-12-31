@@ -143,6 +143,17 @@ export const Store = {
         this.notify();
     },
 
+    deleteTasks(idsRef) {
+        if (!idsRef || idsRef.length === 0) return;
+        // Normalize to Set for O(1) lookups if array passed
+        const ids = new Set(idsRef);
+
+        this.saveUndoState();
+        this.tasks = this.tasks.filter(t => !ids.has(t.id));
+        this.saveToPersistence();
+        this.notify('BULK_DELETE');
+    },
+
     clearAllTasks() {
         this.saveUndoState();
         this.tasks = [];
