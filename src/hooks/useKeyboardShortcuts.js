@@ -11,7 +11,8 @@ export const useKeyboardShortcuts = ({
     onTaskEdit, // Enters edit mode for the task
     onTaskPriority, // Callback to update priority
     onUndo, // Callback for undo
-    clearFilters
+    clearFilters,
+    onClearSelection // Callback to clear task selection
 }) => {
     const [priorityMode, setPriorityMode] = useState(false);
 
@@ -42,6 +43,7 @@ export const useKeyboardShortcuts = ({
                     return;
                 }
                 if (clearFilters) clearFilters();
+                if (onClearSelection) onClearSelection(); // Clear selection on Esc
                 setFocusedTaskId(null); // Clear focus
                 return;
             }

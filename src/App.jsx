@@ -247,6 +247,7 @@ function App() {
         onTaskEdit: (id) => {
             setEditingTaskId(id);
         },
+        onClearSelection: () => setSelectedTaskIds(new Set()),
         onTaskPriority: (id, action) => {
             const task = tasks.find(t => t.id === id);
             if (!task) return;
