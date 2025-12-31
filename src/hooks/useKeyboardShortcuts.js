@@ -93,7 +93,8 @@ export const useKeyboardShortcuts = ({
                         setFocusedTaskId(tasks[tasks.length - 1].id);
                     }
                     break;
-                case 'x': // Toggle completion
+                case ' ': // Toggle completion (Space)
+                case 'x': // Toggle completion (x)
                     if (focusedTaskId) {
                         e.preventDefault();
                         onTaskComplete(focusedTaskId);

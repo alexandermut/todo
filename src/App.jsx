@@ -229,8 +229,8 @@ function App() {
         <button
             onClick={onClick}
             className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium transition-colors border ${isActive
-                    ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
-                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
+                ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
+                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
                 }`}
         >
             {label}
@@ -247,9 +247,18 @@ function App() {
                 {currentPage === 'tasks' && (
                     <div className="bg-zinc-950 border-b border-zinc-800 flex flex-col pt-[max(env(safe-area-inset-top),16px)] z-30 relative shrink-0">
                         {/* Branding - Above Search */}
-                        <div className="flex items-center gap-3 px-4 pb-2">
-                            <img src={logo} alt="todotext.de" className="w-8 h-8" />
-                            <h2 className="text-lg font-semibold text-zinc-300">todotext.de</h2>
+                        <div className="flex items-center justify-between px-4 pb-2">
+                            <div className="flex items-center gap-3">
+                                <img src={logo} alt="todotext.de" className="w-8 h-8" />
+                                <h2 className="text-lg font-semibold text-zinc-300">todotext.de</h2>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[10px] text-zinc-600">
+                                <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Datenschutz</a>
+                                <a href="/impressum.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Impressum</a>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="font-mono opacity-50">{__APP_VERSION__}</span>
+                            </div>
                         </div>
 
                         <BottomSearch
@@ -397,20 +406,7 @@ function App() {
                     />
                 </div>
 
-                {/* BOTTOM: Footer */}
-                {currentPage === 'tasks' && (
-                    <div className="bg-zinc-950 py-1 px-4 text-center text-[10px] text-zinc-600 flex justify-center gap-3 items-center border-t border-zinc-900 pb-[env(safe-area-inset-bottom)] shrink-0 z-20">
-                        <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors">
-                            Datenschutzerklärung
-                        </a>
-                        <span>•</span>
-                        <a href="/impressum.html" className="hover:text-zinc-400 transition-colors">
-                            Impressum
-                        </a>
-                        <span className="w-px h-3 bg-zinc-800 mx-1"></span>
-                        <span className="font-mono opacity-50">{__APP_VERSION__}</span>
-                    </div>
-                )}
+                {/* BOTTOM: Footer Removed */}
 
 
             </div>
