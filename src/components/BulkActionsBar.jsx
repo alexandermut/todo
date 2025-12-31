@@ -24,7 +24,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
                         type="text"
                         value={addValue}
                         onChange={(e) => setAddValue(e.target.value)}
-                        placeholder="Add +project, @context, #tag..."
+                        placeholder="Add +project or remove -+project..."
                         className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
                         autoFocus
                         onKeyDown={(e) => {

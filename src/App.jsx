@@ -237,10 +237,43 @@ function App() {
 
     const handleBulkAdd = (text) => {
         if (!text.trim()) return;
+
+        const tokens = text.trim().split(/\s+/);
+        const additions = [];
+        const removals = [];
+
+        tokens.forEach(token => {
+            if (token.startsWith('-+') || token.startsWith('-@') || token.startsWith('-#')) {
+                removals.push(token.substring(1));
+            } else {
+                additions.push(token);
+            }
+        });
+
         Array.from(selectedTaskIds).forEach(id => {
             const task = tasks.find(t => t.id === id);
             if (task) {
-                Store.updateTask(id, `${task.raw} ${text}`);
+                let newRaw = task.raw;
+
+                // 1. Removals
+                removals.forEach(rem => {
+                    const escaped = rem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`\\s*${escaped}\\b`, 'g');
+                    newRaw = newRaw.replace(regex, '');
+                });
+
+                // 2. Additions
+                if (additions.length > 0) {
+                    const addStr = additions.join(' ');
+                    newRaw = `${newRaw} ${addStr}`;
+                }
+
+                // Cleanup
+                newRaw = newRaw.replace(/\s+/g, ' ').trim();
+
+                if (newRaw !== task.raw) {
+                    Store.updateTask(id, newRaw);
+                }
             }
         });
         setSelectedTaskIds(new Set());
