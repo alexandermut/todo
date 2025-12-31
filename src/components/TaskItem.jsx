@@ -388,7 +388,7 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, i
                     type="checkbox"
                     checked={selected || false}
                     onChange={(e) => {
-                        onSelect && onSelect();
+                        onSelect && onSelect(e); // Pass event for modifier keys
                     }}
                     className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />

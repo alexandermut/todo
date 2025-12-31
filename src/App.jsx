@@ -143,14 +143,54 @@ function App() {
     const tags = useMemo(() => [...new Set(tasks.flatMap(t => t.tags || []))].sort(), [tasks]);
 
     const [selectedTaskIds, setSelectedTaskIds] = useState(new Set());
+    const [lastSelectedId, setLastSelectedId] = useState(null);
 
-    const handleTaskSelect = (id) => {
-        const newSelected = new Set(selectedTaskIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
+    const handleTaskSelect = (id, e) => {
+        let newSelected = new Set(selectedTaskIds);
+
+        // Range Selection (Shift + Click)
+        if (e && e.shiftKey && lastSelectedId && lastSelectedId !== id) {
+            const tasksList = filteredTasks; // Use currently visible tasks
+            const lastIndex = tasksList.findIndex(t => t.id === lastSelectedId);
+            const currentIndex = tasksList.findIndex(t => t.id === id);
+
+            if (lastIndex !== -1 && currentIndex !== -1) {
+                const start = Math.min(lastIndex, currentIndex);
+                const end = Math.max(lastIndex, currentIndex);
+
+                // Add range to selection
+                for (let i = start; i <= end; i++) {
+                    newSelected.add(tasksList[i].id);
+                }
+            }
         }
+        // Additive/Toggle Selection (Cmd/Ctrl + Click or standard click)
+        else {
+            if (newSelected.has(id)) {
+                newSelected.delete(id);
+            } else {
+                newSelected.add(id);
+            }
+            setLastSelectedId(id);
+        }
+
+        setSelectedTaskIds(newSelected);
+    };
+
+    const handleSelectAll = () => {
+        // If all visible are selected, deselect all visible.
+        // Otherwise, select all visible.
+        const visibleIds = filteredTasks.map(t => t.id);
+        const allVisibleSelected = visibleIds.every(id => selectedTaskIds.has(id));
+
+        const newSelected = new Set(selectedTaskIds);
+
+        if (allVisibleSelected) {
+            visibleIds.forEach(id => newSelected.delete(id));
+        } else {
+            visibleIds.forEach(id => newSelected.add(id));
+        }
+
         setSelectedTaskIds(newSelected);
     };
 
@@ -165,8 +205,34 @@ function App() {
     };
 
     const handleBulkDelete = () => {
-        Array.from(selectedTaskIds).forEach(id => Store.deleteTask(id));
-        setSelectedTaskIds(new Set());
+        if (window.confirm(`Delete ${selectedTaskIds.size} tasks?`)) {
+            Array.from(selectedTaskIds).forEach(id => Store.deleteTask(id));
+            setSelectedTaskIds(new Set());
+        }
+    };
+
+    const handleBulkPriority = (priority) => {
+        Array.from(selectedTaskIds).forEach(id => Store.setTaskPriority(id, priority));
+        // Keep selection active or clear? Typically keep for further edits, but maybe clear is safer.
+        // User didn't specify. I'll keep selection for "mass edit" workflow.
+    };
+
+    const handleBulkDate = (dateStr) => {
+        Array.from(selectedTaskIds).forEach(id => {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                let newText = task.raw;
+                // Regex to find existing due date (due:YYYY-MM-DD)
+                const dueRegex = /\bdue:\S+/g;
+                if (dueRegex.test(newText)) {
+                    newText = newText.replace(dueRegex, `due:${dateStr}`);
+                } else {
+                    newText = `${newText} due:${dateStr}`;
+                }
+                Store.updateTask(id, newText);
+            }
+        });
+        setSelectedTaskIds(new Set()); // Close selection after date pick? logic: typically date is final.
     };
 
     useKeyboardShortcuts({
@@ -354,6 +420,7 @@ function App() {
                                         activeFilter={activeFilter}
                                         selectedTaskIds={selectedTaskIds}
                                         onTaskSelect={handleTaskSelect}
+                                        onSelectAll={handleSelectAll}
                                         focusedTaskId={focusedTaskId}
                                         onTaskFocus={setFocusedTaskId}
                                         editingTaskId={editingTaskId}
@@ -403,6 +470,8 @@ function App() {
                         onDeselectAll={() => setSelectedTaskIds(new Set())}
                         onCompleteAll={handleBulkComplete}
                         onDeleteAll={handleBulkDelete}
+                        onSetPriority={handleBulkPriority}
+                        onSetDate={() => openCalendar(handleBulkDate)}
                     />
                 </div>
 

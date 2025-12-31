@@ -1,8 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { TaskItem } from './TaskItem';
 
 
-export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
+export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, onSelectAll, focusedTaskId, editingTaskId, onEditEnd, onFilterClick, projects, contexts, tags, onOpenCalendar }) {
+    const allVisibleSelected = tasks.length > 0 && tasks.every(t => selectedTaskIds?.has(t.id));
+    const someSelected = tasks.some(t => selectedTaskIds?.has(t.id));
+    const isIndeterminate = someSelected && !allVisibleSelected;
+
+    const checkboxRef = useRef(null);
+
+    useEffect(() => {
+        if (checkboxRef.current) {
+            checkboxRef.current.indeterminate = isIndeterminate;
+        }
+    }, [isIndeterminate]);
 
 
     return (
@@ -10,6 +21,25 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, f
 
 
             <div className="mb-4">
+                {/* Select All Header */}
+                {tasks.length > 0 && (
+                    <div className="flex items-center py-2 -mx-4 px-4 border-b border-zinc-800/50 mb-1 group">
+                        <div className="mr-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <input
+                                ref={checkboxRef}
+                                type="checkbox"
+                                checked={allVisibleSelected}
+                                onChange={onSelectAll}
+                                className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                title="Select All Visible"
+                            />
+                        </div>
+                        <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider select-none cursor-pointer" onClick={onSelectAll}>
+                            {allVisibleSelected ? 'Select None' : isIndeterminate ? 'Select all' : 'Select All'}
+                        </div>
+                    </div>
+                )}
+
                 {tasks.map(task => (
                     <TaskItem
                         key={task.id}
