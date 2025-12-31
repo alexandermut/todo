@@ -24,7 +24,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
                         type="text"
                         value={addValue}
                         onChange={(e) => setAddValue(e.target.value)}
-                        placeholder="Add +project or remove -+project..."
+                        placeholder="Add +project / @context / #tag or remove -+project / -@context / -#tag"
                         className="flex-1 bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
                         autoFocus
                         onKeyDown={(e) => {
@@ -76,7 +76,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
                                 className="p-2 text-zinc-500 hover:text-amber-500 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-lg transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-600"
                                 title="Set Priority"
                             >
-                                <span className="font-bold text-sm">(!)</span>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                             </button>
                             {showPriorityMenu && (
                                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl p-1 flex flex-col gap-1 min-w-[40px]">
@@ -106,7 +106,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
                             className="p-2 text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-lg transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-600"
                             title="Set Due Date"
                         >
-                            📅
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
 
                         <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
