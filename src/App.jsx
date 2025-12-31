@@ -55,7 +55,8 @@ function App() {
         isSyncing: isDropboxSyncing,
         login: loginDropbox,
         syncPush: syncPushDropbox,
-        syncPull: syncPullDropbox
+        syncPull: syncPullDropbox,
+        lastSyncTime: dropboxLastSync
     } = useDropbox(handleCloudLoad);
 
     // REMOVED: isMyOwnUpdate ref - superseded by reliable source check in Store
@@ -73,7 +74,21 @@ function App() {
 
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchFocusTrigger, setSearchFocusTrigger] = useState(0); // Simple counter to trigger strict mode ref focus
+    const [searchFocusTrigger, setSearchFocusTrigger] = useState(0);
+
+    // AUTO-SYNC (Dropbox)
+    // Automatically push changes to Dropbox 3 seconds after the last modification.
+    // Conflict handling in useDropbox.js ensures we don't overwrite remote changes blindly.
+    useEffect(() => {
+        if (isDropboxAuth && tasks.length > 0) {
+            const timer = setTimeout(() => {
+                console.log("☁️ Auto-Syncing to Dropbox...");
+                syncPushDropbox(tasks);
+            }, 3000); // 3s Debounce
+
+            return () => clearTimeout(timer);
+        }
+    }, [tasks, isDropboxAuth]);
 
     const filteredTasks = useMemo(() => {
         let result = tasks;
@@ -495,6 +510,7 @@ function App() {
                         onDropboxPull={syncPullDropbox}
                         isDropboxAuth={isDropboxAuth}
                         isDropboxSyncing={isDropboxSyncing}
+                        dropboxLastSync={dropboxLastSync}
                         onGTasksSync={() => isAuthenticated ? syncPushTasks(tasks) : login()}
                         onGTasksPull={syncPullTasks}
                         onClearAll={() => {

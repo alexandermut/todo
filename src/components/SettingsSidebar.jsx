@@ -57,7 +57,8 @@ export function SettingsSidebar({
     isDropboxSyncing,
     onGTasksSync,
     onGTasksPull,
-    onClearAll
+    onClearAll,
+    dropboxLastSync // Added prop
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(true);
 
@@ -175,6 +176,13 @@ export function SettingsSidebar({
                                             </button>
                                         )}
                                     </div>
+                                    {isDropboxAuth && dropboxLastSync && (
+                                        <div className="mt-2 text-center">
+                                            <span className="text-[10px] text-zinc-500 font-mono">
+                                                Last successful push: {new Date(dropboxLastSync).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Google Tasks */}
