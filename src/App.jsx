@@ -15,6 +15,7 @@ import { sortTasks } from './utils/sortUtils';
 
 import { Impressum } from './components/Impressum';
 import { Datenschutz } from './components/Datenschutz';
+import { FAQ } from './components/FAQ';
 import logo from './assets/logo.png';
 
 
@@ -402,8 +403,6 @@ function App() {
                             <div className="flex items-center gap-3 text-[10px] text-zinc-600">
                                 <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Datenschutz</a>
                                 <a href="/impressum.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Impressum</a>
-                                <span className="hidden sm:inline">•</span>
-                                <span className="font-mono opacity-50">{__APP_VERSION__}</span>
                             </div>
                         </div>
 
@@ -507,6 +506,8 @@ function App() {
                                     <Impressum onBack={() => setCurrentPage('tasks')} />
                                 ) : currentPage === 'datenschutz' ? (
                                     <Datenschutz onBack={() => setCurrentPage('tasks')} />
+                                ) : currentPage === 'faq' ? (
+                                    <FAQ onBack={() => setCurrentPage('tasks')} />
                                 ) : (
                                     <TaskList
                                         tasks={filteredTasks}
@@ -572,17 +573,19 @@ function App() {
                 {/* BOTTOM: Footer Removed */}
 
 
-            </div>
+            </div >
             {/* Global Calendar Popup */}
-            {calendarState.isOpen && (
-                <CalendarPopup
-                    onSelect={(date) => {
-                        if (calendarState.onSelect) calendarState.onSelect(date);
-                        setCalendarState({ ...calendarState, isOpen: false });
-                    }}
-                    onClose={() => setCalendarState({ ...calendarState, isOpen: false })}
-                />
-            )}
+            {
+                calendarState.isOpen && (
+                    <CalendarPopup
+                        onSelect={(date) => {
+                            if (calendarState.onSelect) calendarState.onSelect(date);
+                            setCalendarState({ ...calendarState, isOpen: false });
+                        }}
+                        onClose={() => setCalendarState({ ...calendarState, isOpen: false })}
+                    />
+                )
+            }
         </>
     );
 }

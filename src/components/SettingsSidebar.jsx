@@ -60,7 +60,6 @@ export function SettingsSidebar({
     onClearAll
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(true);
-    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
     return (
         <>
@@ -201,41 +200,6 @@ export function SettingsSidebar({
                         )}
                     </div>
 
-                    {/* Shortcuts Section */}
-                    <div className="border border-zinc-800/50 rounded-2xl bg-zinc-900/30 overflow-hidden">
-                        <button
-                            onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-800/30 transition-colors"
-                        >
-                            <span className="text-sm font-semibold text-zinc-100 uppercase tracking-widest text-[10px]">Shortcuts</span>
-                            <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isShortcutsOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {isShortcutsOpen && (
-                            <div className="px-4 pb-4 space-y-2 animate-in slide-in-from-top-1 fade-in duration-200">
-                                {[
-                                    { label: 'Focus Search', keys: ['/'] },
-                                    { label: 'Navigate', keys: ['↑', '↓'] },
-                                    { label: 'Priority', keys: ['←', '→'] },
-                                    { label: 'Edit Task', keys: ['Enter'] },
-                                    { label: 'Undo', keys: ['⌘', 'Z'] },
-                                    { label: 'Redo', keys: ['⌘', '⇧', 'Z'] }
-                                ].map((item, i) => (
-                                    <div key={i} className="flex justify-between items-center">
-                                        <span className="text-xs text-zinc-400">{item.label}</span>
-                                        <div className="flex gap-1">
-                                            {item.keys.map(k => (
-                                                <kbd key={k} className="min-w-[20px] text-center px-1.5 py-0.5 bg-zinc-800 border border-zinc-700/50 rounded text-[10px] font-mono text-zinc-400 shadow-sm">
-                                                    {k}
-                                                </kbd>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-
 
                     {/* Danger Zone */}
                     <div className="mt-8 pt-4 border-t border-zinc-800/50">
@@ -251,7 +215,7 @@ export function SettingsSidebar({
                     </div>
 
                     <div className="text-center pb-8 pt-4">
-                        <span className="text-[10px] text-zinc-600 font-mono">v1.2.0 • build 142</span>
+                        <span className="text-[10px] text-zinc-600 font-mono">{__APP_VERSION__}</span>
                     </div>
 
                 </div>

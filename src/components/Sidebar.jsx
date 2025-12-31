@@ -1,5 +1,64 @@
 import React, { useState } from 'react';
 
+// --- Icons ---
+const InboxIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+    </svg>
+);
+
+const TodayIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <path d="M8 14h.01" />
+        <path d="M12 14h.01" />
+        <path d="M16 14h.01" />
+        <path d="M8 18h.01" />
+        <path d="M12 18h.01" />
+        <path d="M16 18h.01" />
+    </svg>
+);
+
+const UpcomingIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+);
+
+const OverdueIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+);
+
+const ChevronDown = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const ViewIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+    </svg>
+);
+
+const FilterIcon = ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+);
+
+
 export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate }) {
     const [projectsExpanded, setProjectsExpanded] = useState(true);
     const [contextsExpanded, setContextsExpanded] = useState(true);
@@ -10,206 +69,215 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
     const isActive = (type, value) => activeFilter.type === type && (value === undefined || activeFilter.value === value);
 
     const navItemClass = (active) =>
-        `flex items-center gap-2 px-2 py-1.5 rounded text-sm font-medium w-full text-left transition-colors ${active ? 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800'}`;
+        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium w-full text-left transition-all duration-200 ${active
+            ? 'bg-zinc-800/80 text-white shadow-sm border border-zinc-700/50'
+            : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border border-transparent'
+        }`;
+
+    const SectionHeader = ({ label, expanded, onToggle, onAdd }) => (
+        <div
+            onClick={onToggle}
+            className="flex items-center justify-between px-3 py-2 mt-6 text-zinc-500 hover:text-zinc-300 cursor-pointer group transition-colors"
+        >
+            <span className="text-[10px] uppercase tracking-[0.15em] font-bold">{label}</span>
+            <div className="flex items-center gap-2">
+                {onAdd && (
+                    <button
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-zinc-800 rounded transition-all"
+                        onClick={(e) => { e.stopPropagation(); onAdd(); }}
+                    >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
+                )}
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`} />
+            </div>
+        </div>
+    );
 
     return (
         <>
             {/* Mobile Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
                     onClick={onClose}
-                ></div>
+                />
             )}
 
             <aside className={`
-            w-[305px] bg-zinc-900 flex flex-col border-l border-zinc-800 pt-8 pl-8 pr-4 shrink-0 overflow-y-auto
-            fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-in-out
-            ${isOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'}
-            bg-zinc-900 text-zinc-300
+            w-[280px] bg-zinc-950/95 backdrop-blur-xl flex flex-col border-l border-zinc-800/50 pt-6 px-3 shrink-0 overflow-y-auto no-scrollbar
+            fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+            ${isOpen ? 'translate-x-0 shadow-2xl shadow-black/50' : 'translate-x-full'}
+            font-sans
         `}>
-                {/* Logo */}
-                <div className="mb-8 px-2">
-                    <img src="/icons/logo.svg" alt="todo.txt" className="h-8" />
+                {/* Logo Area */}
+                <div className="mb-8 px-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity cursor-default">
+                        <div className="w-8 h-8 bg-zinc-900 rounded-xl border border-zinc-800 flex items-center justify-center">
+                            <span className="text-lg">☑️</span>
+                        </div>
+                        <span className="font-bold text-zinc-200 tracking-tight">todotext</span>
+                    </div>
                 </div>
 
-                <nav className="space-y-1 mb-8">
+                <nav className="space-y-1 mb-6">
                     <button
                         onClick={() => { onFilterSelect({ type: 'inbox' }); if (onClose) onClose(); }}
                         className={navItemClass(activeFilter.type === 'inbox')}
                     >
-                        <span className="text-blue-500 text-lg leading-none">📥</span> Inbox
+                        <InboxIcon className={`w-4 h-4 ${activeFilter.type === 'inbox' ? 'text-blue-500' : 'text-zinc-500'}`} />
+                        Inbox
                     </button>
                     <button
                         onClick={() => { onFilterSelect({ type: 'today' }); if (onClose) onClose(); }}
                         className={navItemClass(activeFilter.type === 'today')}
                     >
-                        <span className="text-green-500 text-lg leading-none">📅</span> Today
+                        <TodayIcon className={`w-4 h-4 ${activeFilter.type === 'today' ? 'text-green-500' : 'text-zinc-500'}`} />
+                        Today
                     </button>
                     <button
                         onClick={() => { onFilterSelect({ type: 'upcoming' }); if (onClose) onClose(); }}
                         className={navItemClass(activeFilter.type === 'upcoming')}
                     >
-                        <span className="text-purple-500 text-lg leading-none">🗓</span> Upcoming
+                        <UpcomingIcon className={`w-4 h-4 ${activeFilter.type === 'upcoming' ? 'text-purple-500' : 'text-zinc-500'}`} />
+                        Upcoming
                     </button>
                     <button
                         onClick={() => { onFilterSelect({ type: 'overdue' }); if (onClose) onClose(); }}
                         className={navItemClass(activeFilter.type === 'overdue')}
                     >
-                        <span className="text-red-500 text-lg leading-none">⚠️</span> Overdue
+                        <OverdueIcon className={`w-4 h-4 ${activeFilter.type === 'overdue' ? 'text-red-500' : 'text-zinc-500'}`} />
+                        Overdue
                     </button>
                 </nav>
 
                 {/* Views */}
-                <div onClick={() => setViewsExpanded(!viewsExpanded)} className="flex items-center justify-between px-2 py-1 mt-4 text-gray-500 hover:text-gray-700 cursor-pointer text-xs font-bold uppercase tracking-wider">
-                    <span>Views</span>
-                    <span>{viewsExpanded ? '▼' : '▶'}</span>
-                </div>
+                <SectionHeader label="Views" expanded={viewsExpanded} onToggle={() => setViewsExpanded(!viewsExpanded)} />
                 {viewsExpanded && (
-                    <div className="mt-1 space-y-0.5">
-                        <div onClick={() => onFilterSelect({ type: 'view', value: 'all' })} className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${isActive('view', 'all') ? 'bg-orange-100 text-orange-800' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <span>📑</span> All
-                        </div>
-                        <div onClick={() => onFilterSelect({ type: 'view', value: 'open' })} className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${isActive('view', 'open') ? 'bg-emerald-100 text-emerald-800' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <span>⚡</span> Open
-                        </div>
-                        <div onClick={() => onFilterSelect({ type: 'view', value: 'done' })} className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${isActive('view', 'done') ? 'bg-gray-200 text-gray-800' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <span>✅</span> Done
-                        </div>
+                    <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                        <button onClick={() => onFilterSelect({ type: 'view', value: 'all' })} className={navItemClass(isActive('view', 'all'))}>
+                            <ViewIcon className="w-4 h-4 text-zinc-500" />
+                            All Tasks
+                        </button>
+                        <button onClick={() => onFilterSelect({ type: 'view', value: 'open' })} className={navItemClass(isActive('view', 'open'))}>
+                            <div className="w-4 h-4 rounded-full border-2 border-zinc-600 border-dashed" />
+                            Open
+                        </button>
+                        <button onClick={() => onFilterSelect({ type: 'view', value: 'done' })} className={navItemClass(isActive('view', 'done'))}>
+                            <div className="w-4 h-4 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                            </div>
+                            Completed
+                        </button>
                     </div>
                 )}
 
-                {/* Special Filters */}
-                <div onClick={() => setFiltersExpanded(!filtersExpanded)} className="flex items-center justify-between px-2 py-1 mt-4 text-gray-500 hover:text-gray-700 cursor-pointer text-xs font-bold uppercase tracking-wider">
-                    <span>Filters</span>
-                    <span>{filtersExpanded ? '▼' : '▶'}</span>
-                </div>
+                {/* Filters */}
+                <SectionHeader label="Filters" expanded={filtersExpanded} onToggle={() => setFiltersExpanded(!filtersExpanded)} />
                 {filtersExpanded && (
-                    <div className="mt-1 space-y-0.5">
-                        <div onClick={() => onFilterSelect({ type: 'filter', value: 'no-due' })} className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${isActive('filter', 'no-due') ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <span>🚫</span> No Due Date
-                        </div>
-                        <div onClick={() => onFilterSelect({ type: 'filter', value: 'no-project' })} className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${isActive('filter', 'no-project') ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <span>📂</span> No Project
-                        </div>
+                    <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                        <button onClick={() => onFilterSelect({ type: 'filter', value: 'no-time' })} className={navItemClass(isActive('filter', 'no-time'))}>
+                            <span className="w-4 flex justify-center text-[10px] font-mono text-zinc-500">🚫</span>
+                            No Due Date
+                        </button>
+                        <button onClick={() => onFilterSelect({ type: 'filter', value: 'no-project' })} className={navItemClass(isActive('filter', 'no-project'))}>
+                            <span className="w-4 flex justify-center text-[10px] font-mono text-zinc-500">📂</span>
+                            No Project
+                        </button>
                     </div>
                 )}
 
                 {/* Projects */}
-                <div className="mb-6">
-                    <h3
-                        className="flex items-center justify-between text-gray-500 font-bold text-xs px-2 mb-2 group cursor-pointer hover:text-gray-700"
-                        onClick={() => setProjectsExpanded(!projectsExpanded)}
-                    >
-                        <span className="flex items-center gap-1">
-                            <span className={`transition-transform duration-200 ${projectsExpanded ? '' : '-rotate-90'}`}>▼</span>
-                            Projects
-                        </span>
-                        <button className="opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded p-0.5" onClick={(e) => e.stopPropagation()}>+</button>
-                    </h3>
-                    {projectsExpanded && (
-                        <div className="space-y-0.5">
-                            {projects.length === 0 && <div className="px-2 text-xs text-gray-400 italic">No projects yet</div>}
-                            {projects.map(proj => (
-                                <button
-                                    key={proj}
-                                    onClick={() => { onFilterSelect({ type: 'project', value: proj }); if (onClose) onClose(); }}
-                                    className={navItemClass(activeFilter.type === 'project' && activeFilter.value === proj)}
-                                >
-                                    <span className="text-gray-400 text-xs">●</span>
-                                    {proj}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <SectionHeader label="Projects" expanded={projectsExpanded} onToggle={() => setProjectsExpanded(!projectsExpanded)} />
+                {projectsExpanded && (
+                    <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                        {projects.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No projects yet</div>}
+                        {projects.map(proj => (
+                            <button
+                                key={proj}
+                                onClick={() => { onFilterSelect({ type: 'project', value: proj }); if (onClose) onClose(); }}
+                                className={navItemClass(activeFilter.type === 'project' && activeFilter.value === proj)}
+                            >
+                                <span className={`w-2 h-2 rounded-full ${activeFilter.type === 'project' && activeFilter.value === proj ? 'bg-purple-500' : 'bg-zinc-700'}`}></span>
+                                {proj}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Contexts */}
-                <div className="mb-6">
-                    <h3
-                        className="flex items-center justify-between text-gray-500 font-bold text-xs px-2 mb-2 group cursor-pointer hover:text-gray-700"
-                        onClick={() => setContextsExpanded(!contextsExpanded)}
-                    >
-                        <span className="flex items-center gap-1">
-                            <span className={`transition-transform duration-200 ${contextsExpanded ? '' : '-rotate-90'}`}>▼</span>
-                            Contexts
-                        </span>
-                        <button className="opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded p-0.5" onClick={(e) => e.stopPropagation()}>+</button>
-                    </h3>
-                    {contextsExpanded && (
-                        <div className="space-y-0.5">
-                            {contexts.length === 0 && <div className="px-2 text-xs text-gray-400 italic">No contexts yet</div>}
-                            {contexts.map(ctx => (
-                                <button
-                                    key={ctx}
-                                    onClick={() => { onFilterSelect({ type: 'context', value: ctx }); if (onClose) onClose(); }}
-                                    className={navItemClass(activeFilter.type === 'context' && activeFilter.value === ctx)}
-                                >
-                                    <span className="text-gray-400 text-lg leading-none">@</span>
-                                    {ctx}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <SectionHeader label="Contexts" expanded={contextsExpanded} onToggle={() => setContextsExpanded(!contextsExpanded)} />
+                {contextsExpanded && (
+                    <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                        {contexts.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No contexts yet</div>}
+                        {contexts.map(ctx => (
+                            <button
+                                key={ctx}
+                                onClick={() => { onFilterSelect({ type: 'context', value: ctx }); if (onClose) onClose(); }}
+                                className={navItemClass(activeFilter.type === 'context' && activeFilter.value === ctx)}
+                            >
+                                <span className="text-zinc-500 text-xs font-mono">@</span>
+                                {ctx}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Tags */}
-                <div className="mb-6">
-                    <h3
-                        className="flex items-center justify-between text-gray-500 font-bold text-xs px-2 mb-2 group cursor-pointer hover:text-gray-700"
-                        onClick={() => setTagsExpanded(!tagsExpanded)}
-                    >
-                        <span className="flex items-center gap-1">
-                            <span className={`transition-transform duration-200 ${tagsExpanded ? '' : '-rotate-90'}`}>▼</span>
-                            Tags
-                        </span>
-                        <button className="opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded p-0.5" onClick={(e) => e.stopPropagation()}>+</button>
-                    </h3>
-                    {tagsExpanded && (
-                        <div className="space-y-0.5">
-                            {tags.length === 0 && <div className="px-2 text-xs text-gray-400 italic">No tags yet</div>}
-                            {tags.map(tag => (
-                                <button
-                                    key={tag}
-                                    onClick={() => { onFilterSelect({ type: 'tag', value: tag }); if (onClose) onClose(); }}
-                                    className={navItemClass(activeFilter.type === 'tag' && activeFilter.value === tag)}
-                                >
-                                    <span className="text-gray-400 text-xs">#</span>
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <SectionHeader label="Tags" expanded={tagsExpanded} onToggle={() => setTagsExpanded(!tagsExpanded)} />
+                {tagsExpanded && (
+                    <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                        {tags.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No tags yet</div>}
+                        {tags.map(tag => (
+                            <button
+                                key={tag}
+                                onClick={() => { onFilterSelect({ type: 'tag', value: tag }); if (onClose) onClose(); }}
+                                className={navItemClass(activeFilter.type === 'tag' && activeFilter.value === tag)}
+                            >
+                                <span className="text-zinc-500 text-xs font-mono">#</span>
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
 
-                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-zinc-800">
-                    <div className="flex flex-col space-y-2 px-2 pb-4">
+                {/* Footer */}
+                <div className="mt-auto px-1 pb-4 pt-6">
+                    <div className="space-y-1 pt-4 border-t border-zinc-800/50">
+                        <button
+                            onClick={() => { if (onPageNavigate) onPageNavigate('faq'); if (onClose) onClose(); }}
+                            className="w-full text-xs text-left px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors flex items-center gap-2 group"
+                        >
+                            <span className="w-4 h-4 flex items-center justify-center bg-zinc-900 rounded border border-zinc-800 group-hover:border-zinc-700 text-[10px]">?</span>
+                            Help & FAQ
+                        </button>
                         <a
                             href="/impressum.html"
-                            className="text-sm text-left transition-colors text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                            className="block w-full text-xs text-left px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 transition-colors"
                         >
                             Impressum
                         </a>
                         <a
                             href="/datenschutz.html"
-                            className="text-sm text-left transition-colors text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+                            className="block w-full text-xs text-left px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 transition-colors"
                         >
                             Datenschutz
                         </a>
                     </div>
                 </div>
 
-                {/* Close Button - Bottom Right */}
-                <button
-                    onClick={onClose}
-                    className="absolute bottom-4 right-4 p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-                    title="Close sidebar"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
-                </button>
+                {/* Close Button - Mobile Only */}
+                {isOpen && (
+                    <button
+                        onClick={onClose}
+                        className="fixed bottom-4 right-4 md:hidden p-3 bg-zinc-900 text-zinc-200 rounded-full shadow-lg border border-zinc-800 z-50"
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
             </aside>
         </>
     );
