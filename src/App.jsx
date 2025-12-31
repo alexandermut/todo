@@ -232,7 +232,18 @@ function App() {
                 Store.updateTask(id, newText);
             }
         });
-        setSelectedTaskIds(new Set()); // Close selection after date pick? logic: typically date is final.
+        setSelectedTaskIds(new Set());
+    };
+
+    const handleBulkAdd = (text) => {
+        if (!text.trim()) return;
+        Array.from(selectedTaskIds).forEach(id => {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                Store.updateTask(id, `${task.raw} ${text}`);
+            }
+        });
+        setSelectedTaskIds(new Set());
     };
 
     useKeyboardShortcuts({
@@ -376,6 +387,12 @@ function App() {
                                 onClick={() => handleSortClick('context')}
                             />
                             <SortButton
+                                label="Tag"
+                                value="tag"
+                                isActive={sortCriteria.startsWith('tag')}
+                                onClick={() => handleSortClick('tag')}
+                            />
+                            <SortButton
                                 label="Due Date"
                                 value="due"
                                 isActive={sortCriteria.startsWith('due')}
@@ -480,6 +497,7 @@ function App() {
                         onDeleteAll={handleBulkDelete}
                         onSetPriority={handleBulkPriority}
                         onSetDate={() => openCalendar(handleBulkDate)}
+                        onBulkAdd={handleBulkAdd}
                     />
                 </div>
 

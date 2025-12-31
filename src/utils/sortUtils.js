@@ -97,6 +97,21 @@ export const sortTasks = (tasks, criteria) => {
                 return ctxB.localeCompare(ctxA);
             });
 
+        case 'tag':
+            // Alphabetical by first tag
+            return sorted.sort((a, b) => {
+                const tagA = (a.tags && a.tags[0]) || 'zzzz';
+                const tagB = (b.tags && b.tags[0]) || 'zzzz';
+                return tagA.localeCompare(tagB);
+            });
+
+        case 'tag-desc':
+            return sorted.sort((a, b) => {
+                const tagA = (a.tags && a.tags[0]) || 'zzzz';
+                const tagB = (b.tags && b.tags[0]) || 'zzzz';
+                return tagB.localeCompare(tagA);
+            });
+
         case 'alpha-asc': // A-Z
             return sorted.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
 
