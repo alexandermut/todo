@@ -135,19 +135,119 @@ export function useGoogleServices(onTasksLoaded) {
             // 1. Find or create todotext.de folder
             const folderId = await findOrCreateFolder('todotext.de');
 
-            // 2. Find or create todo.txt file in that folder
+            let todoContent = '';
+            let doneContent = '';
+
+            if (shouldArchive) {
+                const active = tasks.filter(t => !t.completed);
+                const done = tasks.filter(t => t.completed);
+                todoContent = active.map(t => t.raw).join('\n');
+                doneContent = done.map(t => t.raw).join('\n');
+            } else {
+                todoContent = tasks.map(t => t.raw).join('\n');
+            }
+
+            // 2. Update todo.txt
             const fileId = await findOrCreateFile('todo.txt', folderId);
+            await updateFile(fileId, todoContent);
 
-            // 3. Update file content
-            const content = tasks.map(t => t.raw).join('\n');
-            await updateFile(fileId, content);
+            // 3. Update done.txt if archiving
+            if (shouldArchive) {
+                const doneFileId = await findOrCreateFile('done.txt', folderId);
+                await updateFile(doneFileId, doneContent);
+            }
 
-            console.log('✅ Pushed to Google Drive: /todotext.de/todo.txt');
+            console.log('✅ Pushed to Google Drive: /todotext.de/');
+
+            // Trigger Backup
+            performDailyBackup();
+
         } catch (err) {
             console.error('❌ Drive Push failed', err);
         } finally {
             setIsSyncing(false);
         }
+    };
+
+    const performDailyBackup = async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const lastBackup = localStorage.getItem('gdrive_last_backup');
+
+        if (lastBackup === today) {
+            console.log('✅ Daily backup already performed today (GDrive).');
+            return;
+        }
+
+        console.log('📦 Starting daily backup (GDrive)...');
+        try {
+            const rootId = await findOrCreateFolder('todotext.de');
+
+            // 1. Find or Create Archive Folder
+            const archiveId = await findOrCreateFolderInParent('Archive', rootId);
+
+            // 2. Backup todo.txt
+            const todoId = await findFileId('todo.txt', rootId);
+            if (todoId) {
+                await copyFile(todoId, archiveId, `${today}_todo.txt`);
+            }
+
+            // 3. Backup done.txt
+            const doneId = await findFileId('done.txt', rootId);
+            if (doneId) {
+                await copyFile(doneId, archiveId, `${today}_done.txt`);
+            }
+
+            localStorage.setItem('gdrive_last_backup', today);
+            console.log('✅ Daily backup completed (GDrive).');
+
+        } catch (err) {
+            console.error('GDrive Backup failed', err);
+        }
+    };
+
+    // Helper to find folder specifically in parent (generic findOrCreateFolder searches globally-ish or doesn't strict parent?)
+    // Our existing findOrCreateFolder searches globally by name. 
+    // Let's make a specific helper for Archive inside todotext.de to be clean.
+    const findOrCreateFolderInParent = async (name, parentId) => {
+        try {
+            // Search
+            const response = await window.gapi.client.drive.files.list({
+                q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                fields: 'files(id, name)',
+                spaces: 'drive'
+            });
+            if (response.result.files?.length > 0) return response.result.files[0].id;
+
+            // Create
+            const folder = await window.gapi.client.drive.files.create({
+                resource: {
+                    name: name,
+                    parents: [parentId],
+                    mimeType: 'application/vnd.google-apps.folder'
+                },
+                fields: 'id'
+            });
+            return folder.result.id;
+        } catch (e) { console.error('Archive folder error', e); throw e; }
+    };
+
+    const findFileId = async (name, parentId) => {
+        const response = await window.gapi.client.drive.files.list({
+            q: `name='${name}' and '${parentId}' in parents and trashed=false`,
+            fields: 'files(id)',
+            spaces: 'drive'
+        });
+        return response.result.files?.[0]?.id;
+    };
+
+    const copyFile = async (fileId, parentId, newName) => {
+        await window.gapi.client.drive.files.copy({
+            fileId: fileId,
+            resource: {
+                name: newName,
+                parents: [parentId]
+            }
+        });
     };
 
     const updateFile = async (fileId, content) => {
@@ -183,14 +283,32 @@ export function useGoogleServices(onTasksLoaded) {
             // 2. Find or create todo.txt file in that folder
             const fileId = await findOrCreateFile('todo.txt', folderId);
 
-            // 3. Download file content
+            // 3. Download todo.txt content
             const resp = await window.gapi.client.drive.files.get({
                 fileId: fileId,
                 alt: 'media'
             });
+            let fullText = resp.body;
 
-            onTasksLoaded(resp.body);
-            console.log('✅ Pulled from Google Drive: /todotext.de/todo.txt');
+            // 4. Try to load done.txt (optional)
+            try {
+                const doneFileId = await findOrCreateFile('done.txt', folderId); // This creates if missing, maybe findFileId is better? 
+                // findOrCreate is fine, if we create empty done.txt it returns empty body usually or we check size.
+                // Actually findOrCreate returns ID.
+                const doneResp = await window.gapi.client.drive.files.get({
+                    fileId: doneFileId,
+                    alt: 'media'
+                });
+                if (doneResp.body) {
+                    fullText += '\n' + doneResp.body;
+                    console.log('✅ Loaded done.txt from Drive');
+                }
+            } catch (e) {
+                console.warn('⚠️ Could not load done.txt (might be empty/new)', e);
+            }
+
+            onTasksLoaded(fullText);
+            console.log('✅ Pulled from Google Drive: /todotext.de/');
         } catch (err) {
             console.error('❌ Drive Pull failed', err);
         } finally {

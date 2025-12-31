@@ -49,7 +49,20 @@ function App() {
         Store.loadFromString(text);
     };
 
-    const { isAuthenticated, isSyncing, login, syncPushDrive, syncPullDrive, syncPushTasks, syncPullTasks } = useGoogleServices(handleCloudLoad);
+    // SETTINGS STATE
+    const [archiveCompleted, setArchiveCompleted] = useState(() => {
+        return localStorage.getItem('setting_archiveCompleted') === 'true';
+    });
+
+    const toggleArchive = () => {
+        setArchiveCompleted(prev => {
+            const next = !prev;
+            localStorage.setItem('setting_archiveCompleted', next);
+            return next;
+        });
+    };
+
+    const { isAuthenticated, isSyncing, login, syncPushDrive, syncPullDrive, syncPushTasks, syncPullTasks } = useGoogleServices(handleCloudLoad, archiveCompleted);
     const {
         isAuthenticated: isDropboxAuth,
         isSyncing: isDropboxSyncing,
@@ -57,7 +70,7 @@ function App() {
         syncPush: syncPushDropbox,
         syncPull: syncPullDropbox,
         lastSyncTime: dropboxLastSync
-    } = useDropbox(handleCloudLoad);
+    } = useDropbox(handleCloudLoad, archiveCompleted);
 
     // REMOVED: isMyOwnUpdate ref - superseded by reliable source check in Store
 
@@ -511,6 +524,8 @@ function App() {
                         isDropboxAuth={isDropboxAuth}
                         isDropboxSyncing={isDropboxSyncing}
                         dropboxLastSync={dropboxLastSync}
+                        archiveCompleted={archiveCompleted}
+                        onToggleArchive={toggleArchive}
                         onGTasksSync={() => isAuthenticated ? syncPushTasks(tasks) : login()}
                         onGTasksPull={syncPullTasks}
                         onClearAll={() => {

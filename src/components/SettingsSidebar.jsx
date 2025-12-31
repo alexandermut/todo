@@ -58,7 +58,9 @@ export function SettingsSidebar({
     onGTasksSync,
     onGTasksPull,
     onClearAll,
-    dropboxLastSync // Added prop
+    dropboxLastSync,
+    archiveCompleted,
+    onToggleArchive
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(true);
 
@@ -104,6 +106,16 @@ export function SettingsSidebar({
 
                         {isSyncOpen && (
                             <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                                {/* Archive Completed Toggle */}
+                                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                                    <span className="text-xs text-zinc-300 font-medium">Archive Completed</span>
+                                    <button
+                                        onClick={onToggleArchive}
+                                        className={`w-9 h-5 rounded-full p-1 transition-colors relative ${archiveCompleted ? 'bg-green-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${archiveCompleted ? 'translate-x-4' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
                                 {/* Google Drive */}
                                 <div className="group bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3 hover:border-zinc-700/50 transition-colors">
                                     <div className="flex items-center justify-between mb-2">
@@ -227,7 +239,7 @@ export function SettingsSidebar({
                     </div>
 
                     <div className="text-center pb-8 pt-4">
-                        <span className="text-[10px] text-zinc-600 font-mono">{__APP_VERSION__}</span>
+                        <span className="text-[10px] text-zinc-600 font-mono">Version: {__APP_VERSION__}</span>
                     </div>
 
                 </div>

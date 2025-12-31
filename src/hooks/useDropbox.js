@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react';
 // Placeholder App Key - User must replace this
 const DROPBOX_APP_KEY = 'rbpbfwt1ba6ji8h';
 
-export function useDropbox(onTasksLoaded) {
+export function useDropbox(onTasksLoaded, shouldArchive = false) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [accessToken, setAccessToken] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [lastSyncTime, setLastSyncTime] = useState(null);
     const [fileRev, setFileRev] = useState(null);
+    const [doneRev, setDoneRev] = useState(null); // Added doneRev tracking
 
     useEffect(() => {
         // Check for token in URL hash (Implicit Flow)
@@ -43,12 +44,27 @@ export function useDropbox(onTasksLoaded) {
         if (!accessToken) { login(); return; }
         setIsSyncing(true);
         try {
-            const content = tasks.map(t => t.raw).join('\n');
-            const file = new Blob([content], { type: 'text/plain' });
+            let todoContent = '';
+            let doneContent = '';
+
+            if (shouldArchive) {
+                const active = tasks.filter(t => !t.completed);
+                const done = tasks.filter(t => t.completed);
+                todoContent = active.map(t => t.raw).join('\n');
+                doneContent = done.map(t => t.raw).join('\n');
+            } else {
+                todoContent = tasks.map(t => t.raw).join('\n');
+                // If not archiving, we don't touch done.txt (safe) 
+                // OR we could empty it? But that risks data loss if we didn't load it all.
+                // Best to just update todo.txt with everything.
+            }
+
+            const todoFile = new Blob([todoContent], { type: 'text/plain' });
 
             // Optimistic Concurrency: Only overwrite if rev matches (if we have one)
             const mode = fileRev ? { '.tag': 'update', 'update': fileRev } : { '.tag': 'overwrite' };
 
+            // 1. Upload todo.txt
             const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
                 method: 'POST',
                 headers: {
@@ -61,7 +77,7 @@ export function useDropbox(onTasksLoaded) {
                     }),
                     'Content-Type': 'application/octet-stream'
                 },
-                body: file
+                body: todoFile
             });
 
             if (response.status === 401) {
@@ -72,7 +88,7 @@ export function useDropbox(onTasksLoaded) {
             }
 
             if (response.status === 409) {
-                console.warn('⚠️ Conflict detected (409). Server file is newer. Merging changes...');
+                console.warn('⚠️ Conflict detected on todo.txt (409). Server file is newer. Merging changes...');
                 if (retry) {
                     await handleConflict(tasks);
                 } else {
@@ -84,8 +100,16 @@ export function useDropbox(onTasksLoaded) {
             if (response.ok) {
                 const data = await response.json();
                 setFileRev(data.rev);
-                console.log('Dropbox push successful. New Rev:', data.rev);
+                console.log('Dropbox push successful (todo.txt). New Rev:', data.rev);
                 setLastSyncTime(new Date());
+
+                // 2. Upload done.txt (if archiving)
+                if (shouldArchive) {
+                    await uploadDoneTxt(doneContent);
+                }
+
+                // Trigger daily backup check
+                performDailyBackup();
             } else {
                 console.error('Dropbox push error:', response.status, await response.text());
             }
@@ -93,6 +117,38 @@ export function useDropbox(onTasksLoaded) {
             console.error('Dropbox push network error', err);
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const uploadDoneTxt = async (content) => {
+        const file = new Blob([content], { type: 'text/plain' });
+        const mode = doneRev ? { '.tag': 'update', 'update': doneRev } : { '.tag': 'overwrite' };
+
+        try {
+            const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Dropbox-API-Arg': JSON.stringify({
+                        path: '/done.txt',
+                        mode: mode,
+                        autorename: true,
+                        mute: false
+                    }),
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: file
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setDoneRev(data.rev);
+                console.log('Dropbox push successful (done.txt). New Rev:', data.rev);
+            } else if (response.status === 409) {
+                console.warn('⚠️ Conflict on done.txt. Skipping update to avoid overwrite (TODO: Merge done.txt).');
+            }
+        } catch (e) {
+            console.error('Failed to upload done.txt', e);
         }
     };
 
@@ -136,6 +192,52 @@ export function useDropbox(onTasksLoaded) {
         }
     };
 
+    const performDailyBackup = async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const lastBackup = localStorage.getItem('dropbox_last_backup');
+
+        if (lastBackup === today) {
+            console.log('✅ Daily backup already performed today.');
+            return;
+        }
+
+        console.log('📦 Starting daily backup...');
+
+        try {
+            // Check/Create Archive Folder (implicitly handled by copy if path exists, but safer to check? 
+            // Dropbox copy_v2 creates parent folders if missing usually? Actually, let's just copy to /Archive/...)
+
+            const timestamp = today;
+            const filesToBackup = ['todo.txt', 'done.txt'];
+
+            for (const filename of filesToBackup) {
+                try {
+                    await fetch('https://api.dropboxapi.com/2/files/copy_v2', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            from_path: `/${filename}`,
+                            to_path: `/Archive/${timestamp}_${filename}`,
+                            autorename: false
+                        })
+                    });
+                    console.log(`✅ Backed up ${filename} to /Archive/${timestamp}_${filename}`);
+                } catch (e) {
+                    // Ignore if file doesn't exist or backup already exists
+                    console.warn(`Backup skipped for ${filename} (may not exist or already backed up)`);
+                }
+            }
+
+            localStorage.setItem('dropbox_last_backup', today);
+
+        } catch (err) {
+            console.error('Backup failed', err);
+        }
+    };
+
     const directUploadText = async (text, rev) => {
         const file = new Blob([text], { type: 'text/plain' });
         try {
@@ -158,6 +260,9 @@ export function useDropbox(onTasksLoaded) {
                 setFileRev(data.rev);
                 setLastSyncTime(new Date());
                 console.log('Merge & Push successful. Rev:', data.rev);
+
+                // Trigger backup check after successful push
+                performDailyBackup();
             }
         } catch (e) {
             console.error('Direct upload failed', e);
@@ -209,11 +314,13 @@ export function useDropbox(onTasksLoaded) {
                     }
                 });
 
-                if (doneResponse.status === 401) return; // Already handled above mostly, but good safety
+                if (doneResponse.status === 401) return;
 
                 if (doneResponse.ok) {
+                    const meta = JSON.parse(doneResponse.headers.get('dropbox-api-result'));
+                    setDoneRev(meta.rev);
                     doneText = await doneResponse.text();
-                    console.log('✅ done.txt loaded');
+                    console.log('✅ done.txt loaded. Rev:', meta.rev);
                 }
             } catch (err) {
                 console.log('ℹ️ done.txt not available (optional)');
