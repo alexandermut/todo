@@ -123,30 +123,33 @@ function App() {
     const handleQuickAdd = (text) => {
         if (!text.trim()) return;
 
-        let finalTaskText = text;
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
 
-        if (activeFilter) {
-            switch (activeFilter.type) {
-                case 'project':
-                    finalTaskText += ` +${activeFilter.value}`;
-                    break;
-                case 'context':
-                    finalTaskText += ` @${activeFilter.value}`;
-                    break;
-                case 'tag':
-                    finalTaskText += ` #${activeFilter.value}`;
-                    break;
-                case 'today':
-                    const today = new Date().toISOString().split('T')[0];
-                    finalTaskText += ` due:${today}`;
-                    break;
-                case 'upcoming':
-                    // Maybe add due:tomorrow? Or ask user? For now, leave as is or default to today?
-                    break;
+        lines.forEach(line => {
+            let finalTaskText = line;
+
+            if (activeFilter) {
+                switch (activeFilter.type) {
+                    case 'project':
+                        finalTaskText += ` +${activeFilter.value}`;
+                        break;
+                    case 'context':
+                        finalTaskText += ` @${activeFilter.value}`;
+                        break;
+                    case 'tag':
+                        finalTaskText += ` #${activeFilter.value}`;
+                        break;
+                    case 'today':
+                        const today = new Date().toISOString().split('T')[0];
+                        finalTaskText += ` due:${today}`;
+                        break;
+                    case 'upcoming':
+                        break;
+                }
             }
-        }
+            Store.addTask(finalTaskText);
+        });
 
-        Store.addTask(finalTaskText);
         setSearchQuery('');
     };
 

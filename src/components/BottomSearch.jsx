@@ -15,6 +15,13 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         }
     }, [focusTrigger]);
 
+    // Reset height when value is cleared
+    useEffect(() => {
+        if (inputRef.current && searchValue === '') {
+            inputRef.current.style.height = 'auto';
+        }
+    }, [searchValue]);
+
     // Input Handler for Autocomplete
     const handleInput = (e) => {
         const val = e.target.value;
@@ -95,6 +102,9 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         setSelectedIndex(0);
     };
 
+    // Detect touch device for mobile-specific Enter behavior
+    const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
     return (
         <div className="relative">
             {/* Suggestions Overlay */}
@@ -129,11 +139,15 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     <span className="text-zinc-500">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </span>
-                    <input
+                    <textarea
                         ref={inputRef}
-                        type="text"
                         value={searchValue}
-                        onChange={handleInput}
+                        onChange={(e) => {
+                            handleInput(e);
+                            // Auto-resize
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
                         onKeyDown={(e) => {
                             if (showSuggestions && suggestions.length > 0) {
                                 if (e.key === 'ArrowDown') {
@@ -153,12 +167,18 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                     setShowSuggestions(false);
                                 }
                             } else if (e.key === 'Enter') {
-                                e.preventDefault();
-                                onQuickAdd(searchValue);
+                                // On Mobile (Touch), Enter should insert newline. Submit is done via button.
+                                // On Desktop, Enter submits (unless Shift is held).
+                                if (!isTouchDevice && !e.shiftKey) {
+                                    e.preventDefault();
+                                    onQuickAdd(searchValue);
+                                }
+                                // Else: Allow default (newline)
                             }
                         }}
                         placeholder={activeFilter && activeFilter.type !== 'inbox' ? `Add to ${activeFilter.value}...` : "add a new task, filter or search..."}
-                        className="flex-1 bg-transparent border-none outline-none text-zinc-200 placeholder-zinc-500 text-sm h-8"
+                        className="flex-1 bg-transparent border-none outline-none text-zinc-200 placeholder-zinc-500 text-sm min-h-[32px] max-h-32 resize-none py-1.5"
+                        rows={1}
                         onBlur={() => {
                             // Delay hiding to allow click event on suggestion to fire
                             setTimeout(() => {
@@ -183,8 +203,6 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                             onClick={() => {
                                 onSearch('');
                                 inputRef.current?.focus();
-                                // To close keyboard on mobile, we might want to blur instead?
-                                // User said "to get out", implying blur/close keyboard.
                                 inputRef.current?.blur();
                             }}
                             className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-colors"
@@ -200,7 +218,7 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {searchValue.trim().length > 0 && (
                         <button
                             onClick={() => onQuickAdd(searchValue)}
-                            className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-colors"
+                            className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-colors"
                             title="Add Task"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
