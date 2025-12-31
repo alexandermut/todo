@@ -64,6 +64,13 @@ export function useDropbox(onTasksLoaded) {
                 body: file
             });
 
+            if (response.status === 401) {
+                console.error('Dropbox Token Expired (401)');
+                setIsAuthenticated(false);
+                sessionStorage.removeItem('dropbox_token');
+                return;
+            }
+
             if (response.status === 409) {
                 console.warn('⚠️ Conflict detected (409). Server file is newer. Merging changes...');
                 if (retry) {
@@ -79,13 +86,11 @@ export function useDropbox(onTasksLoaded) {
                 setFileRev(data.rev);
                 console.log('Dropbox push successful. New Rev:', data.rev);
                 setLastSyncTime(new Date());
+            } else {
+                console.error('Dropbox push error:', response.status, await response.text());
             }
         } catch (err) {
-            console.error('Dropbox push failed', err);
-            if (err.status === 401) {
-                setIsAuthenticated(false);
-                sessionStorage.removeItem('dropbox_token');
-            }
+            console.error('Dropbox push network error', err);
         } finally {
             setIsSyncing(false);
         }
@@ -174,6 +179,13 @@ export function useDropbox(onTasksLoaded) {
                 }
             });
 
+            if (todoResponse.status === 401) {
+                console.error('Dropbox Token Expired (401) during Pull');
+                setIsAuthenticated(false);
+                sessionStorage.removeItem('dropbox_token');
+                return;
+            }
+
             let todoText = '';
             if (todoResponse.ok) {
                 const meta = JSON.parse(todoResponse.headers.get('dropbox-api-result'));
@@ -196,6 +208,8 @@ export function useDropbox(onTasksLoaded) {
                         })
                     }
                 });
+
+                if (doneResponse.status === 401) return; // Already handled above mostly, but good safety
 
                 if (doneResponse.ok) {
                     doneText = await doneResponse.text();
