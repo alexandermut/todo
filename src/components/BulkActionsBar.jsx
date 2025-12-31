@@ -59,9 +59,10 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
 
                 <button
                     onClick={onCompleteAll}
-                    className="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 rounded-md text-sm font-medium transition-colors"
+                    className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-colors"
+                    title="Complete Selected"
                 >
-                    Complete
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 </button>
                 <button
                     onClick={onDeleteAll}
