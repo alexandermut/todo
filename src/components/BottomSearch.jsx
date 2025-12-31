@@ -44,10 +44,20 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
 
         const textBeforeCursor = val.substring(0, pos);
         const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
-        const startOfToken = lastSpaceIndex + 1;
+        let startOfToken = lastSpaceIndex + 1;
         const textAfterCursor = val.substring(pos);
         const nextSpaceIndex = textAfterCursor.indexOf(' ');
         const endOfToken = nextSpaceIndex === -1 ? val.length : pos + nextSpaceIndex;
+
+        const currentToken = val.substring(startOfToken, endOfToken);
+
+        // Fix: If picking a date from calendar and we are NOT editing a 'due:' token, 
+        // strictly append/insert instead of replacing the current word (e.g. "milk").
+        let forceAppend = false;
+        if (dateValue && !currentToken.toLowerCase().startsWith('due:') && currentToken.trim().length > 0) {
+            startOfToken = endOfToken; // Don't replace current token
+            forceAppend = true;
+        }
 
         const prefix = val.substring(0, startOfToken);
         const suffix = val.substring(endOfToken);
@@ -58,6 +68,11 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
         else if (item.type === 'context') insertion = `@${item.value}`;
         else if (item.type === 'tag') insertion = `#${item.value}`;
         else insertion = item.value;
+
+        // Ensure space if appending
+        if (forceAppend && !prefix.endsWith(' ')) {
+            insertion = ' ' + insertion;
+        }
 
         const newVal = prefix + insertion + suffix;
 
