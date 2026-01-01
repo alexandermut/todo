@@ -54,14 +54,37 @@ export function useDropbox(onTasksLoaded, shouldArchive = false) {
                 doneContent = done.map(t => t.raw).join('\n');
             } else {
                 todoContent = tasks.map(t => t.raw).join('\n');
-                // If not archiving, we don't touch done.txt (safe) 
-                // OR we could empty it? But that risks data loss if we didn't load it all.
-                // Best to just update todo.txt with everything.
+            }
+
+            // SAFETY CHECK: If we have no Rev (first sync), check if file exists remotely
+            // to avoid overwriting existing data with potentially empty local state.
+            if (!fileRev) {
+                try {
+                    const metaResponse = await fetch('https://api.dropboxapi.com/2/files/get_metadata', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ path: '/todo.txt' })
+                    });
+
+                    if (metaResponse.ok) {
+                        const meta = await metaResponse.json();
+                        setFileRev(meta.rev);
+                        // File exists! Do not overwrite. Treat as conflict/merge.
+                        console.warn('⚠️ Remote file found during initial push. Switching to Merge flow.');
+                        await handleConflict(tasks);
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore error (file likely doesn't exist), proceed to upload
+                }
             }
 
             const todoFile = new Blob([todoContent], { type: 'text/plain' });
 
-            // Optimistic Concurrency: Only overwrite if rev matches (if we have one)
+            // Optimistic Concurrency
             const mode = fileRev ? { '.tag': 'update', 'update': fileRev } : { '.tag': 'overwrite' };
 
             // 1. Upload todo.txt
