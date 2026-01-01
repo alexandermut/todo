@@ -62,14 +62,25 @@ function App() {
         });
     };
 
-    const { isAuthenticated, isSyncing, login, syncPushDrive, syncPullDrive, syncPushTasks, syncPullTasks } = useGoogleServices(handleCloudLoad, archiveCompleted);
+    const {
+        isAuthenticated,
+        isSyncing,
+        login,
+        syncPushDrive,
+        syncPullDrive,
+        syncPushTasks,
+        syncPullTasks,
+        checkForRemoteUpdates: checkDriveUpdates
+    } = useGoogleServices(handleCloudLoad, archiveCompleted);
+
     const {
         isAuthenticated: isDropboxAuth,
         isSyncing: isDropboxSyncing,
         login: loginDropbox,
         syncPush: syncPushDropbox,
         syncPull: syncPullDropbox,
-        lastSyncTime: dropboxLastSync
+        lastSyncTime: dropboxLastSync,
+        checkForRemoteUpdates: checkDropboxUpdates
     } = useDropbox(handleCloudLoad, archiveCompleted);
 
     // REMOVED: isMyOwnUpdate ref - superseded by reliable source check in Store
@@ -97,11 +108,50 @@ function App() {
             const timer = setTimeout(() => {
                 console.log("☁️ Auto-Syncing to Dropbox...");
                 syncPushDropbox(tasks);
+                syncPushDropbox(tasks);
             }, 3000); // 3s Debounce
 
             return () => clearTimeout(timer);
         }
     }, [tasks, isDropboxAuth]);
+
+    // AUTO-PULL (Polling + OnFocus)
+    useEffect(() => {
+        const checkUpdates = () => {
+            // SAFETY: Don't pull if user modified tasks recently (wait for auto-push to finish)
+            // Giving it a 10s buffer to be safe (Push debounce is 3s + network time)
+            if (Date.now() - Store.lastModificationTime < 10000) {
+                console.log("⏳ Skipping Auto-Pull (User is active)...");
+                return;
+            }
+
+            if (isAuthenticated && checkDriveUpdates) {
+                console.log("🔍 Auto-Pull Check (GDrive)...");
+                checkDriveUpdates();
+            }
+            if (isDropboxAuth && checkDropboxUpdates) {
+                console.log("🔍 Auto-Pull Check (Dropbox)...");
+                checkDropboxUpdates();
+            }
+        };
+
+        // 1. Interval (e.g., every 60s)
+        const intervalId = setInterval(checkUpdates, 60000);
+
+        // 2. On Window Focus
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log("👀 Window Focused - Checking for updates...");
+                checkUpdates();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isAuthenticated, isDropboxAuth, checkDriveUpdates, checkDropboxUpdates]);
 
     const filteredTasks = useMemo(() => {
         let result = tasks;
@@ -441,20 +491,7 @@ function App() {
                             </div>
                         </div>
 
-                        <BottomSearch
-                            searchValue={searchQuery}
-                            onSearch={setSearchQuery}
-                            onQuickAdd={handleQuickAdd}
-                            onMenuClick={() => setIsSidebarOpen(true)}
-                            onSettingsClick={() => setIsSettingsOpen(true)}
-                            focusTrigger={searchFocusTrigger}
-                            activeFilter={activeFilter}
-                            onClearFilter={() => setActiveFilter({ type: 'inbox' })}
-                            projects={projects}
-                            contexts={contexts}
-                            tags={tags}
-                            onOpenCalendar={openCalendar}
-                        />
+
 
                         <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
                             <SortButton
@@ -609,6 +646,22 @@ function App() {
                 </div>
 
                 {/* BOTTOM: Footer Removed */}
+
+                {/* BOTTOM: Search Bar */}
+                <BottomSearch
+                    searchValue={searchQuery}
+                    onSearch={setSearchQuery}
+                    onQuickAdd={handleQuickAdd}
+                    onMenuClick={() => setIsSidebarOpen(true)}
+                    onSettingsClick={() => setIsSettingsOpen(true)}
+                    focusTrigger={searchFocusTrigger}
+                    activeFilter={activeFilter}
+                    onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                    projects={projects}
+                    contexts={contexts}
+                    tags={tags}
+                    onOpenCalendar={openCalendar}
+                />
 
 
             </div >

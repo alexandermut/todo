@@ -62,7 +62,10 @@ export const Store = {
 
     saveToPersistence() {
         this.saveToLocalStorage();
+        this.lastModificationTime = Date.now();
     },
+
+    lastModificationTime: Date.now(),
 
     saveUndoState() {
         // Limit stack size if needed (e.g. 50)

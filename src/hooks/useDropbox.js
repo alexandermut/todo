@@ -152,6 +152,33 @@ export function useDropbox(onTasksLoaded, shouldArchive = false) {
         }
     };
 
+    const checkForRemoteUpdates = async () => {
+        if (!accessToken || !fileRev || isSyncing) return;
+
+        try {
+            const response = await fetch('https://api.dropboxapi.com/2/files/get_metadata', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: '/todo.txt'
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.rev !== fileRev) {
+                    console.log('🔄 Remote change detected (Rev mismatch). Pulling...');
+                    await syncPull();
+                }
+            }
+        } catch (e) {
+            console.error('Remote check failed', e);
+        }
+    };
+
     const handleConflict = async (localTasks) => {
         try {
             // 1. Download Remote Content
@@ -192,12 +219,71 @@ export function useDropbox(onTasksLoaded, shouldArchive = false) {
         }
     };
 
+    const cleanupConflicts = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+
+            // 1. List files in root
+            const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: '', // Root
+                    recursive: false
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const files = data.entries;
+
+                // 2. Filter for "conflicted copy"
+                const conflicts = files.filter(f =>
+                    f['.tag'] === 'file' &&
+                    f.name.toLowerCase().includes('conflicted copy')
+                );
+
+                if (conflicts.length > 0) {
+                    console.log(`🧹 Found ${conflicts.length} conflicted copies. Moving to /Archive/conflicts/...`);
+
+                    for (const file of conflicts) {
+                        try {
+                            await fetch('https://api.dropboxapi.com/2/files/move_v2', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    from_path: file.path_lower,
+                                    to_path: `/Archive/conflicts/${today}_${file.name}`,
+                                    autorename: true
+                                })
+                            });
+                            console.log(`✅ Moved ${file.name} to /Archive/conflicts/${today}_${file.name}`);
+                        } catch (moveErr) {
+                            console.error(`Failed to move ${file.name}`, moveErr);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Conflict cleanup failed', e);
+        }
+    };
+
     const performDailyBackup = async () => {
         const today = new Date().toISOString().split('T')[0];
         const lastBackup = localStorage.getItem('dropbox_last_backup');
 
         if (lastBackup === today) {
             console.log('✅ Daily backup already performed today.');
+            // Still check for conflicts? Maybe not on every single sync if backup done.
+            // But user might want it. Let's keep it commented out for rescue.
+            // await cleanupConflicts(); 
             return;
         }
 
@@ -232,6 +318,13 @@ export function useDropbox(onTasksLoaded, shouldArchive = false) {
             }
 
             localStorage.setItem('dropbox_last_backup', today);
+
+            // Allow checking for conflicts every time we backup or sync
+            try {
+                await cleanupConflicts();
+            } catch (err) {
+                console.error("Cleanup failed", err);
+            }
 
         } catch (err) {
             console.error('Backup failed', err);

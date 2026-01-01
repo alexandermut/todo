@@ -7,6 +7,7 @@ export function useGoogleServices(onTasksLoaded) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [tokenClient, setTokenClient] = useState(null);
+    const [lastRevision, setLastRevision] = useState(null); // Metadata checksum for auto-pull
 
     useEffect(() => {
         const loadScripts = () => {
@@ -288,6 +289,16 @@ export function useGoogleServices(onTasksLoaded) {
                 fileId: fileId,
                 alt: 'media'
             });
+
+            // Fetch metadata for checksum
+            const metaResp = await window.gapi.client.drive.files.get({
+                fileId: fileId,
+                fields: 'md5Checksum'
+            });
+            if (metaResp.result.md5Checksum) {
+                setLastRevision(metaResp.result.md5Checksum);
+            }
+
             let fullText = resp.body;
 
             // 4. Try to load done.txt (optional)
@@ -378,6 +389,28 @@ export function useGoogleServices(onTasksLoaded) {
         }
     };
 
+    const checkForRemoteUpdates = async () => {
+        if (!isAuthenticated || !lastRevision || isSyncing) return;
+        try {
+            const folderId = await findOrCreateFolder('todotext.de');
+            const fileId = await findFileId('todo.txt', folderId);
+            if (fileId) {
+                const metaResp = await window.gapi.client.drive.files.get({
+                    fileId: fileId,
+                    fields: 'md5Checksum'
+                });
+                const remoteMd5 = metaResp.result.md5Checksum;
+
+                if (remoteMd5 && remoteMd5 !== lastRevision) {
+                    console.log('🔄 Remote change detected (MD5 mismatch). Pulling (GDrive)...');
+                    await syncPullDrive();
+                }
+            }
+        } catch (e) {
+            console.error('Remote check failed (GDrive)', e);
+        }
+    };
+
     return {
         isAuthenticated,
         isSyncing,
@@ -385,6 +418,7 @@ export function useGoogleServices(onTasksLoaded) {
         syncPushDrive,
         syncPullDrive,
         syncPushTasks,
-        syncPullTasks
+        syncPullTasks,
+        checkForRemoteUpdates // Exported
     };
 }
