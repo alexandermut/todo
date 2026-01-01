@@ -706,7 +706,7 @@ function App() {
                     />
 
                     <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
-                        <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-6">
+                        <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 pt-2 pb-6">
                             {/* Branding Header Removed (Moved to Top) */}
 
                             <div className="space-y-2">

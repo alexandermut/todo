@@ -20,7 +20,7 @@ export function TaskList({ tasks, activeFilter, selectedTaskIds, onTaskSelect, o
         <div className="pb-20">
 
 
-            <div className="mb-4">
+            <div className="mb-1">
                 {/* Select All Header */}
                 {tasks.length > 0 && (
                     <div className="flex items-center py-2 -mx-4 px-4 border-b border-zinc-800/50 mb-1 group">
