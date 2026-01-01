@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Sidebar } from './components/Sidebar';
 import { TaskList } from './components/TaskList';
 import { BulkActionsBar } from './components/BulkActionsBar';
@@ -474,6 +475,7 @@ function App() {
     return (
         <>
             <div className="flex flex-col h-[100dvh]">
+                <PWAInstallPrompt />
 
                 {/* TOP: Search & Sort Bar */}
                 {currentPage === 'tasks' && (
@@ -492,6 +494,22 @@ function App() {
                         </div>
 
 
+
+
+                        <BottomSearch
+                            searchValue={searchQuery}
+                            onSearch={setSearchQuery}
+                            onQuickAdd={handleQuickAdd}
+                            onMenuClick={() => setIsSidebarOpen(true)}
+                            onSettingsClick={() => setIsSettingsOpen(true)}
+                            focusTrigger={searchFocusTrigger}
+                            activeFilter={activeFilter}
+                            onClearFilter={() => setActiveFilter({ type: 'inbox' })}
+                            projects={projects}
+                            contexts={contexts}
+                            tags={tags}
+                            onOpenCalendar={openCalendar}
+                        />
 
                         <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
                             <SortButton
@@ -647,21 +665,7 @@ function App() {
 
                 {/* BOTTOM: Footer Removed */}
 
-                {/* BOTTOM: Search Bar */}
-                <BottomSearch
-                    searchValue={searchQuery}
-                    onSearch={setSearchQuery}
-                    onQuickAdd={handleQuickAdd}
-                    onMenuClick={() => setIsSidebarOpen(true)}
-                    onSettingsClick={() => setIsSettingsOpen(true)}
-                    focusTrigger={searchFocusTrigger}
-                    activeFilter={activeFilter}
-                    onClearFilter={() => setActiveFilter({ type: 'inbox' })}
-                    projects={projects}
-                    contexts={contexts}
-                    tags={tags}
-                    onOpenCalendar={openCalendar}
-                />
+
 
 
             </div >
