@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { TaskList } from './components/TaskList';
 import { BulkActionsBar } from './components/BulkActionsBar';
 import { BottomSearch } from './components/BottomSearch';
+import { FilterBar } from './components/FilterBar';
 import { Store } from './store';
 import { useGoogleServices } from './hooks/useGoogleServices';
 import { useDropbox } from './hooks/useDropbox';
@@ -44,7 +45,15 @@ function App() {
     };
 
     // SORT STATE
+    // SORT STATE
     const [sortCriteria, setSortCriteria] = useState('priority');
+    // FILTER UI STATE
+    const [openFilterCategory, setOpenFilterCategory] = useState(null);
+    const [filterMode, setFilterMode] = useState('include'); // 'include' | 'exclude'
+
+    const toggleFilterCategory = (category) => {
+        setOpenFilterCategory(prev => prev === category ? null : category);
+    };
 
     const handleCloudLoad = (text) => {
         Store.loadFromString(text);
@@ -199,6 +208,10 @@ function App() {
                     break;
                 case 'tag':
                     result = result.filter(t => t.tags && t.tags.includes(activeFilter.value));
+                    break;
+                case 'priority':
+                    // Priority is stored as 'A', 'B', 'C' or null/undefined
+                    result = result.filter(t => t.priority === activeFilter.value);
                     break;
                 case 'inbox':
                 case 'impressum':
@@ -526,57 +539,144 @@ function App() {
                             onOpenCalendar={openCalendar}
                         />
 
-                        <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                            <SortButton
-                                label="Default"
-                                value="none"
-                                isActive={sortCriteria === 'none'}
-                                onClick={() => setSortCriteria('none')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>}
-                            />
-                            <SortButton
-                                label="Priority"
-                                value="priority"
-                                isActive={sortCriteria.startsWith('priority')}
-                                onClick={() => handleSortClick('priority')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
-                            />
-                            <SortButton
-                                label="Project"
-                                value="project"
-                                isActive={sortCriteria.startsWith('project')}
-                                onClick={() => handleSortClick('project')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
-                            />
-                            <SortButton
-                                label="Context"
-                                value="context"
-                                isActive={sortCriteria.startsWith('context')}
-                                onClick={() => handleSortClick('context')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>}
-                            />
-                            <SortButton
-                                label="Tag"
-                                value="tag"
-                                isActive={sortCriteria.startsWith('tag')}
-                                onClick={() => handleSortClick('tag')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
-                            />
-                            <SortButton
-                                label="Due Date"
-                                value="due"
-                                isActive={sortCriteria.startsWith('due')}
-                                onClick={() => handleSortClick('due')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                            />
-                            <SortButton
-                                label="A-Z"
-                                value="alpha"
-                                isActive={sortCriteria.startsWith('alpha')}
-                                onClick={() => handleSortClick('alpha-asc')}
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>}
-                            />
+                        <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-start gap-2 overflow-x-auto no-scrollbar">
+                            {/* Default / Clear Sort */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Default"
+                                    value="none"
+                                    isActive={sortCriteria === 'none'}
+                                    onClick={() => setSortCriteria('none')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>}
+                                />
+                                {/* Filter Mode Toggle (+/-) */}
+                                <button
+                                    onClick={() => setFilterMode(prev => prev === 'include' ? 'exclude' : 'include')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors font-bold text-xs ${filterMode === 'include' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+                                    title={filterMode === 'include' ? "Current Mode: Include (+)" : "Current Mode: Exclude (-)"}
+                                >
+                                    {filterMode === 'include' ? '+' : '-'}
+                                </button>
+                            </div>
+
+                            {/* Priority */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Priority"
+                                    value="priority"
+                                    isActive={sortCriteria.startsWith('priority')}
+                                    onClick={() => handleSortClick('priority')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+                                />
+                                <button
+                                    onClick={() => toggleFilterCategory('priority')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'priority' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'priority' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Project */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Project"
+                                    value="project"
+                                    isActive={sortCriteria.startsWith('project')}
+                                    onClick={() => handleSortClick('project')}
+                                    // Use Plus Icon (+) as requested
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>}
+                                />
+                                <button
+                                    onClick={() => toggleFilterCategory('project')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'project' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'project' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Context */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Context"
+                                    value="context"
+                                    isActive={sortCriteria.startsWith('context')}
+                                    onClick={() => handleSortClick('context')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>}
+                                />
+                                <button
+                                    onClick={() => toggleFilterCategory('context')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'context' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'context' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Tag */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Tag"
+                                    value="tag"
+                                    isActive={sortCriteria.startsWith('tag')}
+                                    onClick={() => handleSortClick('tag')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>}
+                                />
+                                <button
+                                    onClick={() => toggleFilterCategory('tag')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'tag' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'tag' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Date */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="Due Date"
+                                    value="due"
+                                    isActive={sortCriteria.startsWith('due')}
+                                    onClick={() => handleSortClick('due')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                                />
+                                <button
+                                    onClick={() => toggleFilterCategory('date')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'date' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'date' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                            </div>
+
+                            {/* A-Z Sort (No wrapper needed if staying single, but wrapper for consistency) */}
+                            <div className="flex flex-col gap-1 min-w-max">
+                                <SortButton
+                                    label="A-Z"
+                                    value="alpha"
+                                    isActive={sortCriteria.startsWith('alpha')}
+                                    onClick={() => handleSortClick('alpha-asc')}
+                                    icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>}
+                                />
+                                <div className="h-6"></div>
+                            </div>
                         </div>
+
+                        <FilterBar
+                            projects={projects}
+                            contexts={contexts}
+                            tags={tags}
+                            activeFilter={activeFilter}
+                            onFilterSelect={setActiveFilter}
+                            openCategory={openFilterCategory}
+                            onClose={() => setOpenFilterCategory(null)}
+                        />
+
+                        <BulkActionsBar
+                            selectedCount={selectedTaskIds.size}
+                            onDeselectAll={() => setSelectedTaskIds(new Set())}
+                            onCompleteAll={handleBulkComplete}
+                            onDeleteAll={handleBulkDelete}
+                            onSetPriority={handleBulkPriority}
+                            onSetDate={() => openCalendar(handleBulkDate)}
+                            onBulkAdd={handleBulkAdd}
+                        />
                     </div>
                 )}
 
@@ -637,17 +737,34 @@ function App() {
                                         onOpenCalendar={openCalendar}
                                         onFilterClick={(type, value) => {
                                             let prefix = '';
-                                            if (type === 'project') prefix = '+';
-                                            if (type === 'context') prefix = '@';
-                                            if (type === 'tag') prefix = '#';
-                                            if (type === 'date') prefix = 'due:';
+                                            let token = '';
 
-                                            const token = `${prefix}${value}`;
+                                            // Determine prefix based on type
+                                            if (type === 'project') prefix = '+';
+                                            else if (type === 'context') prefix = '@';
+                                            else if (type === 'tag') prefix = '#'; // searchParser might treat # as text unless specific logic added, but for now let's assume text match works or we map it
+                                            else if (type === 'priority') {
+                                                // Value is 'A' -> (A)
+                                                token = `(${value})`;
+                                            }
+                                            else if (type === 'date') prefix = 'due:';
+
+                                            if (!token) {
+                                                token = `${prefix}${value}`;
+                                            }
+
+                                            // Handle negation if in exclude mode
+                                            if (filterMode === 'exclude') {
+                                                token = `-${token}`;
+                                            }
 
                                             // Append to search query
-                                            if (!searchQuery.includes(token)) {
-                                                setSearchQuery(prev => prev ? `${prev} ${token}` : token);
-                                            }
+                                            setSearchQuery(prev => {
+                                                if (!prev) return token;
+                                                // Avoid duplicates if possible?
+                                                if (prev.includes(token)) return prev; // Simple duplicate check
+                                                return `${prev} ${token}`;
+                                            });
                                         }}
                                     />
                                 )}
@@ -669,15 +786,6 @@ function App() {
                         onSyncModeChange={changeSyncMode}
                     />
 
-                    <BulkActionsBar
-                        selectedCount={selectedTaskIds.size}
-                        onDeselectAll={() => setSelectedTaskIds(new Set())}
-                        onCompleteAll={handleBulkComplete}
-                        onDeleteAll={handleBulkDelete}
-                        onSetPriority={handleBulkPriority}
-                        onSetDate={() => openCalendar(handleBulkDate)}
-                        onBulkAdd={handleBulkAdd}
-                    />
                 </div>
 
                 {/* BOTTOM: Footer Removed */}

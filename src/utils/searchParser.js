@@ -21,46 +21,51 @@ export const searchParser = (tasks, query) => {
 
     return tasks.filter(task => {
         return terms.every(term => {
-            const lowerTerm = term.toLowerCase();
+            let isNegated = false;
+            let checkTerm = lowerTerm;
 
-            // Priority filter: prio:A or prio:a
-            if (lowerTerm.startsWith('prio:')) {
-                const prioValue = lowerTerm.split(':')[1]?.toUpperCase();
-                // Metadata priority is usually (A), (B), (C) or null
-                // We check if the task's priority matches the requested letter
-                return task.priority === prioValue;
+            if (checkTerm.startsWith('-')) {
+                isNegated = true;
+                checkTerm = checkTerm.substring(1);
             }
 
+            let match = false;
+
+            // Priority filter: prio:A or (A)
+            if (checkTerm.startsWith('prio:')) {
+                const prioValue = checkTerm.split(':')[1]?.toUpperCase();
+                match = task.priority === prioValue;
+            }
+            else if (/^\([a-z]\)$/.test(checkTerm)) {
+                const prioValue = checkTerm[1].toUpperCase();
+                match = task.priority === prioValue;
+            }
             // Project filter: +project
-            if (lowerTerm.startsWith('+')) {
-                const project = lowerTerm.substring(1);
-                // Projects are stored in an array
-                return task.projects && task.projects.some(p => p.toLowerCase().includes(project));
+            else if (checkTerm.startsWith('+')) {
+                const project = checkTerm.substring(1);
+                match = task.projects && task.projects.some(p => p.toLowerCase().includes(project));
             }
-
             // Context filter: @context
-            if (lowerTerm.startsWith('@')) {
-                const context = lowerTerm.substring(1);
-                // Contexts are stored in an array
-                return task.contexts && task.contexts.some(c => c.toLowerCase().includes(context));
+            else if (checkTerm.startsWith('@')) {
+                const context = checkTerm.substring(1);
+                match = task.contexts && task.contexts.some(c => c.toLowerCase().includes(context));
             }
-
-            // Status filters: is:open, is:done
-            if (lowerTerm === 'is:open') {
-                return !task.completed;
+            // Status filters
+            else if (checkTerm === 'is:open') {
+                match = !task.completed;
             }
-            if (lowerTerm === 'is:done') {
-                return task.completed;
+            else if (checkTerm === 'is:done') {
+                match = task.completed;
             }
-
-            // Other 'is' filters
-            if (lowerTerm === 'is:no-due') {
-                return !task.metadata || !task.metadata.due;
+            else if (checkTerm === 'is:no-due') {
+                match = !task.metadata || !task.metadata.due;
             }
-
             // Generic text search
-            // Search in raw text
-            return task.raw.toLowerCase().includes(lowerTerm);
+            else {
+                match = task.raw.toLowerCase().includes(checkTerm);
+            }
+
+            return isNegated ? !match : match;
         });
     });
 };

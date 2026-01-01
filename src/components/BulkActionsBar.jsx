@@ -17,7 +17,7 @@ export function BulkActionsBar({ selectedCount, onDeselectAll, onCompleteAll, on
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 md:left-[305px] bg-white dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700 py-2 px-4 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30 transition-all transform translate-y-0">
+        <div className="w-full bg-zinc-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 py-1 px-4 flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
             {isAdding ? (
                 <form onSubmit={handleAddSubmit} className="flex-1 flex items-center gap-2">
                     <input
