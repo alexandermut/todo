@@ -118,6 +118,14 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                         </div>
                         <span className="font-bold text-zinc-200 tracking-tight">todotext</span>
                     </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800/50 rounded-full transition-all"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
                 </div>
 
                 <nav className="space-y-1 mb-6">
@@ -267,17 +275,7 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                     </div>
                 </div>
 
-                {/* Close Button - Mobile Only */}
-                {isOpen && (
-                    <button
-                        onClick={onClose}
-                        className="fixed bottom-4 right-4 md:hidden p-3 bg-zinc-900 text-zinc-200 rounded-full shadow-lg border border-zinc-800 z-50"
-                    >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
-                )}
+
             </aside>
         </>
     );

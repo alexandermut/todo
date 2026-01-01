@@ -44,7 +44,7 @@ function App() {
     };
 
     // SORT STATE
-    const [sortCriteria, setSortCriteria] = useState('none');
+    const [sortCriteria, setSortCriteria] = useState('priority');
 
     const handleCloudLoad = (text) => {
         Store.loadFromString(text);
