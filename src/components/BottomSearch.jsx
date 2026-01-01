@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { get_completions } from 'todo-parser';
 
-export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter, projects, contexts, tags, onOpenCalendar }) {
+export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter, projects, contexts, tags, onOpenCalendar, isEditing, onCancelEdit }) {
     const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -11,14 +11,19 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
             inputRef.current.focus();
-            inputRef.current.setSelectionRange(0, 0);
+            // Move cursor to end of text
+            const len = inputRef.current.value.length;
+            inputRef.current.setSelectionRange(len, len);
         }
     }, [focusTrigger]);
 
-    // Reset height when value is cleared
+    // Auto-resize when value changes (e.g. loading a task)
     useEffect(() => {
-        if (inputRef.current && searchValue === '') {
+        if (inputRef.current) {
             inputRef.current.style.height = 'auto';
+            if (searchValue !== '') {
+                inputRef.current.style.height = inputRef.current.scrollHeight + 'px';
+            }
         }
     }, [searchValue]);
 
@@ -166,14 +171,28 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                     e.preventDefault();
                                     setShowSuggestions(false);
                                 }
-                            } else if (e.key === 'Enter') {
-                                // On Mobile (Touch), Enter should insert newline. Submit is done via button.
-                                // On Desktop, Enter submits (unless Shift is held).
-                                if (!isTouchDevice && !e.shiftKey) {
+                            } else {
+                                // Not showing suggestions
+                                if (e.key === 'Escape') {
+                                    // If not showing suggestions, Esc should cancel edit or clear search
                                     e.preventDefault();
-                                    onQuickAdd(searchValue);
+                                    if (isEditing && onCancelEdit) {
+                                        onCancelEdit();
+                                    } else if (activeFilter && activeFilter.type !== 'inbox' && onClearFilter) {
+                                        // Optional: Clear filter on Esc if not editing?
+                                        inputRef.current?.blur();
+                                    } else {
+                                        inputRef.current?.blur();
+                                    }
+                                } else if (e.key === 'Enter') {
+                                    // On Mobile (Touch), Enter should insert newline. Submit is done via button.
+                                    // On Desktop, Enter submits (unless Shift is held).
+                                    if (!isTouchDevice && !e.shiftKey) {
+                                        e.preventDefault();
+                                        onQuickAdd(searchValue);
+                                    }
+                                    // Else: Allow default (newline)
                                 }
-                                // Else: Allow default (newline)
                             }
                         }}
                         placeholder={activeFilter && activeFilter.type !== 'inbox' ? `Add to ${activeFilter.value}...` : "add a new task, filter or search..."}
@@ -187,8 +206,8 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         }}
                     />
 
-                    {/* Clear Filter Badge */}
-                    {activeFilter && activeFilter.type !== 'inbox' && (
+                    {/* Clear Filter Badge - HIDE when editing to avoid confusion */}
+                    {activeFilter && activeFilter.type !== 'inbox' && !isEditing && (
                         <button
                             onClick={onClearFilter}
                             className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full hover:bg-blue-500/30 flex items-center gap-1"
@@ -201,12 +220,15 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     {searchValue.length > 0 && (
                         <button
                             onClick={() => {
-                                onSearch('');
-                                inputRef.current?.focus();
-                                inputRef.current?.blur();
+                                if (isEditing && onCancelEdit) {
+                                    onCancelEdit();
+                                } else {
+                                    onSearch('');
+                                    inputRef.current?.focus();
+                                }
                             }}
                             className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-colors"
-                            title="Clear"
+                            title="Clear / Cancel"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -219,11 +241,17 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                         <button
                             onClick={() => onQuickAdd(searchValue)}
                             className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-colors"
-                            title="Add Task"
+                            title={isEditing ? "Save Changes" : "Add Task"}
                         >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
+                            {isEditing ? (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            )}
                         </button>
                     )}
 

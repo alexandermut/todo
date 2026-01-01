@@ -67,6 +67,13 @@ export const useKeyboardShortcuts = ({
                 return;
             }
 
+            // 'N' Shortcut to Focus Search/Input
+            if (e.key.toLowerCase() === 'n' && !priorityMode) {
+                e.preventDefault();
+                setSearchFocus();
+                return;
+            }
+
             // Undo (Ctrl+Z or Cmd+Z) and Redo (Cmd+Shift+Z)
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
                 console.log(`Shortcut Triggered: ${e.shiftKey ? 'Redo' : 'Undo'}`);
@@ -191,6 +198,9 @@ export const useKeyboardShortcuts = ({
                     if (focusedTaskId && onTaskEdit) {
                         e.preventDefault();
                         onTaskEdit(focusedTaskId);
+                    } else if (focusedTaskId && !onTaskEdit) {
+                        // If no edit handler (should usually be there), maybe just ignore or basic toggle?
+                        // For now, doing nothing effectively.
                     }
                     break;
 

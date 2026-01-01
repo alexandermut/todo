@@ -119,6 +119,36 @@ function App() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocusTrigger, setSearchFocusTrigger] = useState(0);
 
+    // --- Editing State & Handlers (Must be before useKeyboardShortcuts) ---
+    const [editingTask, setEditingTask] = useState(null);
+
+    const handleStartEdit = (task) => {
+        setEditingTask(task);
+        setSearchQuery(task.raw);
+        setSearchFocusTrigger(prev => prev + 1);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingTask(null);
+        setSearchQuery('');
+    };
+
+    const handleQuickAdd = (rawText) => {
+        if (!rawText.trim()) return;
+
+        if (editingTask) {
+            // Update
+            Store.updateTask(editingTask.id, rawText);
+            setEditingTask(null);
+            setSearchQuery('');
+        } else {
+            // Add New
+            const newTask = Store.addTask(rawText);
+            setSearchQuery('');
+        }
+    };
+    // ---------------------------------------------------------------------
+
     // AUTO-SYNC (Dropbox & Google Drive)
     // Automatically push changes to Cloud 3 seconds after the last modification.
     useEffect(() => {
@@ -282,38 +312,7 @@ function App() {
         // But if FilterBar used to set activeFilter, we should stop doing that for these types.
     };
 
-    const handleQuickAdd = (text) => {
-        if (!text.trim()) return;
 
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-
-        lines.forEach(line => {
-            let finalTaskText = line;
-
-            if (activeFilter) {
-                switch (activeFilter.type) {
-                    case 'project':
-                        finalTaskText += ` +${activeFilter.value}`;
-                        break;
-                    case 'context':
-                        finalTaskText += ` @${activeFilter.value}`;
-                        break;
-                    case 'tag':
-                        finalTaskText += ` #${activeFilter.value}`;
-                        break;
-                    case 'today':
-                        const today = new Date().toISOString().split('T')[0];
-                        finalTaskText += ` due:${today}`;
-                        break;
-                    case 'upcoming':
-                        break;
-                }
-            }
-            Store.addTask(finalTaskText);
-        });
-
-        setSearchQuery('');
-    };
 
     const projects = useMemo(() => [...new Set(tasks.flatMap(t => t.projects || []))].sort(), [tasks]);
     const contexts = useMemo(() => [...new Set(tasks.flatMap(t => t.contexts || []))].sort(), [tasks]);
@@ -470,7 +469,8 @@ function App() {
             setSelectedTaskIds(new Set()); // Clear selection after delete
         },
         onTaskEdit: (id) => {
-            setEditingTaskId(id);
+            const task = tasks.find(t => t.id === id);
+            if (task) handleStartEdit(task);
         },
         onUndo: () => Store.undo(),
         onRedo: () => Store.redo(),
@@ -515,7 +515,7 @@ function App() {
                 Store.setTaskPriority(id, priorities[newIdx]);
             }
         },
-        onUndo: () => Store.undo(),
+
         clearFilters: () => {
             setSearchQuery('');
             setActiveFilter({ type: 'inbox' });
@@ -594,6 +594,15 @@ function App() {
                             </div>
 
                             <div className="flex items-center gap-3 text-[10px] text-zinc-600">
+                                <button
+                                    onClick={() => setCurrentPage('faq')}
+                                    className="p-1.5 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors"
+                                    title="Help & FAQ"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
                                 <a href="/datenschutz.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Datenschutz</a>
                                 <a href="/impressum.html" className="hover:text-zinc-400 transition-colors hidden sm:block">Impressum</a>
                             </div>
@@ -615,10 +624,12 @@ function App() {
                             contexts={contexts}
                             tags={tags}
                             onOpenCalendar={openCalendar}
+                            isEditing={!!editingTask}
+                            onCancelEdit={handleCancelEdit}
                         />
 
-                        {/* Active Filter Chips */}
-                        {searchQuery.trim() && (
+                        {/* Active Filter Chips - Hide when editing */}
+                        {searchQuery.trim() && !editingTask && (
                             <div className="flex flex-wrap gap-2 px-4 py-2 animate-in fade-in zoom-in-95 duration-200">
                                 {searchQuery.trim().split(/\s+/).map((token, idx) => (
                                     <div key={idx} className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1 text-xs text-zinc-300">
@@ -842,6 +853,7 @@ function App() {
                                         focusedTaskId={focusedTaskId}
                                         onTaskFocus={setFocusedTaskId}
                                         editingTaskId={editingTaskId}
+                                        onEdit={handleStartEdit} // Pass the edit handler
                                         onEditEnd={(id) => {
                                             setEditingTaskId(null);
                                             // Restore focus to the task that was just edited/cancelled
