@@ -382,7 +382,17 @@ export function TaskItem({ task, selected, onSelect, selectionMode, isFocused, o
             {/* 4. Content */}
             <div className="flex-1 min-w-0">
                 <div className={`text-sm text-zinc-200 ${task.completed ? 'line-through text-zinc-500' : ''}`}>
-                    {task.priority && <span className={`text-xs font-bold mr-1 ${priorityClass}`}>({task.priority})</span>}
+                    {task.priority && (
+                        <span
+                            className={`text-xs font-bold mr-1 hover:underline cursor-pointer ${priorityClass}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onFilterClick && onFilterClick('priority', task.priority);
+                            }}
+                        >
+                            ({task.priority})
+                        </span>
+                    )}
                     {renderText(task.text)}
                 </div>
             </div>

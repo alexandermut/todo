@@ -259,11 +259,19 @@ function App() {
         }
 
         // Append to search query
+        // Append or Remove from search query (Toggle logic)
         setSearchQuery(prev => {
-            if (!prev) return token;
-            // Avoid duplicates if possible?
-            if (prev.includes(token)) return prev; // Simple duplicate check
-            return `${prev} ${token}`;
+            const currentTokens = prev ? prev.trim().split(/\s+/) : [];
+
+            // Check if exact token exists
+            if (currentTokens.includes(token)) {
+                // Remove it
+                const newTokens = currentTokens.filter(t => t !== token);
+                return newTokens.join(' ');
+            } else {
+                // Add it
+                return [...currentTokens, token].join(' ');
+            }
         });
 
         // Also ensure we are not in a conflicting activeFilter mode?
