@@ -201,7 +201,7 @@ function App() {
                     result = result.filter(t => t.metadata && t.metadata.due && t.metadata.due < nowStr && !t.completed);
                     break;
                 case 'project':
-                    result = result.filter(t => t.projects.includes(activeFilter.value));
+                    result = result.filter(t => t.projects && t.projects.includes(activeFilter.value));
                     break;
                 case 'context':
                     result = result.filter(t => t.contexts && t.contexts.includes(activeFilter.value));
@@ -226,6 +226,53 @@ function App() {
         return sortTasks(result, sortCriteria);
 
     }, [tasks, activeFilter, searchQuery, sortCriteria]);
+
+    // Unified Filter Handler (Additive)
+    const handleFilterClick = (type, value) => {
+        let prefix = '';
+        let token = '';
+
+        // Determine prefix based on type
+        if (type === 'project') prefix = '+';
+        else if (type === 'context') prefix = '@';
+        else if (type === 'tag') prefix = '#';
+        else if (type === 'priority') {
+            // Value is 'A' -> (A)
+            token = `(${value})`;
+        }
+        else if (type === 'alpha') {
+            token = `^${value}`;
+        }
+        else if (type === 'date') prefix = 'due:';
+
+        // For special filters (today, upcoming, etc - handled by ActiveFilter usually, but if we want them searching?)
+        // Let's keep specific filters (today/upcoming) as activeFilter navigation if they don't map to text search easily
+        // But Project/Context/Tag/Priority map to text.
+
+        if (!token) {
+            token = `${prefix}${value}`;
+        }
+
+        // Handle negation if in exclude mode
+        if (filterMode === 'exclude') {
+            token = `-${token}`;
+        }
+
+        // Append to search query
+        setSearchQuery(prev => {
+            if (!prev) return token;
+            // Avoid duplicates if possible?
+            if (prev.includes(token)) return prev; // Simple duplicate check
+            return `${prev} ${token}`;
+        });
+
+        // Also ensure we are not in a conflicting activeFilter mode?
+        // Actually, if we use Search, activeFilter is ignored by our logic?
+        // No, filteredTasks uses BOTH. 
+        // If we want "Clicking FilterBar" to *only* set search, we should probably clear activeFilter if it was set to something else?
+        // Or just let them coexist. 
+        // But if FilterBar used to set activeFilter, we should stop doing that for these types.
+    };
 
     const handleQuickAdd = (text) => {
         if (!text.trim()) return;
@@ -539,6 +586,26 @@ function App() {
                             onOpenCalendar={openCalendar}
                         />
 
+                        {/* Active Filter Chips */}
+                        {searchQuery.trim() && (
+                            <div className="flex flex-wrap gap-2 px-4 py-2 animate-in fade-in zoom-in-95 duration-200">
+                                {searchQuery.trim().split(/\s+/).map((token, idx) => (
+                                    <div key={idx} className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1 text-xs text-zinc-300">
+                                        <span className="font-medium">{token}</span>
+                                        <button
+                                            onClick={() => {
+                                                const newQuery = searchQuery.trim().split(/\s+/).filter((_, i) => i !== idx).join(' ');
+                                                setSearchQuery(newQuery);
+                                            }}
+                                            className="ml-1 p-0.5 rounded-full hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition-colors"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="max-w-2xl mx-auto w-full px-4 py-2 flex items-start gap-2 overflow-x-auto no-scrollbar">
                             {/* Default / Clear Sort */}
                             <div className="flex flex-col gap-1 min-w-max">
@@ -654,16 +721,30 @@ function App() {
                                     onClick={() => handleSortClick('alpha-asc')}
                                     icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg>}
                                 />
-                                <div className="h-6"></div>
+                                <button
+                                    onClick={() => toggleFilterCategory('alpha')}
+                                    className={`w-full h-6 flex items-center justify-center rounded-md transition-colors ${openFilterCategory === 'alpha' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'}`}
+                                >
+                                    <svg className={`w-3 h-3 transition-transform ${openFilterCategory === 'alpha' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
                             </div>
                         </div>
+
 
                         <FilterBar
                             projects={projects}
                             contexts={contexts}
                             tags={tags}
                             activeFilter={activeFilter}
-                            onFilterSelect={setActiveFilter}
+                            onFilterSelect={(filterObj) => {
+                                // If it's a type we handle via search (project, context, tag, priority), use search handler
+                                if (['project', 'context', 'tag', 'priority', 'alpha'].includes(filterObj.type)) {
+                                    handleFilterClick(filterObj.type, filterObj.value);
+                                } else {
+                                    // Fallback for others (like date ranges if not text based, or 'today')
+                                    setActiveFilter(filterObj);
+                                }
+                            }}
                             openCategory={openFilterCategory}
                             onClose={() => setOpenFilterCategory(null)}
                         />
@@ -735,37 +816,7 @@ function App() {
                                         contexts={contexts}
                                         tags={tags}
                                         onOpenCalendar={openCalendar}
-                                        onFilterClick={(type, value) => {
-                                            let prefix = '';
-                                            let token = '';
-
-                                            // Determine prefix based on type
-                                            if (type === 'project') prefix = '+';
-                                            else if (type === 'context') prefix = '@';
-                                            else if (type === 'tag') prefix = '#'; // searchParser might treat # as text unless specific logic added, but for now let's assume text match works or we map it
-                                            else if (type === 'priority') {
-                                                // Value is 'A' -> (A)
-                                                token = `(${value})`;
-                                            }
-                                            else if (type === 'date') prefix = 'due:';
-
-                                            if (!token) {
-                                                token = `${prefix}${value}`;
-                                            }
-
-                                            // Handle negation if in exclude mode
-                                            if (filterMode === 'exclude') {
-                                                token = `-${token}`;
-                                            }
-
-                                            // Append to search query
-                                            setSearchQuery(prev => {
-                                                if (!prev) return token;
-                                                // Avoid duplicates if possible?
-                                                if (prev.includes(token)) return prev; // Simple duplicate check
-                                                return `${prev} ${token}`;
-                                            });
-                                        }}
+                                        onFilterClick={handleFilterClick}
                                     />
                                 )}
                             </div>

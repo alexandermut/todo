@@ -6,6 +6,7 @@ export function FilterBar({ projects, contexts, tags, onFilterSelect, activeFilt
         if (category === 'context') return contexts || [];
         if (category === 'tag') return tags || [];
         if (category === 'priority') return ['A', 'B', 'C'];
+        if (category === 'alpha') return Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)); // A-Z
         // Dates could be generated: "Today", "Tomorrow", "Next Week" or extracted from tasks
         // For now, let's offer standard time buckets
         if (category === 'date') return ['Today', 'Tomorrow', 'Overdue', 'Upcoming'];

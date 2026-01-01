@@ -16,6 +16,8 @@ const getGitVersion = () => {
     }
 };
 
+import { VitePWA } from 'vite-plugin-pwa';
+
 // https://vitejs.dev/config/
 // Vite Configuration - Updated for Theme Refresh
 export default defineConfig(({ mode }) => ({
@@ -23,7 +25,43 @@ export default defineConfig(({ mode }) => ({
     plugins: [
         react(),
         wasm(),
-        topLevelAwait()
+        topLevelAwait(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+            manifest: {
+                name: 'todotext.de',
+                short_name: 'todotext.de',
+                description: 'A simple, offline-first todo.txt task manager',
+                theme_color: '#09090b',
+                background_color: '#09090b',
+                display: 'standalone',
+                scope: '/',
+                start_url: '/',
+                orientation: 'portrait',
+                icons: [
+                    {
+                        src: 'icons/todotext-appicon-dark-192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                        purpose: 'any maskable'
+                    },
+                    {
+                        src: 'icons/todotext-appicon-dark-512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        purpose: 'any maskable'
+                    }
+                ]
+            },
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
+                maximumFileSizeToCacheInBytes: 5000000 // Increase limit for WASM if needed
+            },
+            devOptions: {
+                enabled: true // Enable PWA in dev mode to test
+            }
+        })
     ],
     define: {
         '__APP_VERSION__': JSON.stringify(getGitVersion())

@@ -21,6 +21,7 @@ export const searchParser = (tasks, query) => {
 
     return tasks.filter(task => {
         return terms.every(term => {
+            const lowerTerm = term.toLowerCase();
             let isNegated = false;
             let checkTerm = lowerTerm;
 
@@ -59,6 +60,11 @@ export const searchParser = (tasks, query) => {
             }
             else if (checkTerm === 'is:no-due') {
                 match = !task.metadata || !task.metadata.due;
+            }
+            // Start-of-line filter: ^text
+            else if (checkTerm.startsWith('^')) {
+                const prefix = checkTerm.substring(1);
+                match = task.raw.toLowerCase().startsWith(prefix);
             }
             // Generic text search
             else {
