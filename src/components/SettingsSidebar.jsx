@@ -60,7 +60,9 @@ export function SettingsSidebar({
     onClearAll,
     dropboxLastSync,
     archiveCompleted,
-    onToggleArchive
+    onToggleArchive,
+    syncMode,
+    onSyncModeChange
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(true);
 
@@ -116,6 +118,30 @@ export function SettingsSidebar({
                                         <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${archiveCompleted ? 'translate-x-4' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
+
+                                {/* Sync Mode Selection */}
+                                <div className="px-2 py-2 mb-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                                    <span className="text-xs text-zinc-300 font-medium block mb-2 px-1">Sync Mode</span>
+                                    <div className="bg-zinc-800 p-1 rounded-lg flex">
+                                        <button
+                                            onClick={() => onSyncModeChange('auto')}
+                                            className={`flex-1 py-1 text-[10px] font-medium rounded-md transition-all ${syncMode === 'auto' ? 'bg-zinc-600 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                        >
+                                            Automatic
+                                        </button>
+                                        <button
+                                            onClick={() => onSyncModeChange('manual')}
+                                            className={`flex-1 py-1 text-[10px] font-medium rounded-md transition-all ${syncMode === 'manual' ? 'bg-zinc-600 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                        >
+                                            Manual
+                                        </button>
+                                    </div>
+                                    <p className="text-[9px] text-zinc-500 mt-2 px-1 leading-tight">
+                                        {syncMode === 'auto'
+                                            ? 'Syncs automatically on changes and app start.'
+                                            : 'Only syncs when you click Push or Pull.'}
+                                    </p>
+                                </div>
                                 {/* Google Drive */}
                                 <div className="group bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3 hover:border-zinc-700/50 transition-colors">
                                     <div className="flex items-center justify-between mb-2">
@@ -131,23 +157,23 @@ export function SettingsSidebar({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 mt-2">
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
                                         <button
                                             onClick={onSyncClick}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${isAuthenticated
+                                            className={`py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${isAuthenticated
                                                 ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                                                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20'
+                                                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 col-span-2'
                                                 }`}
                                         >
-                                            {isAuthenticated ? (isSyncing ? 'Syncing...' : 'Sync Now') : 'Connect'}
+                                            {isAuthenticated ? (isSyncing ? 'Pushing...' : 'Push ↗') : 'Connect'}
                                         </button>
                                         {isAuthenticated && (
                                             <button
                                                 onClick={onPullClick}
-                                                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                                                title="Force Pull"
+                                                className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors text-xs font-medium"
+                                                title="Force Download"
                                             >
-                                                <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8h8M20 12V4h-8M4 20l9-9M20 4l-9 9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                {isSyncing ? 'Pulling...' : 'Pull ↙'}
                                             </button>
                                         )}
                                     </div>
@@ -168,23 +194,23 @@ export function SettingsSidebar({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 mt-2">
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
                                         <button
                                             onClick={onDropboxSync}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${isDropboxAuth
+                                            className={`py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${isDropboxAuth
                                                 ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                                                : 'bg-[#0061FE] hover:bg-[#0057E5] text-white shadow-lg shadow-blue-900/20'
+                                                : 'bg-[#0061FE] hover:bg-[#0057E5] text-white shadow-lg shadow-blue-900/20 col-span-2'
                                                 }`}
                                         >
-                                            {isDropboxAuth ? (isDropboxSyncing ? 'Syncing...' : 'Sync Now') : 'Connect'}
+                                            {isDropboxAuth ? (isDropboxSyncing ? 'Pushing...' : 'Push ↗') : 'Connect'}
                                         </button>
                                         {isDropboxAuth && (
                                             <button
                                                 onClick={onDropboxPull}
-                                                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                                                title="Force Pull"
+                                                className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors text-xs font-medium"
+                                                title="Force Download"
                                             >
-                                                <svg className={`w-4 h-4 ${isDropboxSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8h8M20 12V4h-8M4 20l9-9M20 4l-9 9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                {isDropboxSyncing ? 'Pulling...' : 'Pull ↙'}
                                             </button>
                                         )}
                                     </div>

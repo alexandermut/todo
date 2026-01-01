@@ -63,6 +63,15 @@ function App() {
         });
     };
 
+    const [syncMode, setSyncMode] = useState(() => {
+        return localStorage.getItem('setting_syncMode') || 'auto';
+    });
+
+    const changeSyncMode = (mode) => {
+        setSyncMode(mode);
+        localStorage.setItem('setting_syncMode', mode);
+    };
+
     const {
         isAuthenticated,
         isSyncing,
@@ -101,23 +110,29 @@ function App() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocusTrigger, setSearchFocusTrigger] = useState(0);
 
-    // AUTO-SYNC (Dropbox)
-    // Automatically push changes to Dropbox 3 seconds after the last modification.
-    // Conflict handling in useDropbox.js ensures we don't overwrite remote changes blindly.
+    // AUTO-SYNC (Dropbox & Google Drive)
+    // Automatically push changes to Cloud 3 seconds after the last modification.
     useEffect(() => {
-        if (isDropboxAuth && tasks.length > 0) {
+        if (syncMode === 'auto' && tasks.length > 0) {
             const timer = setTimeout(() => {
-                console.log("☁️ Auto-Syncing to Dropbox...");
-                syncPushDropbox(tasks);
-                syncPushDropbox(tasks);
+                if (isDropboxAuth) {
+                    console.log("☁️ Auto-Syncing to Dropbox...");
+                    syncPushDropbox(tasks);
+                }
+                if (isAuthenticated) {
+                    console.log("☁️ Auto-Syncing to Google Drive...");
+                    syncPushDrive(tasks);
+                }
             }, 3000); // 3s Debounce
 
             return () => clearTimeout(timer);
         }
-    }, [tasks, isDropboxAuth]);
+    }, [tasks, isDropboxAuth, isAuthenticated, syncMode]);
 
     // AUTO-PULL (Polling + OnFocus)
     useEffect(() => {
+        if (syncMode !== 'auto') return;
+
         const checkUpdates = () => {
             // SAFETY: Don't pull if user modified tasks recently (wait for auto-push to finish)
             // Giving it a 10s buffer to be safe (Push debounce is 3s + network time)
@@ -650,6 +665,8 @@ function App() {
                         isOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}
                         onPageNavigate={setCurrentPage}
+                        syncMode={syncMode}
+                        onSyncModeChange={changeSyncMode}
                     />
 
                     <BulkActionsBar
