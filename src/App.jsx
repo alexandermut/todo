@@ -555,6 +555,29 @@ function App() {
         </button>
     );
 
+    const handleExport = () => {
+        const text = Store.dumpToString();
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'todo.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            Store.loadFromString(text);
+        };
+        reader.readAsText(file);
+    };
+
     return (
         <>
             <div className="flex flex-col h-[100dvh]">
@@ -785,6 +808,10 @@ function App() {
                         dropboxLastSync={dropboxLastSync}
                         archiveCompleted={archiveCompleted}
                         onToggleArchive={toggleArchive}
+                        syncMode={syncMode}
+                        onSyncModeChange={changeSyncMode}
+                        onExport={handleExport}
+                        onImport={handleImport}
                         onGTasksSync={() => isAuthenticated ? syncPushTasks(tasks) : login()}
                         onGTasksPull={syncPullTasks}
                         onClearAll={() => {

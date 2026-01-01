@@ -62,9 +62,13 @@ export function SettingsSidebar({
     archiveCompleted,
     onToggleArchive,
     syncMode,
-    onSyncModeChange
+    onSyncModeChange,
+    onExport,
+    onImport
 }) {
     const [isSyncOpen, setIsSyncOpen] = useState(true);
+    const fileInputRef = React.useRef(null);
+    const [isDataOpen, setIsDataOpen] = useState(false);
 
     return (
         <>
@@ -108,16 +112,7 @@ export function SettingsSidebar({
 
                         {isSyncOpen && (
                             <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-1 fade-in duration-200">
-                                {/* Archive Completed Toggle */}
-                                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                                    <span className="text-xs text-zinc-300 font-medium">Archive Completed</span>
-                                    <button
-                                        onClick={onToggleArchive}
-                                        className={`w-9 h-5 rounded-full p-1 transition-colors relative ${archiveCompleted ? 'bg-green-500' : 'bg-zinc-700'}`}
-                                    >
-                                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${archiveCompleted ? 'translate-x-4' : 'translate-x-0'}`} />
-                                    </button>
-                                </div>
+
 
                                 {/* Sync Mode Selection */}
                                 <div className="px-2 py-2 mb-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
@@ -250,18 +245,76 @@ export function SettingsSidebar({
                         )}
                     </div>
 
-
-                    {/* Danger Zone */}
-                    <div className="mt-8 pt-4 border-t border-zinc-800/50">
+                    {/* Data Management Section */}
+                    <div className="border border-zinc-800/50 rounded-2xl bg-zinc-900/30 overflow-hidden">
                         <button
-                            onClick={onClearAll}
-                            className="w-full group relative overflow-hidden px-4 py-2.5 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all duration-300"
+                            onClick={() => setIsDataOpen(!isDataOpen)}
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-800/30 transition-colors"
                         >
-                            <span className="relative z-10 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider">
-                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                Clear System
-                            </span>
+                            <span className="text-sm font-semibold text-zinc-100 uppercase tracking-widest text-[10px]">Data Management</span>
+                            <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isDataOpen ? 'rotate-180' : ''}`} />
                         </button>
+
+                        {isDataOpen && (
+                            <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                                {/* Archive Completed Toggle */}
+                                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                                    <span className="text-xs text-zinc-300 font-medium">Archive Completed</span>
+                                    <button
+                                        onClick={onToggleArchive}
+                                        className={`w-9 h-5 rounded-full p-1 transition-colors relative ${archiveCompleted ? 'bg-green-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${archiveCompleted ? 'translate-x-4' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {/* Export */}
+                                    <button
+                                        onClick={onExport}
+                                        className="flex items-center justify-center gap-2 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors text-xs font-medium border border-zinc-700/50"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                        Export txt
+                                    </button>
+
+                                    {/* Import */}
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex items-center justify-center gap-2 py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors text-xs font-medium border border-zinc-700/50"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                        Import txt
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) {
+                                                if (confirm('Importing will overwrite/merge your current tasks. Continue?')) {
+                                                    onImport(e.target.files[0]);
+                                                }
+                                                e.target.value = ''; // Reset
+                                            }
+                                        }}
+                                        className="hidden"
+                                        accept=".txt"
+                                    />
+                                </div>
+                                <p className="text-[9px] text-zinc-500 px-1">
+                                    Download your list as todo.txt or import an existing file.
+                                </p>
+                                {/* Clear System (Danger) */}
+                                <div className="pt-2 mt-2 border-t border-zinc-800/50">
+                                    <button
+                                        onClick={onClearAll}
+                                        className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded-xl transition-colors text-xs font-semibold uppercase tracking-wider border border-red-500/10"
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                        Clear System
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-center pb-8 pt-4">
