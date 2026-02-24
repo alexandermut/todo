@@ -130,12 +130,49 @@ export const Store = {
         }
     },
 
+    updateTasks(updates) {
+        if (!updates || updates.length === 0) return;
+        this.saveUndoState();
+
+        updates.forEach(({ id, newRaw }) => {
+            const index = this.tasks.findIndex(t => t.id === id);
+            if (index !== -1) {
+                const updatedTask = parse_todo_line(newRaw);
+                updatedTask.id = id;
+                if (this.tasks[index].creationDate && !updatedTask.creationDate) {
+                    updatedTask.creationDate = this.tasks[index].creationDate;
+                }
+                this.tasks[index] = updatedTask;
+            }
+        });
+
+        this.saveToPersistence();
+        this.notify('UPDATE_TASKS');
+    },
+
     replaceAllTasks(newTasks, shouldNotify = true) {
         this.tasks = newTasks;
         this.saveToPersistence();
         if (shouldNotify) {
             this.notify('REPLACE_ALL');
         }
+    },
+
+    reorderTasks(reorderedSubset) {
+        this.saveUndoState();
+
+        // 1. Find all tasks that are currently hidden (not in reorderedSubset)
+        // We do this by creating a Set of IDs from the subset and filtering the whole list.
+        const subsetIds = new Set(reorderedSubset.map(t => t.id));
+        const hiddenTasks = this.tasks.filter(t => !subsetIds.has(t.id));
+
+        // 2. The new task list is the reordered subset followed by all hidden tasks.
+        // This effectively moves the visible, sorted tasks to the top of the file,
+        // maintaining their exact visual order, while keeping everything else at the bottom.
+        this.tasks = [...reorderedSubset, ...hiddenTasks];
+
+        this.saveToPersistence();
+        this.notify('REORDER_TASKS');
     },
 
 

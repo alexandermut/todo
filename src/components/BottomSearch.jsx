@@ -178,10 +178,11 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                                     e.preventDefault();
                                     if (isEditing && onCancelEdit) {
                                         onCancelEdit();
-                                    } else if (activeFilter && activeFilter.type !== 'inbox' && onClearFilter) {
-                                        // Optional: Clear filter on Esc if not editing?
-                                        inputRef.current?.blur();
                                     } else {
+                                        if (searchValue) onSearch('');
+                                        if (activeFilter && activeFilter.type !== 'inbox' && onClearFilter) {
+                                            onClearFilter();
+                                        }
                                         inputRef.current?.blur();
                                     }
                                 } else if (e.key === 'Enter') {

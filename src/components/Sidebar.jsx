@@ -59,7 +59,7 @@ const FilterIcon = ({ className }) => (
 );
 
 
-export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate }) {
+export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate, onManageMetadata, onRenameMetadata }) {
     const [projectsExpanded, setProjectsExpanded] = useState(true);
     const [contextsExpanded, setContextsExpanded] = useState(true);
     const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -73,6 +73,79 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
             ? 'bg-zinc-800/80 text-white shadow-sm border border-zinc-700/50'
             : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border border-transparent'
         }`;
+
+    const EditableSidebarItem = ({ type, value, active, onClick, prefixLabel, dotColor }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [editValue, setEditValue] = useState(value);
+
+        const handleSave = () => {
+            if (editValue.trim() !== value) {
+                if (onRenameMetadata) onRenameMetadata(type, value, editValue.trim());
+            }
+            setIsEditing(false);
+        };
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') {
+                setEditValue(value);
+                setIsEditing(false);
+            }
+        };
+
+        if (isEditing) {
+            return (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700/50 w-full mb-0.5 shadow-inner">
+                    {prefixLabel && <span className="text-zinc-500 text-xs font-mono">{prefixLabel}</span>}
+                    {dotColor && <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>}
+                    <input
+                        autoFocus
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleSave}
+                        className="flex-1 bg-transparent border-none p-0 text-sm text-zinc-200 focus:ring-0"
+                    />
+                </div>
+            );
+        }
+
+        return (
+            <div className={`group relative flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium w-full text-left transition-all duration-200 mb-0.5 cursor-pointer ${active ? 'bg-zinc-800/80 text-white shadow-sm border border-zinc-700/50' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border border-transparent'}`} onClick={onClick}>
+                <div className="flex items-center gap-3 truncate">
+                    {prefixLabel && <span className="text-zinc-500 text-xs font-mono">{prefixLabel}</span>}
+                    {dotColor && <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>}
+                    <span className="truncate">{value}</span>
+                </div>
+
+                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditValue(value); }}
+                        className="p-1 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
+                        title="Rename"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete ${type} "${value}" from all tasks?`)) {
+                                if (onRenameMetadata) onRenameMetadata(type, value, '');
+                            }
+                        }}
+                        className="p-1 hover:bg-red-500/20 rounded text-zinc-400 hover:text-red-400 transition-colors"
+                        title="Delete everywhere"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     const SectionHeader = ({ label, expanded, onToggle, onAdd }) => (
         <div
@@ -201,14 +274,14 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                     <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
                         {projects.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No projects yet</div>}
                         {projects.map(proj => (
-                            <button
+                            <EditableSidebarItem
                                 key={proj}
+                                type="project"
+                                value={proj}
+                                dotColor={activeFilter.type === 'project' && activeFilter.value === proj ? 'bg-purple-500' : 'bg-zinc-700'}
+                                active={activeFilter.type === 'project' && activeFilter.value === proj}
                                 onClick={() => { onFilterSelect({ type: 'project', value: proj }); if (onClose) onClose(); }}
-                                className={navItemClass(activeFilter.type === 'project' && activeFilter.value === proj)}
-                            >
-                                <span className={`w-2 h-2 rounded-full ${activeFilter.type === 'project' && activeFilter.value === proj ? 'bg-purple-500' : 'bg-zinc-700'}`}></span>
-                                {proj}
-                            </button>
+                            />
                         ))}
                     </div>
                 )}
@@ -219,14 +292,14 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                     <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
                         {contexts.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No contexts yet</div>}
                         {contexts.map(ctx => (
-                            <button
+                            <EditableSidebarItem
                                 key={ctx}
+                                type="context"
+                                value={ctx}
+                                prefixLabel="@"
+                                active={activeFilter.type === 'context' && activeFilter.value === ctx}
                                 onClick={() => { onFilterSelect({ type: 'context', value: ctx }); if (onClose) onClose(); }}
-                                className={navItemClass(activeFilter.type === 'context' && activeFilter.value === ctx)}
-                            >
-                                <span className="text-zinc-500 text-xs font-mono">@</span>
-                                {ctx}
-                            </button>
+                            />
                         ))}
                     </div>
                 )}
@@ -237,14 +310,14 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                     <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200">
                         {tags.length === 0 && <div className="px-3 py-2 text-xs text-zinc-600 italic">No tags yet</div>}
                         {tags.map(tag => (
-                            <button
+                            <EditableSidebarItem
                                 key={tag}
+                                type="tag"
+                                value={tag}
+                                prefixLabel="#"
+                                active={activeFilter.type === 'tag' && activeFilter.value === tag}
                                 onClick={() => { onFilterSelect({ type: 'tag', value: tag }); if (onClose) onClose(); }}
-                                className={navItemClass(activeFilter.type === 'tag' && activeFilter.value === tag)}
-                            >
-                                <span className="text-zinc-500 text-xs font-mono">#</span>
-                                {tag}
-                            </button>
+                            />
                         ))}
                     </div>
                 )}
@@ -253,6 +326,15 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                 {/* Footer */}
                 <div className="mt-auto px-1 pb-4 pt-6">
                     <div className="space-y-1 pt-4 border-t border-zinc-800/50">
+                        <button
+                            onClick={() => { if (onManageMetadata) onManageMetadata(); if (onClose) onClose(); }}
+                            className="w-full text-xs text-left px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors flex items-center gap-2 group"
+                        >
+                            <svg className="w-4 h-4 text-zinc-500 group-hover:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Manage Metadata
+                        </button>
                         <button
                             onClick={() => { if (onPageNavigate) onPageNavigate('faq'); if (onClose) onClose(); }}
                             className="w-full text-xs text-left px-3 py-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors flex items-center gap-2 group"

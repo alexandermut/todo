@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Sidebar } from './components/Sidebar';
 import { TaskList } from './components/TaskList';
 import { BulkActionsBar } from './components/BulkActionsBar';
+import { BatchEditModal } from './components/BatchEditModal';
 import { BottomSearch } from './components/BottomSearch';
 import { FilterBar } from './components/FilterBar';
 import { Store } from './store';
@@ -11,6 +12,9 @@ import { useDropbox } from './hooks/useDropbox';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { searchParser } from './utils/searchParser';
 import { SettingsSidebar } from './components/SettingsSidebar';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { NoteService } from './services/NoteService';
 
 import { CalendarPopup } from './components/CalendarPopup';
 import { sortTasks } from './utils/sortUtils';
@@ -19,10 +23,28 @@ import { Impressum } from './components/Impressum';
 import { Datenschutz } from './components/Datenschutz';
 import { FAQ } from './components/FAQ';
 import logo from './assets/logo.png';
+import { NoteEditor } from './components/NoteEditor';
 
 
+// --- MAIN COMPONENT ---
 function App() {
     const [tasks, setTasks] = useState(Store.getTasks());
+
+    // NOTE ENTRY POINT
+    const [activeNote, setActiveNote] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('note');
+    });
+
+
+
+    const closeNoteEditor = () => {
+        setActiveNote(null);
+        // Clean up URL without reloading
+        const url = new URL(window.location);
+        url.searchParams.delete('note');
+        window.history.pushState({}, '', url);
+    };
 
     // Undo/Redo state proxies (derived from Store/Force Update?)
     // Actually, Store doesn't expose canUndo/canRedo reactively yet.
@@ -116,11 +138,30 @@ function App() {
 
 
 
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('search') || '';
+    });
     const [searchFocusTrigger, setSearchFocusTrigger] = useState(0);
+
+    // When the user clicks a Note or Search link, we stay in the same tab
+    useEffect(() => {
+        const handlePopState = () => {
+            const params = new URLSearchParams(window.location.search);
+            setActiveNote(params.get('note'));
+
+            const sp = params.get('search');
+            if (sp !== null) {
+                setSearchQuery(sp);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
     // --- Editing State & Handlers (Must be before useKeyboardShortcuts) ---
     const [editingTask, setEditingTask] = useState(null);
+    const [isBatchEditModalOpen, setIsBatchEditModalOpen] = useState(false);
 
     const handleStartEdit = (task) => {
         setEditingTask(task);
@@ -387,72 +428,142 @@ function App() {
         }
     };
 
-    const handleBulkPriority = (priority) => {
-        Array.from(selectedTaskIds).forEach(id => Store.setTaskPriority(id, priority));
-        // Keep selection active or clear? Typically keep for further edits, but maybe clear is safer.
-        // User didn't specify. I'll keep selection for "mass edit" workflow.
+    const [isGlobalBatchEdit, setIsGlobalBatchEdit] = useState(false);
+
+    const handleOpenGlobalBatchEdit = () => {
+        setIsGlobalBatchEdit(true);
+        setIsBatchEditModalOpen(true);
     };
 
-    const handleBulkDate = (dateStr) => {
-        Array.from(selectedTaskIds).forEach(id => {
+    const handleBatchEditorSave = (instructions) => {
+        const { priority, dueDate, renames, additions } = instructions;
+
+        // Ensure additions are split into tokens
+        const additionTokens = additions ? additions.split(/\s+/).filter(t => t.length > 0) : [];
+
+        const updates = [];
+
+        const targetTaskIds = isGlobalBatchEdit
+            ? tasks.map(t => t.id)
+            : Array.from(selectedTaskIds);
+
+        targetTaskIds.forEach(id => {
             const task = tasks.find(t => t.id === id);
-            if (task) {
-                let newText = task.raw;
-                // Regex to find existing due date (due:YYYY-MM-DD)
-                const dueRegex = /\bdue:\S+/g;
-                if (dueRegex.test(newText)) {
-                    newText = newText.replace(dueRegex, `due:${dateStr}`);
+            if (!task) return;
+
+            let newRaw = task.raw;
+
+            // 1. Process Renames/Removals of Metadata
+            Object.entries(renames).forEach(([original, current]) => {
+                // We need to exactly match the original token as a whole word.
+                // e.g. replacing '+pro1' with '+pro2' or removing it entirely.
+                // Escape regex specials
+                const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`(^|\\s)${escaped}(?!\\S)`, 'g');
+
+                if (current === '') {
+                    // Remove it entirely, keep the leading space/boundary
+                    newRaw = newRaw.replace(regex, '$1');
                 } else {
-                    newText = `${newText} due:${dateStr}`;
+                    // Replace it
+                    newRaw = newRaw.replace(regex, `$1${current}`);
                 }
-                Store.updateTask(id, newText);
+            });
+
+            // 2. Process Additions
+            if (additionTokens.length > 0) {
+                // Only add if not already present
+                additionTokens.forEach(token => {
+                    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(^|\\s)${escaped}(?!\\S)`);
+                    if (!regex.test(newRaw)) {
+                        newRaw = `${newRaw} ${token}`;
+                    }
+                });
+            }
+
+            // Clean up multiple spaces that might have been left by removals
+            newRaw = newRaw.replace(/\s+/g, ' ').trim();
+
+            // 3. Update Priority via Store method (it's safest since it handles the (A) syntax perfectly)
+            if (priority !== 'MIXED') {
+                // Update the raw string in memory, then let Store handle the actual save later
+                // Actually, Store.setTaskPriority saves immediately. 
+                // Let's manually manipulate the string here to save just once at the end if possible, 
+                // OR we just use Store updates iteratively.
+                newRaw = newRaw.replace(/^\([A-Z]\)\s/, "");
+                if (priority) {
+                    newRaw = `(${priority}) ${newRaw}`;
+                }
+            }
+
+            // 4. Update Due Date
+            if (dueDate !== 'MIXED') {
+                const dueRegex = /\bdue:\S+/g;
+                if (!dueDate) {
+                    // Remove due date
+                    newRaw = newRaw.replace(dueRegex, '');
+                } else {
+                    if (dueRegex.test(newRaw)) {
+                        newRaw = newRaw.replace(dueRegex, `due:${dueDate}`);
+                    } else {
+                        newRaw = `${newRaw} due:${dueDate}`;
+                    }
+                }
+            }
+
+            // Final cleanup
+            newRaw = newRaw.replace(/\s+/g, ' ').trim();
+
+            if (newRaw !== task.raw) {
+                updates.push({ id, newRaw });
             }
         });
-        setSelectedTaskIds(new Set());
+
+        if (updates.length > 0) {
+            Store.updateTasks(updates);
+        }
+
+        setIsBatchEditModalOpen(false);
+        setIsGlobalBatchEdit(false);
+        if (!isGlobalBatchEdit) {
+            setSelectedTaskIds(new Set());
+        }
     };
 
-    const handleBulkAdd = (text) => {
-        if (!text.trim()) return;
+    const handleRenameGlobalMetadata = (type, oldName, newName) => {
+        let prefix = '';
+        if (type === 'project') prefix = '+';
+        else if (type === 'context') prefix = '@';
+        else if (type === 'tag') prefix = '#';
 
-        const tokens = text.trim().split(/\s+/);
-        const additions = [];
-        const removals = [];
+        const original = prefix + oldName;
+        const current = newName ? prefix + newName : '';
 
-        tokens.forEach(token => {
-            if (token.startsWith('-+') || token.startsWith('-@') || token.startsWith('-#')) {
-                removals.push(token.substring(1));
-            } else {
-                additions.push(token);
-            }
-        });
+        const updates = [];
+        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(^|\\s)${escaped}(?!\\S)`, 'g');
 
-        Array.from(selectedTaskIds).forEach(id => {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                let newRaw = task.raw;
-
-                // 1. Removals
-                removals.forEach(rem => {
-                    const escaped = rem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(`\\s*${escaped}\\b`, 'g');
-                    newRaw = newRaw.replace(regex, '');
-                });
-
-                // 2. Additions
-                if (additions.length > 0) {
-                    const addStr = additions.join(' ');
-                    newRaw = `${newRaw} ${addStr}`;
+        tasks.forEach(task => {
+            let newRaw = task.raw;
+            if (regex.test(newRaw)) {
+                regex.lastIndex = 0; // reset for multiple uses if needed
+                if (current === '') {
+                    newRaw = newRaw.replace(regex, '$1');
+                } else {
+                    newRaw = newRaw.replace(regex, `$1${current}`);
                 }
-
-                // Cleanup
                 newRaw = newRaw.replace(/\s+/g, ' ').trim();
 
                 if (newRaw !== task.raw) {
-                    Store.updateTask(id, newRaw);
+                    updates.push({ id: task.id, newRaw });
                 }
             }
         });
-        setSelectedTaskIds(new Set());
+
+        if (updates.length > 0) {
+            Store.updateTasks(updates);
+        }
     };
 
     useKeyboardShortcuts({
@@ -471,6 +582,10 @@ function App() {
         onTaskEdit: (id) => {
             const task = tasks.find(t => t.id === id);
             if (task) handleStartEdit(task);
+        },
+        clearFilters: () => {
+            setSearchQuery('');
+            setActiveFilter({ type: 'inbox' });
         },
         onUndo: () => Store.undo(),
         onRedo: () => Store.redo(),
@@ -514,14 +629,59 @@ function App() {
             if (newIdx !== currentIdx) {
                 Store.setTaskPriority(id, priorities[newIdx]);
             }
-        },
-
-        clearFilters: () => {
-            setSearchQuery('');
-            setActiveFilter({ type: 'inbox' });
-            setIsSettingsOpen(false);
         }
     });
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setActiveFilter({ type: 'inbox' });
+    };
+
+    // DRAG AND DROP HANDLER
+    const handleDragEnd = (result) => {
+        if (!result.destination) return;
+
+        const sourceIndex = result.source.index;
+        const destinationIndex = result.destination.index;
+        const draggedId = result.draggableId;
+
+        // Determine which items are moving
+        let itemsToMoveIds = new Set();
+        if (selectedTaskIds && selectedTaskIds.has(draggedId)) {
+            itemsToMoveIds = new Set(selectedTaskIds);
+        } else {
+            itemsToMoveIds = new Set([draggedId]);
+        }
+
+        if (sourceIndex === destinationIndex && itemsToMoveIds.size <= 1) return;
+
+        const draggedTask = filteredTasks[sourceIndex];
+
+        // 1. Get the items in their original visual order
+        const itemsToMove = filteredTasks.filter(t => itemsToMoveIds.has(t.id));
+
+        // 2. Simulate single-item drag to find the correct insertion point among unselected items
+        const singleReordered = Array.from(filteredTasks);
+        singleReordered.splice(sourceIndex, 1);
+        singleReordered.splice(destinationIndex, 0, draggedTask);
+
+        // 3. Split the simulated array at the destination index
+        const beforeDragged = singleReordered.slice(0, destinationIndex);
+        const afterDragged = singleReordered.slice(destinationIndex + 1);
+
+        // 4. Strip out any selected items from these prefix and suffix arrays
+        const unselectedBefore = beforeDragged.filter(t => !itemsToMoveIds.has(t.id));
+        const unselectedAfter = afterDragged.filter(t => !itemsToMoveIds.has(t.id));
+
+        // 5. The final order is simply the unselected prefix + the selected block + the unselected suffix
+        const finalReorderedSubset = [...unselectedBefore, ...itemsToMove, ...unselectedAfter];
+
+        // Save to store (appends hidden tasks to the bottom automatically)
+        Store.reorderTasks(finalReorderedSubset);
+
+        // Force sort to 'none' so the user immediately sees the raw file order they just established
+        setSortCriteria('none');
+    };
 
     const handleSortClick = (base) => {
         if (base === 'alpha-asc') {
@@ -555,17 +715,37 @@ function App() {
         </button>
     );
 
-    const handleExport = () => {
-        const text = Store.dumpToString();
-        const blob = new Blob([text], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'todo.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    const handleExport = async () => {
+        try {
+            const zip = new JSZip();
+
+            // 1. Add todo.txt
+            const todoText = Store.dumpToString();
+            zip.file('todo.txt', todoText);
+
+            // 2. Add done.txt if needed (Store currently manages both as tasks with completed state)
+            const doneTasks = tasks.filter(t => t.completed).map(t => t.raw).join('\n');
+            if (doneTasks) {
+                zip.file('done.txt', doneTasks);
+            }
+
+            // 3. Add Notes
+            const allNotes = NoteService.getAllNotes();
+            const noteNames = Object.keys(allNotes);
+            if (noteNames.length > 0) {
+                const notesFolder = zip.folder('notes');
+                noteNames.forEach(name => {
+                    notesFolder.file(`${name}.md`, allNotes[name]);
+                });
+            }
+
+            // Generate ZIP
+            const blob = await zip.generateAsync({ type: 'blob' });
+            saveAs(blob, 'todotext_export.zip');
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("Export failed. Please check the console.");
+        }
     };
 
     const handleImport = (file) => {
@@ -577,6 +757,11 @@ function App() {
         };
         reader.readAsText(file);
     };
+
+    // If a note is active via URL parameter, only render the NoteEditor
+    if (activeNote) {
+        return <NoteEditor noteName={activeNote} onClose={closeNoteEditor} />;
+    }
 
     return (
         <>
@@ -796,9 +981,7 @@ function App() {
                             onDeselectAll={() => setSelectedTaskIds(new Set())}
                             onCompleteAll={handleBulkComplete}
                             onDeleteAll={handleBulkDelete}
-                            onSetPriority={handleBulkPriority}
-                            onSetDate={() => openCalendar(handleBulkDate)}
-                            onBulkAdd={handleBulkAdd}
+                            onOpenBatchEdit={() => setIsBatchEditModalOpen(true)}
                         />
                     </div>
                 )}
@@ -845,6 +1028,7 @@ function App() {
                                     <FAQ onBack={() => setCurrentPage('tasks')} />
                                 ) : (
                                     <TaskList
+                                        onDragEnd={handleDragEnd}
                                         tasks={filteredTasks}
                                         activeFilter={activeFilter}
                                         selectedTaskIds={selectedTaskIds}
@@ -872,7 +1056,13 @@ function App() {
 
                     <Sidebar
                         activeFilter={activeFilter}
-                        onFilterSelect={setActiveFilter}
+                        onFilterSelect={(filterObj) => {
+                            if (['project', 'context', 'tag'].includes(filterObj.type)) {
+                                handleFilterClick(filterObj.type, filterObj.value);
+                            } else {
+                                setActiveFilter(filterObj);
+                            }
+                        }}
                         projects={projects}
                         contexts={contexts}
                         tags={tags}
@@ -882,6 +1072,8 @@ function App() {
                         onPageNavigate={setCurrentPage}
                         syncMode={syncMode}
                         onSyncModeChange={changeSyncMode}
+                        onManageMetadata={handleOpenGlobalBatchEdit}
+                        onRenameMetadata={handleRenameGlobalMetadata}
                     />
 
                 </div>
@@ -892,6 +1084,18 @@ function App() {
 
 
             </div >
+
+            <BatchEditModal
+                isOpen={isBatchEditModalOpen}
+                onClose={() => {
+                    setIsBatchEditModalOpen(false);
+                    setIsGlobalBatchEdit(false);
+                }}
+                selectedTasks={isGlobalBatchEdit ? tasks : filteredTasks.filter(t => selectedTaskIds.has(t.id))}
+                onSave={handleBatchEditorSave}
+                onOpenCalendar={openCalendar}
+            />
+
             {/* Global Calendar Popup */}
             {
                 calendarState.isOpen && (

@@ -1,17 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export function CalendarPopup({ onSelect, onClose }) {
     const [viewDate, setViewDate] = useState(new Date());
+    const popupRef = useRef(null);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                onClose();
+                onClose && onClose();
             }
         };
+
+        const handleClickOutside = (e) => {
+            if (popupRef.current && !popupRef.current.contains(e.target)) {
+                onClose && onClose();
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, [onClose]);
 
     const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -61,7 +74,7 @@ export function CalendarPopup({ onSelect, onClose }) {
     }
 
     return (
-        <div className="fixed top-32 right-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 w-72 z-[60] animate-in fade-in slide-in-from-top-4 duration-200">
+        <div ref={popupRef} className="fixed top-32 right-4 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 w-72 z-[60] animate-in fade-in slide-in-from-top-4 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <button onClick={(e) => { e.preventDefault(); handlePrevMonth(); }} className="p-1 hover:text-white text-zinc-400">

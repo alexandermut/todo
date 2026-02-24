@@ -1,7 +1,7 @@
 import React from 'react';
 import { Store } from '../store';
 
-export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onEdit, onFilterClick }) {
+export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onEdit, onFilterClick, dragHandleProps, isDragging, selectionCount }) {
 
     const handleToggle = (e) => {
         e.stopPropagation();
@@ -55,9 +55,34 @@ export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onE
     }[task.priority] || 'text-gray-400';
 
     const renderText = (text) => {
-        const parts = text.split(/(\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:(?:\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{2,4})|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
+        // Regex now includes wiki links \[\[.*?\]\]
+        const parts = text.split(/(\[\[.*?\]\]|\+[a-zA-Z0-9äöüÄÖÜß._-]+|@[a-zA-Z0-9äöüÄÖÜß._-]+|#[a-zA-Z0-9äöüÄÖÜß._-]+|due:(?:\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{2,4})|tel:[+0-9]+|mail:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|contact:[a-zA-Z0-9äöüÄÖÜß._-]+)/g);
 
         return parts.map((part, i) => {
+            if (part.startsWith('[[') && part.endsWith(']]')) {
+                const inner = part.slice(2, -2);
+                const isTask = inner.startsWith('task:');
+                const query = isTask ? inner.substring(5) : inner;
+                const href = isTask ? `/?search=${encodeURIComponent(query)}` : `/?note=${encodeURIComponent(query)}`;
+                const title = isTask ? `Aufgaben suchen: ${query}` : `Notiz öffnen: ${query}`;
+
+                return (
+                    <a
+                        key={i}
+                        href={href}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.history.pushState({}, '', href);
+                            window.dispatchEvent(new Event('popstate'));
+                        }}
+                        className="text-yellow-400 hover:underline cursor-pointer font-medium"
+                        title={title}
+                    >
+                        {part}
+                    </a>
+                );
+            }
             if (part.startsWith('+')) {
                 return (
                     <span
@@ -146,9 +171,12 @@ export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onE
 
     return (
         <div
-            className={`group flex items-center py-2 -mx-4 px-4 transition-colors cursor-pointer border-b border-zinc-800/30
+            {...dragHandleProps}
+            className={`group relative flex items-center py-2 -mx-4 px-4 transition-colors border-b border-zinc-800/30
                 ${selected ? 'bg-blue-900/10' : ''} 
-                ${isFocused ? 'bg-zinc-800/50 ring-1 ring-zinc-700/50' : 'hover:bg-zinc-900/30'}`}
+                ${isFocused ? 'bg-zinc-800/50 ring-1 ring-zinc-700/50' : 'hover:bg-zinc-900/30'}
+                ${isDragging ? 'cursor-grabbing opacity-90 z-50 bg-zinc-900 shadow-2xl ring-1 ring-blue-500/50' : 'cursor-grab'}
+            `}
             data-id={task.id}
             onMouseEnter={() => onTaskFocus && onTaskFocus(task.id)}
             onClick={(e) => {
@@ -161,6 +189,16 @@ export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onE
             }}
             onContextMenu={handlePriorityContextMenu}
         >
+            {/* Multi-Drag Badge */}
+            {isDragging && selected && selectionCount > 1 && (
+                <div className="absolute -top-3 right-4 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xl border border-blue-400 z-50 shadow-blue-900/50 pointer-events-none flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                    </svg>
+                    {selectionCount} Aufgaben ziehen
+                </div>
+            )}
+
             {/* 1. Selection (Visible on Hover/Selected/Focused) */}
             <div className={`mr-3 flex-shrink-0 transition-opacity ${selected || isFocused ? 'opacity-100' : 'opacity-0'}`} onClick={(e) => e.stopPropagation()}>
                 <input
@@ -202,21 +240,10 @@ export function TaskItem({ task, selected, onSelect, isFocused, onTaskFocus, onE
             </div>
 
             {/* Actions (Right) */}
-            <div className={`flex items-center gap-1 ml-2 transition-opacity ${isFocused || 'group-hover:opacity-100'} opacity-0 sm:opacity-0`}>
-                {/* Pencil / Edit Button (Especially for Mobile) */}
-                <button
-                    onClick={(e) => { e.stopPropagation(); onEdit && onEdit(task); }}
-                    className="p-2 text-zinc-500 hover:text-blue-400 transition-colors"
-                    title="Edit task"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                </button>
-
+            <div className="flex items-center gap-1 ml-2">
                 <button
                     onClick={(e) => { e.stopPropagation(); Store.deleteTask(task.id); }}
-                    className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+                    className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
                     title="Delete task"
                 >
                     ✕
