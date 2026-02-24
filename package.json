@@ -18,9 +18,14 @@
     "vite-plugin-wasm": "^3.5.0"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@vitejs/plugin-react": "^5.1.2",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "todo-parser": "file:todo-parser/pkg"
   }
 }

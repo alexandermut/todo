@@ -1,0 +1,9 @@
+feat: Implement Batch Edit, Global Metadata Management, and Ignore _Projekt
+
+- Added `BatchEditModal` to edit priority, due date, and metadata for selected tasks or globally for all tasks.
+- Introduced inline editing & deleting of Projects, Contexts, and Tags directly from the Sidebar hover states.
+- Re-routed sidebar filter clicks to populate the main search bar as raw text rather than active filter badges.
+- Improved search UX: pressing Escape now clears both the active search query and any currently applied filter.
+- Optimized drag-and-drop task selection and rendering performance.
+- Fixed regex boundaries for accurate global renaming and deletion of metadata tokens (`+Project`, `@Context`, `#Tag`).
+- Added `_Projekt/` and `_Projekt` to `.gitignore`.
