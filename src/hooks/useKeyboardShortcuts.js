@@ -8,33 +8,35 @@ export const useKeyboardShortcuts = ({
     setSearchFocus,
     onTaskComplete,
     onTaskDelete,
-    onTaskEdit, // Enters edit mode for the task
-    onTaskPriority, // Callback to update priority
-    onUndo, // Callback for undo
-    onRedo, // Callback for redo
+    onTaskEdit,
+    onTaskPriority,
+    onUndo,
+    onRedo,
     clearFilters,
-    onClearSelection, // Callback to clear task selection
-    selectedTaskIds, // New prop
-    onSelectTask, // New prop: (id, multi) => void
-    onTasksDelete // New prop: (ids) => void
+    onClearSelection,
+    selectedTaskIds,
+    onSelectTask,
+    onTasksDelete,
+    onMoveTask,
 }) => {
     const [priorityMode, setPriorityMode] = useState(false);
+    const lastDeleteRef = useRef(0);
 
     // Use refs to hold latest values for use inside event listener
-    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters });
+    const latestProps = useRef({ tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters, onSelectTask, onMoveTask });
 
     // useLayoutEffect ensures the ref is updated synchronously after render/DOM mutation,
     // preventing any "stale" state window between the visual update and the event listener's execution.
     useLayoutEffect(() => {
-        latestProps.current = { tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters };
-    }, [tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters]);
+        latestProps.current = { tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters, onSelectTask, onMoveTask };
+    }, [tasks, focusedTaskId, selectedTaskIds, onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete, onTaskEdit, onClearSelection, setSearchFocus, clearFilters, onSelectTask, onMoveTask]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             const {
                 tasks, focusedTaskId, selectedTaskIds,
                 onUndo, onRedo, onTaskPriority, onTaskComplete, onTaskDelete, onTasksDelete,
-                onTaskEdit, onClearSelection, setSearchFocus, clearFilters
+                onTaskEdit, onClearSelection, setSearchFocus, clearFilters, onSelectTask, onMoveTask
             } = latestProps.current;
 
             // Ignore if focus is in an input or textarea (unless it's Esc to blur)
@@ -114,6 +116,11 @@ export const useKeyboardShortcuts = ({
             switch (e.key) {
                 case 'ArrowDown':
                     e.preventDefault();
+                    // Option + ArrowDown = move task down
+                    if (e.altKey && focusedTaskId && onMoveTask) {
+                        onMoveTask(focusedTaskId, 'down');
+                        break;
+                    }
                     let nextIdDown = null;
                     if (currentIndex < tasks.length - 1) {
                         nextIdDown = tasks[currentIndex + 1].id;
@@ -124,16 +131,19 @@ export const useKeyboardShortcuts = ({
                     if (nextIdDown) {
                         setFocusedTaskId(nextIdDown);
                         if (e.shiftKey && onSelectTask) {
-                            // Select current AND next if not already selected
-                            // This effectively "drags" selection
-                            if (focusedTaskId) onSelectTask(focusedTaskId, true); // Ensure current is selected
-                            onSelectTask(nextIdDown, true); // Add next to selection
+                            if (focusedTaskId) onSelectTask(focusedTaskId, true);
+                            onSelectTask(nextIdDown, true);
                         }
                     }
                     break;
 
                 case 'ArrowUp':
                     e.preventDefault();
+                    // Option + ArrowUp = move task up
+                    if (e.altKey && focusedTaskId && onMoveTask) {
+                        onMoveTask(focusedTaskId, 'up');
+                        break;
+                    }
                     let nextIdUp = null;
                     if (currentIndex > 0) {
                         nextIdUp = tasks[currentIndex - 1].id;
@@ -151,10 +161,34 @@ export const useKeyboardShortcuts = ({
                     break;
 
                 case 'x':
-                case ' ': // Space alias for 'x'
+                case ' ': // Space alias
                     if (focusedTaskId && onTaskComplete) {
                         e.preventDefault();
                         onTaskComplete(focusedTaskId);
+                    }
+                    break;
+
+                case 'a':
+                    // Toggle selection on focused task
+                    if (focusedTaskId && onSelectTask) {
+                        e.preventDefault();
+                        const selected = selectedTaskIds && selectedTaskIds.has(focusedTaskId);
+                        onSelectTask(focusedTaskId, !selected);
+                    }
+                    break;
+
+                case 'd':
+                    // Delete focused task, double-press = undo
+                    if (focusedTaskId) {
+                        e.preventDefault();
+                        const now = Date.now();
+                        if (now - lastDeleteRef.current < 800 && onUndo) {
+                            onUndo();
+                            lastDeleteRef.current = 0;
+                        } else if (onTaskDelete) {
+                            onTaskDelete(focusedTaskId);
+                            lastDeleteRef.current = now;
+                        }
                     }
                     break;
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 // --- Icons ---
 const InboxIcon = ({ className }) => (
@@ -59,7 +59,7 @@ const FilterIcon = ({ className }) => (
 );
 
 
-export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate, onManageMetadata, onRenameMetadata }) {
+export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags = [], tasks = [], isOpen, onClose, onSyncClick, onPullClick, isSyncing, isAuthenticated, onDropboxSync, onDropboxPull, isDropboxAuth, isDropboxSyncing, onGTasksSync, onPageNavigate, onManageMetadata, onRenameMetadata }) {
     const [projectsExpanded, setProjectsExpanded] = useState(true);
     const [contextsExpanded, setContextsExpanded] = useState(true);
     const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -67,6 +67,24 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
     const [filtersExpanded, setFiltersExpanded] = useState(true);
 
     const isActive = (type, value) => activeFilter.type === type && (value === undefined || activeFilter.value === value);
+
+    // Stats
+    const stats = useMemo(() => {
+        const today = new Date().toISOString().split('T')[0];
+        let open = 0, doneToday = 0, dueToday = 0, overdue = 0;
+        tasks.forEach(t => {
+            if (t.completed) {
+                if (t.completionDate === today) doneToday++;
+            } else {
+                open++;
+                if (t.metadata && t.metadata.due) {
+                    if (t.metadata.due === today) dueToday++;
+                    else if (t.metadata.due < today) overdue++;
+                }
+            }
+        });
+        return { open, doneToday, dueToday, overdue };
+    }, [tasks]);
 
     const navItemClass = (active) =>
         `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium w-full text-left transition-all duration-200 ${active
@@ -201,7 +219,7 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                     </button>
                 </div>
 
-                <nav className="space-y-1 mb-6">
+                <nav className="space-y-1 mb-4">
                     <button
                         onClick={() => { onFilterSelect({ type: 'inbox' }); if (onClose) onClose(); }}
                         className={navItemClass(activeFilter.type === 'inbox')}
@@ -231,6 +249,26 @@ export function Sidebar({ activeFilter, onFilterSelect, projects, contexts, tags
                         Overdue
                     </button>
                 </nav>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-2 px-1 mb-4">
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg px-3 py-2 text-center">
+                        <div className="text-lg font-bold text-zinc-200">{stats.open}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Offen</div>
+                    </div>
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg px-3 py-2 text-center">
+                        <div className="text-lg font-bold text-yellow-400">{stats.dueToday}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Heute fällig</div>
+                    </div>
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg px-3 py-2 text-center">
+                        <div className="text-lg font-bold text-red-400">{stats.overdue}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Überfällig</div>
+                    </div>
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg px-3 py-2 text-center">
+                        <div className="text-lg font-bold text-emerald-400">{stats.doneToday}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Heute erledigt</div>
+                    </div>
+                </div>
 
                 {/* Views */}
                 <SectionHeader label="Views" expanded={viewsExpanded} onToggle={() => setViewsExpanded(!viewsExpanded)} />

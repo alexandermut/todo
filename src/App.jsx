@@ -57,7 +57,7 @@ function App() {
     const [focusedTaskId, setFocusedTaskId] = useState(null);
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState('tasks'); // 'tasks' | 'impressum' | 'datenschutz'
+    const [currentPage, setCurrentPage] = useState('tasks'); // 'tasks' | 'impressum' | 'datenschutz' | 'faq'
 
     // GLOBAL CALENDAR STATE
     const [calendarState, setCalendarState] = useState({ isOpen: false, onSelect: null });
@@ -187,6 +187,14 @@ function App() {
             const newTask = Store.addTask(rawText);
             setSearchQuery('');
         }
+    };
+
+    const handleAIAdd = (taskLines) => {
+        if (!taskLines || taskLines.length === 0) return;
+        taskLines.forEach(line => {
+            if (line.trim()) Store.addTask(line.trim());
+        });
+        setSearchQuery('');
     };
     // ---------------------------------------------------------------------
 
@@ -358,6 +366,14 @@ function App() {
     const projects = useMemo(() => [...new Set(tasks.flatMap(t => t.projects || []))].sort(), [tasks]);
     const contexts = useMemo(() => [...new Set(tasks.flatMap(t => t.contexts || []))].sort(), [tasks]);
     const tags = useMemo(() => [...new Set(tasks.flatMap(t => t.tags || []))].sort(), [tasks]);
+
+    // Few-shot examples for AI: up to 6 recent uncompleted tasks
+    const recentTaskExamples = useMemo(() => {
+        return tasks
+            .filter(t => !t.completed && t.raw && t.raw.trim())
+            .slice(-6)
+            .map(t => t.raw);
+    }, [tasks]);
 
     const [selectedTaskIds, setSelectedTaskIds] = useState(new Set());
     const [lastSelectedId, setLastSelectedId] = useState(null);
@@ -629,6 +645,9 @@ function App() {
             if (newIdx !== currentIdx) {
                 Store.setTaskPriority(id, priorities[newIdx]);
             }
+        },
+        onMoveTask: (id, direction) => {
+            Store.moveTask(id, direction);
         }
     });
 
@@ -748,12 +767,122 @@ function App() {
         }
     };
 
+    const convertToTodoTxt = (text, filename) => {
+        const ext = filename.split('.').pop().toLowerCase();
+        const lines = text.split(/\r?\n/);
+
+        if (ext === 'md') {
+            // Detect if the .md file contains todo.txt-formatted content (line-by-line)
+            // A todo.txt line matches: optional "x ", optional "(A) ", optional date, then text
+            const isTodoTxtLine = (l) =>
+                /^(x\s+)?(\([A-Z]\)\s+)?(\d{4}-\d{2}-\d{2}\s+)?.+/.test(l) &&
+                (l.startsWith('x ') || /^\([A-Z]\)/.test(l) || /\+\w+/.test(l) || /@\w+/.test(l) || /\w+:\S+/.test(l));
+
+            const nonEmptyLines = lines.filter(l => {
+                const t = l.trim();
+                return t.length > 0 && !t.startsWith('#');
+            });
+            const todoTxtLineCount = nonEmptyLines.filter(l => isTodoTxtLine(l.trim())).length;
+            const markdownLineCount = nonEmptyLines.filter(l => /^[-*]\s+/.test(l.trim())).length;
+
+            // If more than half the non-empty lines look like todo.txt → pass through directly
+            if (todoTxtLineCount > 0 && todoTxtLineCount >= markdownLineCount) {
+                return nonEmptyLines.join('\n');
+            }
+
+            // Otherwise: convert from Markdown format
+            const tasks = [];
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+
+                // GitHub-style checkbox: - [ ] task or - [x] task
+                const unchecked = trimmed.match(/^[-*]\s+\[ \]\s+(.+)/);
+                const checked = trimmed.match(/^[-*]\s+\[x\]\s+(.+)/i);
+                const bullet = trimmed.match(/^[-*]\s+(.+)/);
+
+                if (checked) {
+                    tasks.push(`x ${new Date().toISOString().split('T')[0]} ${checked[1].trim()}`);
+                } else if (unchecked) {
+                    tasks.push(unchecked[1].trim());
+                } else if (bullet) {
+                    // Plain bullet → treat as open task
+                    tasks.push(bullet[1].trim());
+                } else if (!trimmed.startsWith('#') && !trimmed.startsWith('|') && trimmed.length > 2) {
+                    // Non-heading, non-table plain text lines → open task
+                    tasks.push(trimmed);
+                }
+            }
+            return tasks.join('\n');
+        }
+
+        if (ext === 'csv') {
+            // CSV: detect header and pick 'text', 'task', 'description', 'title', or first column
+            const rows = lines.filter(l => l.trim().length > 0);
+            if (rows.length === 0) return '';
+
+            const parseCSVRow = (row) => {
+                const cells = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < row.length; i++) {
+                    if (row[i] === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (row[i] === ',' && !inQuotes) {
+                        cells.push(current.trim());
+                        current = '';
+                    } else {
+                        current += row[i];
+                    }
+                }
+                cells.push(current.trim());
+                return cells;
+            };
+
+            const headerRow = parseCSVRow(rows[0]);
+            const textColIndex = headerRow.findIndex(h =>
+                ['text', 'task', 'description', 'title', 'name'].includes(h.toLowerCase())
+            );
+            const doneColIndex = headerRow.findIndex(h =>
+                ['done', 'completed', 'complete', 'x', 'checked'].includes(h.toLowerCase())
+            );
+            const priorityColIndex = headerRow.findIndex(h =>
+                ['priority', 'prio', 'p'].includes(h.toLowerCase())
+            );
+
+            const dataRows = textColIndex >= 0 ? rows.slice(1) : rows;
+            const startRow = textColIndex >= 0 ? 1 : 0;
+
+            const tasks = [];
+            for (let i = startRow; i < rows.length; i++) {
+                const cells = parseCSVRow(rows[i]);
+                const colIdx = textColIndex >= 0 ? textColIndex : 0;
+                const taskText = cells[colIdx]?.replace(/^"|"$/g, '').trim();
+                if (!taskText) continue;
+
+                const isDone = doneColIndex >= 0 && ['true', '1', 'yes', 'x'].includes(cells[doneColIndex]?.toLowerCase());
+                const priority = priorityColIndex >= 0 ? cells[priorityColIndex]?.toUpperCase() : '';
+
+                let line = '';
+                if (isDone) line += `x ${new Date().toISOString().split('T')[0]} `;
+                if (priority && /^[A-Z]$/.test(priority)) line += `(${priority}) `;
+                line += taskText;
+                tasks.push(line);
+            }
+            return tasks.join('\n');
+        }
+
+        // Default: treat as plain todo.txt (also handles .txt, .text, etc.)
+        return text;
+    };
+
     const handleImport = (file) => {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            const text = e.target.result;
-            Store.loadFromString(text);
+            const rawText = e.target.result;
+            const converted = convertToTodoTxt(rawText, file.name);
+            Store.loadFromString(converted);
         };
         reader.readAsText(file);
     };
@@ -765,7 +894,7 @@ function App() {
 
     return (
         <>
-            <div className="flex flex-col h-[100dvh]">
+            <div className="flex flex-col h-[100dvh] w-full max-w-4xl mx-auto border-x border-zinc-900/50 shadow-2xl relative bg-zinc-950">
                 <PWAInstallPrompt />
 
                 {/* TOP: Search & Sort Bar */}
@@ -798,8 +927,11 @@ function App() {
 
                         <BottomSearch
                             searchValue={searchQuery}
-                            onSearch={setSearchQuery}
+                            onSearch={(q) => {
+                                setSearchQuery(q);
+                            }}
                             onQuickAdd={handleQuickAdd}
+                            onAIAdd={handleAIAdd}
                             onMenuClick={() => setIsSidebarOpen(true)}
                             onSettingsClick={() => setIsSettingsOpen(true)}
                             focusTrigger={searchFocusTrigger}
@@ -808,6 +940,7 @@ function App() {
                             projects={projects}
                             contexts={contexts}
                             tags={tags}
+                            taskExamples={recentTaskExamples}
                             onOpenCalendar={openCalendar}
                             isEditing={!!editingTask}
                             onCancelEdit={handleCancelEdit}
@@ -1015,7 +1148,7 @@ function App() {
                         }}
                     />
 
-                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex justify-center transition-colors pb-32">
+                    <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-950 flex flex-col items-center transition-colors pb-32">
                         <div className="w-full max-w-2xl px-4 sm:px-6 md:px-8 pt-2 pb-6">
                             {/* Branding Header Removed (Moved to Top) */}
 

@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { get_completions } from 'todo-parser';
 
-export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter, projects, contexts, tags, onOpenCalendar, isEditing, onCancelEdit }) {
+export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, onSettingsClick, focusTrigger, activeFilter, onClearFilter, projects, contexts, tags, taskExamples, onOpenCalendar, isEditing, onCancelEdit, onAIAdd }) {
     const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const cursorPositionRef = useRef(0);
+    const [aiLoading, setAiLoading] = useState(false);
 
     useEffect(() => {
         if (focusTrigger > 0 && inputRef.current) {
@@ -109,6 +110,116 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
 
     // Detect touch device for mobile-specific Enter behavior
     const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
+    // Build a smart todo.txt prompt with context from existing tasks
+    const buildTodoPrompt = (input) => {
+        const today = new Date().toISOString().split('T')[0];
+        const safeExamples = (taskExamples || []).slice(-4);
+
+        // Available metadata for the model to reuse
+        const availProjects = projects && projects.length > 0 ? projects.map(p => '+' + p).join(', ') : 'keine';
+        const availContexts = contexts && contexts.length > 0 ? contexts.map(c => '@' + c).join(', ') : 'keine';
+        const availTags = tags && tags.length > 0 ? tags.map(t => '#' + t).join(', ') : 'keine';
+
+        const exampleBlock = safeExamples.length > 0
+            ? `\nBESTEHENDE AUFGABEN (als Orientierung für Projects/Contexts/Tags):\n${safeExamples.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
+            : '';
+
+        const system = `Du bist ein Todo-Assistent. Der Benutzer beschreibt Aufgaben in natürlicher Sprache. Deine Aufgabe ist, daraus eine oder mehrere gültige todo.txt-Zeilen zu erzeugen.
+
+## todo.txt Format
+- Eine Aufgabe pro Zeile
+- Priorität (optional): (A) bis (Z) am Zeilenanfang
+- Erstellungsdatum (optional): YYYY-MM-DD nach der Priorität
+- Beschreibung: Freitext
+- Projekte: +Projektname (zusammenhängend, CamelCase)
+- Kontexte: @Kontextname
+- Key-Value Metadaten: key:value (z.B. due:${today})
+- heute ist: ${today}
+- Schreibe Aufgaben auf DEUTSCH
+
+## WICHTIG: Bestehende Metadaten wiederverwenden
+Nutze für neue Aufgaben bevorzugt die bereits existierenden Projekte, Kontexte und Tags aus den bestehenden Aufgaben.
+Wenn der Benutzer z.B. sagt "Ich will noch Obst kaufen" und es existiert "@einkaufen", dann verwende "@einkaufen" in der generierten Aufgabe.
+
+## Verfügbare Metadaten
+Projekte: ${availProjects}
+Kontexte: ${availContexts}
+Tags: ${availTags}
+${exampleBlock}
+
+## Ausgabe
+Antworte NUR mit den todo.txt-Zeilen. Keine Erklärungen, kein Markdown, keine Nummerierung.
+Jede Zeile MUSS gültiges todo.txt sein.`;
+
+        return { system, user: input };
+    };
+
+    // Extract valid todo.txt lines from messy model output
+    const parseTaskLines = (raw) => {
+        if (!raw) return [];
+        return raw
+            .split('\n')
+            .map(l => l.trim())
+            // strip markdown fences, backtick wrappers, bullet markers
+            .map(l => l.replace(/^```[a-z]*\s*/, '').replace(/```\s*$/, ''))
+            .map(l => l.replace(/^`+|`+$/g, ''))
+            .map(l => l.replace(/^[-*]\s+/, ''))
+            .filter(l => (
+                l.length > 3 &&
+                !l.startsWith('```') &&
+                !l.match(/^(#+|Here|Output|The|These|Das|Dies|Folgend|Aufgabe|Task)/i)
+            ));
+    };
+
+    // AI Task Generator via LM Studio (local)
+    const handleAIGenerate = async () => {
+        const input = searchValue.trim();
+        if (!input || aiLoading) return;
+        setAiLoading(true);
+        try {
+            const { system, user } = buildTodoPrompt(input);
+
+            const res = await fetch('http://127.0.0.1:1234/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'local-model',
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: user }
+                    ],
+                    temperature: 0.5,
+                    max_tokens: 512,
+                })
+            });
+
+            if (!res.ok) throw new Error(`LM Studio error: ${res.status}`);
+            const data = await res.json();
+            const msg = data.choices?.[0]?.message;
+
+            // Support reasoning models: content may be empty, actual answer in reasoning_content
+            let rawOutput = (msg?.content || '').trim();
+            if (!rawOutput && msg?.reasoning_content) {
+                rawOutput = (msg.reasoning_content || '').trim();
+            }
+
+            const taskLines = parseTaskLines(rawOutput);
+
+            if (taskLines.length > 0 && onAIAdd) {
+                onAIAdd(taskLines);
+                onSearch('');
+            } else {
+                console.warn('AI raw output:', rawOutput);
+                alert('AI hat keine gültigen Aufgaben zurückgegeben. Probiere einen einfacheren oder kürzeren Prompt.');
+            }
+        } catch (err) {
+            console.error('AI generation failed:', err);
+            alert(`AI Fehler: ${err.message}\n\nLäuft LM Studio auf http://127.0.0.1:1234?`);
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     return (
         <div className="relative">
@@ -257,7 +368,37 @@ export function BottomSearch({ searchValue, onSearch, onQuickAdd, onMenuClick, o
                     )}
 
 
+                    {/* AI Buttons Group */}
+                    <div className="flex items-center gap-0.5">
+                        {/* LM Studio — local AI */}
+                        <button
+                            onClick={handleAIGenerate}
+                            disabled={aiLoading || !searchValue.trim()}
+                            className={`p-1.5 rounded-lg transition-all ${
+                                aiLoading
+                                    ? 'text-violet-400 animate-pulse cursor-wait'
+                                    : searchValue.trim()
+                                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/20'
+                                        : 'text-zinc-700 cursor-default'
+                            }`}
+                            title="Generate with LM Studio (local)"
+                        >
+                            {aiLoading ? (
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+
                     {/* Quick Calendar Trigger */}
+
                     <button
                         onClick={() => {
                             // Close keyboard if possible (blur input) - optional

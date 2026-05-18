@@ -175,6 +175,21 @@ export const Store = {
         this.notify('REORDER_TASKS');
     },
 
+    moveTask(id, direction) {
+        const index = this.tasks.findIndex(t => t.id === id);
+        if (index === -1) return;
+
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= this.tasks.length) return;
+
+        this.saveUndoState();
+        const tasks = [...this.tasks];
+        [tasks[index], tasks[newIndex]] = [tasks[newIndex], tasks[index]];
+        this.tasks = tasks;
+        this.saveToPersistence();
+        this.notify('MOVE_TASK');
+    },
+
 
     deleteTask(id) {
         this.saveUndoState();
