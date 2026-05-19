@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-store": "^2.4.3",
     "@vitejs/plugin-react": "^5.1.2",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",

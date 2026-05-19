@@ -1,14 +1,26 @@
 import { parse_todo_line } from 'todo-parser';
-// import { get, set } from 'idb-keyval';
+import { loadTasksNative, saveTasksNative, isTauri } from './tauri-bridge';
+
+// Debounce timer for native saves
+let _nativeSaveTimer = null;
+const NATIVE_SAVE_DEBOUNCE = 300;
+
+const saveNativeDebounced = (content) => {
+    clearTimeout(_nativeSaveTimer);
+    _nativeSaveTimer = setTimeout(() => {
+        saveTasksNative(content);
+    }, NATIVE_SAVE_DEBOUNCE);
+};
 
 export const Store = {
     tasks: [],
     listeners: [],
     undoStack: [],
-    redoStack: [], // Added Redo Stack
+    redoStack: [],
+    _useNative: null, // cached check
 
-    init() {
-        this.loadFromPersistence();
+    async init() {
+        await this.loadFromPersistence();
     },
 
     subscribe(listener) {
@@ -55,14 +67,46 @@ export const Store = {
         catch (e) { console.error('Failed to save tasks:', e); }
     },
 
-    // New methods for persistence
-    loadFromPersistence() {
+    // Updated persistence: native file I/O in Tauri, localStorage fallback
+    async loadFromPersistence() {
+        if (isTauri()) {
+            try {
+                const content = await loadTasksNative();
+                if (content && content.trim()) {
+                    const lines = content.split('\n');
+                    this.tasks = [];
+                    lines.forEach(line => {
+                        if (!line.trim()) return;
+                        const task = parse_todo_line(line);
+                        if (task) this.tasks.push(task);
+                    });
+                    this.notify('TAURI_LOAD');
+                    // Also save to localStorage as fallback
+                    this.saveToLocalStorage();
+                    return;
+                }
+            } catch (e) {
+                console.error('Tauri load failed, falling back to localStorage:', e);
+            }
+        }
+        // Fallback: localStorage
         this.loadFromLocalStorage();
     },
 
     saveToPersistence() {
-        this.saveToLocalStorage();
         this.lastModificationTime = Date.now();
+
+        // Always save to localStorage (fast, synchronous)
+        this.saveToLocalStorage();
+
+        // In Tauri: also persist to native file (debounced)
+        if (isTauri()) {
+            const todoTxtContent = this.tasks
+                .map(t => t.raw)
+                .filter(r => r && r.trim())
+                .join('\n');
+            saveNativeDebounced(todoTxtContent);
+        }
     },
 
     lastModificationTime: Date.now(),
